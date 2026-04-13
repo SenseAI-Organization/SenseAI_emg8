@@ -1,5 +1,5 @@
 /*******************************************************************************
- * main4ADC.cpp — EMG8 Bracelet Firmware
+ * main4ADC.cpp — EMG8 Bracelet Firmware  (v4 — multi-file SD + label protocol)
  *
  * 4× ADS1015 mixed-rate continuous sampling with ALERT/RDY interrupts:
  *   ch 0, 1 = fast  (raw EMG   ≈ 1150 Hz per channel in All mode)
@@ -7,16 +7,19 @@
  *
  * ICM-42605 6-axis IMU at 200 Hz via SPI
  *
- * Binary SD logging  ·  UART CSV output  ·  Reed switch + serial commands
+ * Multi-file SD logging  ·  UART CSV @460800  ·  Reed switch + serial commands
  *
- * SD binary format (per file):
- *   [20-byte header] "EMG8" | ver(3) | nADC(4) | nCh(4) | div |
- *                    epoch_s(u32) | bat_mV(u16) | bat_%(u8) | state(u8) |
- *                    imuODR(u8) | rsvd(3)
- *   [N × 8-byte EMG records]  type=0x00 | adc(u8) | ch(u8) | pad(u8) | ts(u16ms) | value(i16)
- *   [N × 20-byte IMU records] type=0x01 | rsvd(u8) | ts(u16ms) |
- *                              ax(i16) | ay(i16) | az(i16) | gx(i16) | gy(i16) | gz(i16) |
- *                              temp_x100(i16)
+ * SD layout per session directory  s_<MAC>_<epoch>/
+ *   M.bin — master  (32-byte header + 12-byte label events)
+ *   R.bin — raw EMG  (8-byte Sample records, ch 0-1)
+ *   E.bin — envelope (8-byte Sample records, ch 2-3)
+ *   I.bin — IMU      (20-byte ImuSample records)
+ *
+ * UART baud 460800.  Protocol:
+ *   PC→ESP: '0' stop · '1-3' mode · '?' status · 'L<id>,<rep>\n' label
+ *           'V0'/'V1' 5V · 'F' list files · 'G<path>\n' transfer file
+ *   ESP→PC: #READY · #MODE:N · #CD:N · #REC · #STOP · #LABEL:id,rep
+ *           #STATUS:mode,rec,mV,% · H,… · D,ts,… · #5V:0/1
  *
  * Sense-AI
  ******************************************************************************/
@@ -28,6 +31,8 @@
 #include "freertos/queue.h"
 #include "esp_timer.h"
 #include "driver/uart.h"
+#include "esp_mac.h"
+#include "ff.h"
 
 #include "ADS1015.hpp"
 #include "ICM42605.hpp"
@@ -106,6 +111,15 @@ struct __attribute__((packed)) ImuSample {
 };
 static_assert(sizeof(ImuSample) == 20, "ImuSample must be 20 bytes");
 
+/** @brief Label event written to master file when PC sends L command. */
+struct __attribute__((packed)) LabelEvent {
+    uint32_t ts;           // µs since recStart
+    uint16_t grasp_id;     // Ninapro movement number (0 = rest)
+    uint16_t repetition;   // current repetition
+    uint32_t _reserved;    // pad to 12 bytes
+};
+static_assert(sizeof(LabelEvent) == 12, "LabelEvent must be 12 bytes");
+
 enum class Mode : uint8_t { Idle = 0, All = 1, Raw = 2, Env = 3 };
 
 /* ── Globals ───────────────────────────────────────────────────────────────── */
@@ -128,10 +142,25 @@ static volatile bool recording = false;
 static int64_t       recStart  = 0;            // µs epoch for timestamps
 static bool          sdOK      = false;        // SD card available
 
-static QueueHandle_t sdQ  = nullptr;
-static QueueHandle_t imuQ = nullptr;
-static constexpr int kQLEN    = 8000;          // ≈ 600 ms buffer at 13.2 kSa/s
-static constexpr int kIMU_QLEN = 400;          // ≈ 2 s buffer at 200 Hz
+// Separate queues for each stream → separate files
+static QueueHandle_t rawQ   = nullptr;         // raw EMG (ch 0,1)
+static QueueHandle_t envQ   = nullptr;         // envelope (ch 2,3)
+static QueueHandle_t imuQ   = nullptr;
+static QueueHandle_t labelQ = nullptr;         // LabelEvent from PC
+static constexpr int kRAW_QLEN  = 8000;        // ≈ 600 ms @ ~13 kSa/s
+static constexpr int kENV_QLEN  = 1000;        // ≈ 2 s   @ ~460 Sa/s
+static constexpr int kIMU_QLEN  = 400;         // ≈ 2 s   @ 200 Hz
+static constexpr int kLABEL_QLEN = 32;
+
+// Label state (set by PC via 'L' command)
+static volatile uint16_t curGrasp = 0;         // current Ninapro grasp ID
+static volatile uint16_t curRep   = 0;         // current repetition
+
+// Device MAC as hex string  "AABBCCDDEEFF\0"
+static char macStr[13] = {};
+
+// Session directory path (set once at SD init)
+static std::string sessionDir;
 
 /* ── ADC conversion callback (called from each ADC's FreeRTOS task) ──────── */
 
@@ -148,94 +177,145 @@ static void onSample(uint8_t ch, int16_t val, void* arg) {
     s.adc = id;
     s.ch  = ch;
     s.val = val;
-    xQueueSend(sdQ, &s, 0);   // non-blocking; drop if full
+
+    if (fast)
+        xQueueSend(rawQ, &s, 0);
+    else
+        xQueueSend(envQ, &s, 0);
 }
 
-/* ── SD writer task — pinned to core 1, priority 5 ────────────────────────── */
+/* ── SD writer task — multi-file via raw FatFs, pinned to core 1, prio 5 ── */
+/*
+ * Files opened once per recording session (no open/close cycling):
+ *   M.bin — master header + label events
+ *   R.bin — raw EMG  (8-byte Sample, ch 0-1)
+ *   E.bin — envelope (8-byte Sample, ch 2-3)
+ *   I.bin — IMU      (20-byte ImuSample)
+ *
+ * Uses raw f_open/f_write/f_sync to hold 4 FIL handles simultaneously
+ * (the SD wrapper class only supports one open file at a time).
+ */
+
+static FIL filMaster, filRaw, filEnv, filImu;
+static bool filesOpen = false;
+
+static void sdOpenFiles(const std::string& base) {
+    std::string mPath = base + "/M.bin";
+    std::string rPath = base + "/R.bin";
+    std::string ePath = base + "/E.bin";
+    std::string iPath = base + "/I.bin";
+
+    f_open(&filMaster, mPath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
+    f_open(&filRaw,    rPath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
+    f_open(&filEnv,    ePath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
+    f_open(&filImu,    iPath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
+
+    // Write master header (32 bytes, v4)
+    // [0-3] "EMG8"  [4] ver=4  [5] nADC  [6] nCh  [7] div
+    // [8-11] epoch_s(u32)  [12-13] bat_mV  [14] bat_%  [15] bat_state
+    // [16-17] imuODR(u16)  [18-23] MAC(6)  [24] mode  [25-31] reserved
+    uint8_t hdr[32] = {};
+    memcpy(hdr, "EMG8", 4);
+    hdr[4] = 4;                  // version
+    hdr[5] = 4;                  // number of ADCs
+    hdr[6] = 4;                  // channels per ADC
+    hdr[7] = kSLOW_DIV;
+    uint32_t e32 = (uint32_t)(esp_timer_get_time() / 1000000);
+    memcpy(hdr + 8, &e32, 4);
+    if (battery) {
+        battery->measure();
+        uint16_t mv = battery->getVoltage();
+        memcpy(hdr + 12, &mv, 2);
+        hdr[14] = battery->getPercentage();
+        hdr[15] = (uint8_t)battery->getState();
+    }
+    uint16_t odr16 = kIMU_ODR_HZ;
+    memcpy(hdr + 16, &odr16, 2);
+    // MAC bytes
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+    memcpy(hdr + 18, mac, 6);
+    hdr[24] = (uint8_t)mode;
+
+    UINT bw;
+    f_write(&filMaster, hdr, 32, &bw);
+    f_sync(&filMaster);
+
+    filesOpen = true;
+}
+
+static void sdCloseFiles() {
+    if (!filesOpen) return;
+    f_sync(&filRaw);  f_close(&filRaw);
+    f_sync(&filEnv);  f_close(&filEnv);
+    f_sync(&filImu);  f_close(&filImu);
+    f_sync(&filMaster); f_close(&filMaster);
+    filesOpen = false;
+}
 
 static void sdWriteTask(void*) {
-    constexpr int BATCH = 500;  // ~4 KB per write
-    constexpr int IMU_BATCH = 50;
-    Sample buf[BATCH];
-    ImuSample imuBuf[IMU_BATCH];
-    char   fname[32];
-    bool   fOpen   = false;
-    int64_t fEpoch = 0;
+    constexpr int RAW_BATCH = 500;    // 500 × 8  = 4 KB
+    constexpr int ENV_BATCH = 100;    // 100 × 8  = 800 B
+    constexpr int IMU_BATCH = 50;     //  50 × 20 = 1 KB
+    constexpr int LBL_BATCH = 8;
 
-    // Session directory
-    char sdir[24];
-    snprintf(sdir, sizeof(sdir), "s_%lld",
-             (long long)(esp_timer_get_time() / 1000000));
-    sdCard->createDir(std::string(sdir));
-    sdCard->goToDir(std::string(sdir));
+    Sample    rawBuf[RAW_BATCH];
+    Sample    envBuf[ENV_BATCH];
+    ImuSample imuBuf[IMU_BATCH];
+    LabelEvent lblBuf[LBL_BATCH];
+    UINT bw;
+
+    uint32_t syncTick = 0;
 
     while (true) {
         /* ---- idle when not recording ---- */
         if (!recording) {
-            if (fOpen) { sdCard->closeFile(); fOpen = false; }
+            if (filesOpen) sdCloseFiles();
             vTaskDelay(pdMS_TO_TICKS(100));
             continue;
         }
 
-        /* ---- open / rotate file ---- */
-        int64_t nowSec = esp_timer_get_time() / 1000000;
-        if (!fOpen) {
-            fEpoch = nowSec;
-            snprintf(fname, sizeof(fname), "emg_%lld.bin", (long long)fEpoch);
-            sdCard->createFile(std::string(fname));
-            sdCard->openFile(std::string(fname), SD::OpenMode::kOpenAppend);
+        /* ---- open files on first iteration of a new recording ---- */
+        if (!filesOpen) {
+            sdOpenFiles(sessionDir);
+        }
 
-            // 20-byte header  (v3 — adds IMU ODR field)
-            // [0-3] "EMG8"  [4] ver  [5] nADC  [6] nCh  [7] div
-            // [8-11] epoch_s(u32)  [12-13] bat_mV(u16)  [14] bat_%
-            // [15] bat_state  [16] imuODR(u8)  [17-19] reserved
-            uint8_t hdr[20] = {};
-            memcpy(hdr, "EMG8", 4);
-            hdr[4] = 3;           // version
-            hdr[5] = 4;           // number of ADCs
-            hdr[6] = 4;           // channels per ADC
-            hdr[7] = kSLOW_DIV;   // slow divider
-            uint32_t e32 = (uint32_t)fEpoch;
-            memcpy(hdr + 8, &e32, 4);
-            if (battery) {
-                battery->measure();
-                uint16_t mv = battery->getVoltage();
-                memcpy(hdr + 12, &mv, 2);
-                hdr[14] = battery->getPercentage();
-                hdr[15] = (uint8_t)battery->getState();
+        /* ---- drain raw EMG queue → R.bin ---- */
+        int nR = 0;
+        while (nR < RAW_BATCH && xQueueReceive(rawQ, &rawBuf[nR], 0) == pdTRUE) nR++;
+        if (nR > 0)
+            f_write(&filRaw, rawBuf, nR * sizeof(Sample), &bw);
+
+        /* ---- drain envelope queue → E.bin ---- */
+        int nE = 0;
+        while (nE < ENV_BATCH && xQueueReceive(envQ, &envBuf[nE], 0) == pdTRUE) nE++;
+        if (nE > 0)
+            f_write(&filEnv, envBuf, nE * sizeof(Sample), &bw);
+
+        /* ---- drain IMU queue → I.bin ---- */
+        int nI = 0;
+        while (nI < IMU_BATCH && xQueueReceive(imuQ, &imuBuf[nI], 0) == pdTRUE) nI++;
+        if (nI > 0)
+            f_write(&filImu, imuBuf, nI * sizeof(ImuSample), &bw);
+
+        /* ---- drain label queue → M.bin ---- */
+        int nL = 0;
+        while (nL < LBL_BATCH && xQueueReceive(labelQ, &lblBuf[nL], 0) == pdTRUE) nL++;
+        if (nL > 0)
+            f_write(&filMaster, lblBuf, nL * sizeof(LabelEvent), &bw);
+
+        /* ---- periodic sync (every ~500 ms) ---- */
+        if (nR || nE || nI || nL) {
+            if (++syncTick >= 25) {   // 25 × 20ms ≈ 500ms
+                f_sync(&filRaw);
+                f_sync(&filEnv);
+                f_sync(&filImu);
+                f_sync(&filMaster);
+                syncTick = 0;
             }
-            hdr[16] = (uint8_t)kIMU_ODR_HZ;  // 200
-            sdCard->fileWrite(std::string(reinterpret_cast<char*>(hdr), 20));
-            fOpen = true;
-        } else if (nowSec - fEpoch >= 60) {
-            sdCard->closeFile();
-            fOpen = false;
-            continue;   // will reopen on next iteration
         }
 
-        /* ---- drain EMG queue → batch write ---- */
-        int n = 0;
-        while (n < BATCH && xQueueReceive(sdQ, &buf[n], 0) == pdTRUE) n++;
-        if (n > 0) {
-            // Tag byte 0xAA before EMG block (1 + n*8 bytes)
-            uint8_t tag = 0xAA;
-            sdCard->fileWrite(std::string(reinterpret_cast<char*>(&tag), 1));
-            sdCard->fileWrite(
-                std::string(reinterpret_cast<char*>(buf), n * sizeof(Sample)));
-        }
-
-        /* ---- drain IMU queue → batch write ---- */
-        int nImu = 0;
-        while (nImu < IMU_BATCH && xQueueReceive(imuQ, &imuBuf[nImu], 0) == pdTRUE) nImu++;
-        if (nImu > 0) {
-            // Tag byte 0xBB before IMU block (1 + nImu*20 bytes)
-            uint8_t tag = 0xBB;
-            sdCard->fileWrite(std::string(reinterpret_cast<char*>(&tag), 1));
-            sdCard->fileWrite(
-                std::string(reinterpret_cast<char*>(imuBuf), nImu * sizeof(ImuSample)));
-        }
-
-        if (n == 0 && nImu == 0) {
+        if (nR == 0 && nE == 0 && nI == 0 && nL == 0) {
             vTaskDelay(pdMS_TO_TICKS(20));  // yield when idle
         }
     }
@@ -245,16 +325,18 @@ static void sdWriteTask(void*) {
 /*  Protocol: line-based text, prefixed by a tag character.
  *
  *  Outgoing (ESP → PC):
- *    '#' lines = metadata / status    e.g.  #READY  #MODE:1  #CD:3  #REC  #STOP
- *    'H' line  = CSV column header    e.g.  H,adc1_0,adc1_1,...,ax,ay,az,gx,gy,gz
- *    'D' line  = CSV data             e.g.  D,1234,-456,...,0.12,-0.03,0.98,1.2,0.5,-0.1
+ *    '#' lines = metadata / status
+ *    'H' line  = CSV header   H,ts_us,adc1_0,...,ax,ay,az,gx,gy,gz,label,rep
+ *    'D' line  = CSV data     D,12345,1234,-456,...,0.12,-0.03,0.98,...,5,2
  *
  *  Incoming (PC → ESP):
- *    '0'  = stop recording
- *    '1'  = start/switch to All mode
- *    '2'  = start/switch to Raw mode
- *    '3'  = start/switch to Env mode
- *    '?'  = query status  → responds with #STATUS:<mode>,<recording>,<bat_mV>,<bat_%>
+ *    '0'        stop
+ *    '1'-'3'    mode
+ *    '?'        query status
+ *    'L<id>,<rep>\n'  set label
+ *    'V0'/'V1'  5V off/on
+ *    'F'        list SD files
+ *    'G<path>\n' transfer SD file
  */
 
 static void uartTask(void*) {
@@ -273,7 +355,7 @@ static void uartTask(void*) {
 
         // Print header line once per recording start / mode change
         if (!hdrDone) {
-            printf("H");
+            printf("H,ts_us");
             for (int a = 0; a < 4; a++)
                 for (int c = 0; c < 4; c++) {
                     bool fast = (c <= kEMG1);
@@ -283,22 +365,25 @@ static void uartTask(void*) {
                 }
             if (imuOK)
                 printf(",ax,ay,az,gx,gy,gz");
-            printf("\n");
+            printf(",label,rep\n");
             lastHdrMode = mode;
             hdrDone = true;
         }
 
         // One CSV line of latest readings
-        char line[384];
+        char line[512];
         int  p = 0;
-        line[p++] = 'D';
+
+        // Timestamp (µs since recStart)
+        uint32_t ts = (uint32_t)(esp_timer_get_time() - recStart);
+        p += snprintf(line + p, sizeof(line) - p, "D,%u", (unsigned)ts);
+
         for (int a = 0; a < 4; a++)
             for (int c = 0; c < 4; c++) {
                 bool fast = (c <= kEMG1);
                 if (mode == Mode::Raw && !fast) continue;
                 if (mode == Mode::Env &&  fast) continue;
-                line[p++] = ',';
-                p += snprintf(line + p, sizeof(line) - p, "%d",
+                p += snprintf(line + p, sizeof(line) - p, ",%d",
                               adc[a]->getLatestReading(c));
             }
         // Append IMU (latest measurement already done by imuTask)
@@ -309,6 +394,9 @@ static void uartTask(void*) {
                           ",%.3f,%.3f,%.3f,%.3f,%.3f,%.3f",
                           ac[0], ac[1], ac[2], gy[0], gy[1], gy[2]);
         }
+        // Append current label
+        p += snprintf(line + p, sizeof(line) - p, ",%u,%u",
+                      (unsigned)curGrasp, (unsigned)curRep);
         line[p++] = '\n';
         line[p] = '\0';
         printf("%s", line);
@@ -352,20 +440,29 @@ static void imuTask(void*) {
     }
 }
 
-/* ── Countdown (visible on serial + LED) ──────────────────────────────────── */
+/* ── Countdown (visible on serial + LED, interruptible via '0') ────────────── */
 
-static void countdown(int seconds) {
+static bool countdown(int seconds) {
     for (int i = seconds; i > 0; i--) {
         printf("#CD:%d\n", i);
-        // Blink LED yellow during countdown
         led->setColor(255, 180, 0);
         led->turnOn();
-        vTaskDelay(pdMS_TO_TICKS(500));
-        led->turnOff();
-        vTaskDelay(pdMS_TO_TICKS(500));
+        // 10 × 100 ms = 1 second; check UART each tick
+        for (int t = 0; t < 10; t++) {
+            uint8_t rx;
+            if (uart_read_bytes(UART_NUM_0, &rx, 1, pdMS_TO_TICKS(100)) > 0) {
+                if (rx == '0') {
+                    led->turnOff();
+                    printf("#CD:ABORT\n");
+                    return false;   // aborted
+                }
+            }
+            if (t == 5) led->turnOff();   // blink: 500ms on, 500ms off
+        }
     }
     printf("#CD:0\n");
     led->turnOn();
+    return true;   // completed normally
 }
 
 /* ── Start / stop helpers ──────────────────────────────────────────────────── */
@@ -396,12 +493,147 @@ static void stopADCs() {
         adc[i]->stopContinuous();
 }
 
+/* ── UART line buffer for multi-byte commands ──────────────────────────────── */
+
+static char uartLineBuf[128];
+static int  uartLinePos = 0;
+
+/** Process a complete line command (after '\n'). */
+static void processUartLine(const char* line, int len) {
+    if (len < 1) return;
+
+    if (line[0] == 'L') {
+        // Label: L<grasp_id>,<rep>
+        int gid = 0, rep = 0;
+        if (sscanf(line + 1, "%d,%d", &gid, &rep) >= 1) {
+            curGrasp = (uint16_t)gid;
+            curRep   = (uint16_t)rep;
+            printf("#LABEL:%d,%d\n", gid, rep);
+            // Enqueue label event for SD master file
+            if (recording && labelQ) {
+                LabelEvent le = {};
+                le.ts = (uint32_t)(esp_timer_get_time() - recStart);
+                le.grasp_id = (uint16_t)gid;
+                le.repetition = (uint16_t)rep;
+                xQueueSend(labelQ, &le, 0);
+            }
+        }
+    } else if (line[0] == 'G') {
+        // File transfer: G<relative_path>
+        if (!sdOK) { printf("#ERR:NO_SD\n"); return; }
+        std::string fpath(line + 1, len - 1);
+        // Trim trailing whitespace
+        while (!fpath.empty() && (fpath.back() == '\r' || fpath.back() == ' '))
+            fpath.pop_back();
+
+        FIL tf;
+        if (f_open(&tf, fpath.c_str(), FA_READ) != FR_OK) {
+            printf("#ERR:OPEN_FAIL\n");
+            return;
+        }
+        uint32_t sz = f_size(&tf);
+        printf("#FDATA:%s,%u\n", fpath.c_str(), (unsigned)sz);
+
+        uint8_t xbuf[512];
+        UINT br;
+        while (f_read(&tf, xbuf, sizeof(xbuf), &br) == FR_OK && br > 0) {
+            // Send raw binary (the Python side reads exactly sz bytes)
+            uart_write_bytes(UART_NUM_0, xbuf, br);
+        }
+        f_close(&tf);
+        printf("\n#FDONE\n");
+    }
+}
+
+/** Feed one byte to the UART line accumulator. Returns single-char cmds. */
+static int feedUartByte(uint8_t b) {
+    // Multi-byte commands start with 'L', 'G' and end with '\n'
+    if (uartLinePos > 0) {
+        // We're accumulating a line
+        if (b == '\n' || b == '\r') {
+            uartLineBuf[uartLinePos] = '\0';
+            processUartLine(uartLineBuf, uartLinePos);
+            uartLinePos = 0;
+            return 0;   // consumed
+        }
+        if (uartLinePos < (int)sizeof(uartLineBuf) - 1)
+            uartLineBuf[uartLinePos++] = (char)b;
+        return 0;   // consumed
+    }
+
+    // First byte of a potential command
+    if (b == 'L' || b == 'G') {
+        uartLineBuf[0] = (char)b;
+        uartLinePos = 1;
+        return 0;
+    }
+
+    // Single-byte commands
+    return b;
+}
+
+/* ── SD directory listing helper ───────────────────────────────────────────── */
+
+static void listSDDir(const char* path) {
+    FF_DIR dir;
+    FILINFO fno;
+    if (f_opendir(&dir, path) != FR_OK) {
+        printf("#ERR:DIR\n");
+        return;
+    }
+    printf("#FLIST:%s\n", path);
+    while (f_readdir(&dir, &fno) == FR_OK && fno.fname[0] != '\0') {
+        if (fno.fname[0] == '.') continue;
+        bool isDir = (fno.fattrib & AM_DIR);
+        printf("#F:%s%s,%u\n", fno.fname, isDir ? "/" : "",
+               isDir ? 0u : (unsigned)fno.fsize);
+        if (isDir) {
+            // Recurse one level for session directories
+            char sub[300];
+            snprintf(sub, sizeof(sub), "%.*s/%.*s",
+                     (int)(sizeof(sub)/2 - 2), path,
+                     (int)(sizeof(sub)/2 - 2), fno.fname);
+            FF_DIR sub_dir;
+            FILINFO sub_fno;
+            if (f_opendir(&sub_dir, sub) == FR_OK) {
+                while (f_readdir(&sub_dir, &sub_fno) == FR_OK && sub_fno.fname[0] != '\0') {
+                    if (sub_fno.fname[0] == '.') continue;
+                    printf("#F:%s/%s,%u\n", fno.fname, sub_fno.fname,
+                           (unsigned)sub_fno.fsize);
+                }
+                f_closedir(&sub_dir);
+            }
+        }
+    }
+    f_closedir(&dir);
+    printf("#FEND\n");
+}
+
 /* ── app_main ──────────────────────────────────────────────────────────────── */
 
 extern "C" void app_main() {
 
-    /* ---- UART driver (needed for uart_read_bytes; printf keeps working) --- */
-    uart_driver_install(UART_NUM_0, 256, 0, 0, nullptr, 0);
+    /* ---- UART driver @ 460800 baud --------------------------------------- */
+    const uart_config_t uart_cfg = {
+        .baud_rate  = 460800,
+        .data_bits  = UART_DATA_8_BITS,
+        .parity     = UART_PARITY_DISABLE,
+        .stop_bits  = UART_STOP_BITS_1,
+        .flow_ctrl  = UART_HW_FLOWCTRL_DISABLE,
+        .rx_flow_ctrl_thresh = 0,
+        .source_clk = UART_SCLK_DEFAULT,
+        .flags      = {},
+    };
+    uart_driver_install(UART_NUM_0, 1024, 0, 0, nullptr, 0);
+    uart_param_config(UART_NUM_0, &uart_cfg);
+
+    /* ---- Device MAC → hex string ----------------------------------------- */
+    {
+        uint8_t mac[6];
+        esp_read_mac(mac, ESP_MAC_WIFI_STA);
+        snprintf(macStr, sizeof(macStr), "%02X%02X%02X%02X%02X%02X",
+                 mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    }
 
     /* ---- RGB LED → blue while booting ------------------------------------ */
     led = new RGB(kLED);
@@ -442,6 +674,16 @@ extern "C" void app_main() {
     if (!sdOK)
         printf("SD card init failed\n");
 
+    // Create session directory using MAC: s_<MAC>_<epoch>
+    if (sdOK) {
+        char sdir[48];
+        snprintf(sdir, sizeof(sdir), "s_%s_%lld", macStr,
+                 (long long)(esp_timer_get_time() / 1000000));
+        sdCard->createDir(std::string(sdir));
+        sdCard->goToDir(std::string(sdir));
+        sessionDir = sdCard->getCurrentDir();
+    }
+
     /* ---- IMU (ICM-42605 over SPI3) --------------------------------------- */
     spiIMU = new SPI(SPI::SpiMode::kMaster, SPI3_HOST, kIMU_MOSI, kIMU_MISO, kIMU_SCK);
     if (spiIMU->init() == ESP_OK) {
@@ -471,8 +713,10 @@ extern "C" void app_main() {
         battery->measure();   // initial reading
 
     /* ---- Sample queues --------------------------------------------------- */
-    sdQ  = xQueueCreate(kQLEN, sizeof(Sample));
-    imuQ = xQueueCreate(kIMU_QLEN, sizeof(ImuSample));
+    rawQ   = xQueueCreate(kRAW_QLEN,   sizeof(Sample));
+    envQ   = xQueueCreate(kENV_QLEN,   sizeof(Sample));
+    imuQ   = xQueueCreate(kIMU_QLEN,   sizeof(ImuSample));
+    labelQ = xQueueCreate(kLABEL_QLEN, sizeof(LabelEvent));
 
     /* ---- Status LED ------------------------------------------------------ */
     if (!adcOK || !sdOK) {
@@ -485,21 +729,37 @@ extern "C" void app_main() {
 
     /* ==== Wait for command ================================================ */
     printf("#READY\n");
+    printf("#MAC:%s\n", macStr);
 
     bool reedPrev = reedSw->isPressed();
-    uint8_t rx;
+    uint8_t rxByte;
 
     while (mode == Mode::Idle) {
         // Check UART
-        if (uart_read_bytes(UART_NUM_0, &rx, 1, pdMS_TO_TICKS(50)) > 0) {
-            if (rx == '1') mode = Mode::All;
-            else if (rx == '2') mode = Mode::Raw;
-            else if (rx == '3') mode = Mode::Env;
-            else if (rx == '?') {
-                uint16_t mv = 0;
-                uint8_t pct = 0;
+        if (uart_read_bytes(UART_NUM_0, &rxByte, 1, pdMS_TO_TICKS(50)) > 0) {
+            int cmd = feedUartByte(rxByte);
+            if (cmd == '1') mode = Mode::All;
+            else if (cmd == '2') mode = Mode::Raw;
+            else if (cmd == '3') mode = Mode::Env;
+            else if (cmd == '?') {
+                uint16_t mv = 0; uint8_t pct = 0;
                 if (battery) { battery->measure(); mv = battery->getVoltage(); pct = battery->getPercentage(); }
                 printf("#STATUS:0,%d,%u,%u\n", 0, mv, pct);
+            }
+            else if (cmd == 'V') {
+                // Read next byte for V0/V1
+                uint8_t vb;
+                if (uart_read_bytes(UART_NUM_0, &vb, 1, pdMS_TO_TICKS(100)) > 0) {
+                    if (vb == '1' && battery) { battery->enable5V(); printf("#5V:1\n"); }
+                    else if (vb == '0' && battery) { battery->disable5V(); printf("#5V:0\n"); }
+                }
+            }
+            else if (cmd == 'F') {
+                if (sdOK) {
+                    std::string root = sdCard->getCurrentDir();
+                    // Go up to root for listing
+                    listSDDir(sessionDir.substr(0, sessionDir.find_last_of('/')).c_str());
+                }
             }
         }
         // Check reed switch (rising edge)
@@ -511,12 +771,19 @@ extern "C" void app_main() {
 
     /* ==== Start recording ================================================= */
     printf("#MODE:%d\n", (int)mode);
-    countdown(3);
-    battery->enable5V();
+    if (!countdown(3)) {
+        // Countdown aborted → go back to idle
+        mode = Mode::Idle;
+        printf("#STOP\n");
+        // Fall through to main loop but not recording
+    }
 
-    recStart  = esp_timer_get_time();
-    recording = true;
-    printf("#REC\n");
+    if (mode != Mode::Idle) {
+        battery->enable5V();
+        recStart  = esp_timer_get_time();
+        recording = true;
+        printf("#REC\n");
+    }
 
     if (sdOK)
         xTaskCreatePinnedToCore(sdWriteTask, "sd",   8192, nullptr, 5, nullptr, 1);
@@ -524,7 +791,8 @@ extern "C" void app_main() {
     if (imuOK)
         xTaskCreatePinnedToCore(imuTask,  "imu",  4096, nullptr, 4, nullptr, 1);
 
-    startADCs();
+    if (recording)
+        startADCs();
 
     /* ==== Main loop: monitor reed + UART ================================== */
     constexpr uint32_t kDebounceMs = 300;
@@ -544,45 +812,60 @@ extern "C" void app_main() {
                 led->setColor(0, 0, 255);
                 printf("#PAUSE\n");
             } else {
-                countdown(3);
-                battery->enable5V();
-                recStart  = esp_timer_get_time();
-                recording = true;
-                startADCs();
-                led->setColor(0, 255, 0);
-                printf("#REC\n");
-            }
-        }
-        reedPrev = reedNow;
-
-        // ---- UART commands ----
-        if (uart_read_bytes(UART_NUM_0, &rx, 1, pdMS_TO_TICKS(50)) > 0) {
-            if (rx == '0') {
-                // Stop
-                recording = false;
-                stopADCs();
-                battery->disable5V();
-                led->setColor(0, 0, 255);
-                printf("#STOP\n");
-            } else if (rx >= '1' && rx <= '3') {
-                Mode newM = (Mode)(rx - '0');
-                if (newM != mode || !recording) {
-                    if (recording) stopADCs();
-                    printf("#MODE:%d\n", (int)newM);
-                    countdown(3);
+                if (countdown(3)) {
                     battery->enable5V();
-                    mode      = newM;
                     recStart  = esp_timer_get_time();
                     recording = true;
                     startADCs();
                     led->setColor(0, 255, 0);
                     printf("#REC\n");
                 }
-            } else if (rx == '?') {
-                uint16_t mv = 0;
-                uint8_t pct = 0;
+            }
+        }
+        reedPrev = reedNow;
+
+        // ---- UART commands ----
+        if (uart_read_bytes(UART_NUM_0, &rxByte, 1, pdMS_TO_TICKS(50)) > 0) {
+            int cmd = feedUartByte(rxByte);
+            if (cmd == 0) continue;   // consumed by line accumulator
+
+            if (cmd == '0') {
+                recording = false;
+                stopADCs();
+                battery->disable5V();
+                led->setColor(0, 0, 255);
+                printf("#STOP\n");
+            } else if (cmd >= '1' && cmd <= '3') {
+                Mode newM = (Mode)(cmd - '0');
+                if (newM != mode || !recording) {
+                    if (recording) stopADCs();
+                    printf("#MODE:%d\n", (int)newM);
+                    if (countdown(3)) {
+                        battery->enable5V();
+                        mode      = newM;
+                        recStart  = esp_timer_get_time();
+                        recording = true;
+                        startADCs();
+                        led->setColor(0, 255, 0);
+                        printf("#REC\n");
+                    } else {
+                        printf("#STOP\n");
+                    }
+                }
+            } else if (cmd == '?') {
+                uint16_t mv = 0; uint8_t pct = 0;
                 if (battery) { battery->measure(); mv = battery->getVoltage(); pct = battery->getPercentage(); }
                 printf("#STATUS:%d,%d,%u,%u\n", (int)mode, recording ? 1 : 0, mv, pct);
+            } else if (cmd == 'V') {
+                uint8_t vb;
+                if (uart_read_bytes(UART_NUM_0, &vb, 1, pdMS_TO_TICKS(100)) > 0) {
+                    if (vb == '1' && battery) { battery->enable5V(); printf("#5V:1\n"); }
+                    else if (vb == '0' && battery) { battery->disable5V(); printf("#5V:0\n"); }
+                }
+            } else if (cmd == 'F') {
+                if (sdOK) {
+                    listSDDir(sessionDir.substr(0, sessionDir.find_last_of('/')).c_str());
+                }
             }
         }
     }
