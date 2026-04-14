@@ -2,8 +2,8 @@
  * main4ADC.cpp — EMG8 Bracelet Firmware  (v4 — multi-file SD + label protocol)
  *
  * 4× ADS1015 mixed-rate continuous sampling with ALERT/RDY interrupts:
- *   ch 0, 1 = fast  (raw EMG   ≈ 1150 Hz per channel in All mode)
- *   ch 2, 3 = slow  (envelope  ≈   57 Hz per channel in All mode)
+ *   ch 0, 2 = fast  (raw EMG   ≈ 1150 Hz per channel in All mode)
+ *   ch 1, 3 = slow  (envelope  ≈   57 Hz per channel in All mode)
  *
  * ICM-42605 6-axis IMU at 200 Hz via SPI
  *
@@ -25,11 +25,13 @@
  ******************************************************************************/
 #include <cstring>
 #include <string>
+#include <atomic>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "esp_timer.h"
+#include "esp_log.h"
 #include "driver/uart.h"
 #include "esp_mac.h"
 #include "ff.h"
@@ -83,8 +85,8 @@ static constexpr gpio_num_t kPGOOD    = GPIO_NUM_4;   // Power-good (active LOW)
 /* ── Channel layout (identical on every ADC) ───────────────────────────────── */
 
 static constexpr uint8_t kEMG0     = 0;   // fast — raw EMG
-static constexpr uint8_t kEMG1     = 1;   // fast — raw EMG
-static constexpr uint8_t kENV0     = 2;   // slow — envelope
+static constexpr uint8_t kEMG1     = 2;   // fast — raw EMG
+static constexpr uint8_t kENV0     = 1;   // slow — envelope
 static constexpr uint8_t kENV1     = 3;   // slow — envelope
 static constexpr uint8_t kSLOW_DIV = 20;  // ≈ 57 Hz envelope at 2400 SPS w/ 2 fast ch
 static constexpr auto    kADC_RATE = ADS1015::ConfigRate::Rate_2400Hz;
@@ -139,7 +141,7 @@ static bool            imuOK   = false;
 
 static volatile Mode mode      = Mode::Idle;
 static volatile bool recording = false;
-static int64_t       recStart  = 0;            // µs epoch for timestamps
+static std::atomic<int64_t> recStart{0};     // µs epoch for timestamps
 static bool          sdOK      = false;        // SD card available
 
 // Separate queues for each stream → separate files
@@ -166,7 +168,7 @@ static std::string sessionDir;
 
 static void onSample(uint8_t ch, int16_t val, void* arg) {
     uint8_t id = (uint8_t)(uintptr_t)arg;
-    bool fast  = (ch <= kEMG1);
+    bool fast  = (ch == kEMG0 || ch == kEMG1);
 
     // Drop channels the current mode doesn't need
     if (mode == Mode::Raw && !fast) return;
@@ -358,7 +360,7 @@ static void uartTask(void*) {
             printf("H,ts_us");
             for (int a = 0; a < 4; a++)
                 for (int c = 0; c < 4; c++) {
-                    bool fast = (c <= kEMG1);
+                    bool fast = (c == kEMG0 || c == kEMG1);
                     if (mode == Mode::Raw && !fast) continue;
                     if (mode == Mode::Env &&  fast) continue;
                     printf(",adc%d_%d", a + 1, c);
@@ -380,7 +382,7 @@ static void uartTask(void*) {
 
         for (int a = 0; a < 4; a++)
             for (int c = 0; c < 4; c++) {
-                bool fast = (c <= kEMG1);
+                bool fast = (c == kEMG0 || c == kEMG1);
                 if (mode == Mode::Raw && !fast) continue;
                 if (mode == Mode::Env &&  fast) continue;
                 p += snprintf(line + p, sizeof(line) - p, ",%d",
@@ -405,14 +407,43 @@ static void uartTask(void*) {
     }
 }
 
+/* ── Single ADC polling task — handles all 4 ADCs from one task ────────────── */
+/*
+ * Replaces the 4 internal per-ADC tasks. Each ADC's ISR sets a binary semaphore
+ * on DRDY; this task polls all four with non-blocking takes. When no conversion
+ * is ready, it yields for 1 tick (1 ms at 1000 Hz tick rate) to avoid starving
+ * IDLE1. Worst-case added latency: 1 ms, negligible at 2400 SPS.
+ */
+
+static void adcTask(void*) {
+    while (true) {
+        if (!recording) {
+            vTaskDelay(pdMS_TO_TICKS(100));
+            continue;
+        }
+
+        bool anyServiced = false;
+        for (int i = 0; i < 4; i++) {
+            if (adc[i]->serviceConversion()) {
+                anyServiced = true;
+            }
+        }
+
+        if (!anyServiced) {
+            vTaskDelay(1);  // yield 1 tick when no ADC has data
+        }
+    }
+}
+
 /* ── IMU polling task — pinned to core 1, 200 Hz ──────────────────────────── */
 
 static void imuTask(void*) {
-    const TickType_t period = pdMS_TO_TICKS(1000 / kIMU_ODR_HZ);  // 5 ms
+    constexpr TickType_t period =
+        pdMS_TO_TICKS(1000 / kIMU_ODR_HZ) > 0 ? pdMS_TO_TICKS(1000 / kIMU_ODR_HZ) : 1;
     TickType_t wake = xTaskGetTickCount();
 
     while (true) {
-        if (!recording) {
+        if (!recording || !imuOK) {
             vTaskDelay(pdMS_TO_TICKS(100));
             wake = xTaskGetTickCount();
             continue;
@@ -485,7 +516,7 @@ static void startADCs() {
         cfg[n++] = {kENV1, div, ADS1015::ConfigPGA::One};
     }
     for (int i = 0; i < 4; i++)
-        adc[i]->startMixedContinuous(cfg, n, kADC_RATE);
+        adc[i]->startMixedContinuousExternal(cfg, n, kADC_RATE);
 }
 
 static void stopADCs() {
@@ -666,13 +697,28 @@ extern "C" void app_main() {
 
     /* ---- SD card --------------------------------------------------------- */
     spiSD = new SPI(SPI::SpiMode::kMaster, SPI2_HOST, kSD_MOSI, kSD_MISO, kSD_SCK);
-    if (spiSD->init() == ESP_OK) {
+    esp_err_t sdSpiErr = spiSD->init();
+    if (sdSpiErr != ESP_OK) {
+        printf("SD SPI bus init failed: %s\n", esp_err_to_name(sdSpiErr));
+    } else {
+        printf("SD SPI bus OK (MOSI=%d MISO=%d SCK=%d CS=%d)\n",
+               kSD_MOSI, kSD_MISO, kSD_SCK, kSD_CS);
         sdCard = new SD(*spiSD, kSD_CS);
-        if (sdCard->init() == ESP_OK && sdCard->mountCard() == FR_OK)
-            sdOK = true;
+        esp_err_t sdErr = sdCard->init();
+        if (sdErr != ESP_OK) {
+            printf("SD card init failed: %s (0x%x)\n", esp_err_to_name(sdErr), sdErr);
+        } else {
+            FRESULT fr = sdCard->mountCard();
+            if (fr != FR_OK) {
+                printf("SD mount failed: FRESULT=%d\n", fr);
+            } else {
+                sdOK = true;
+                printf("SD card mounted OK\n");
+            }
+        }
     }
     if (!sdOK)
-        printf("SD card init failed\n");
+        printf("SD card NOT available\n");
 
     // Create session directory using MAC: s_<MAC>_<epoch>
     if (sdOK) {
@@ -685,20 +731,26 @@ extern "C" void app_main() {
     }
 
     /* ---- IMU (ICM-42605 over SPI3) --------------------------------------- */
+    esp_log_level_set("ICM42605", ESP_LOG_DEBUG);
     spiIMU = new SPI(SPI::SpiMode::kMaster, SPI3_HOST, kIMU_MOSI, kIMU_MISO, kIMU_SCK);
-    if (spiIMU->init() == ESP_OK) {
-        imu = new ICM42605(*spiIMU, kIMU_CS, 8000000);
-        if (imu->init(ICM42605::AccelScale::kAFS_4G,
+    esp_err_t imuSpiErr = spiIMU->init();
+    if (imuSpiErr != ESP_OK) {
+        printf("IMU SPI bus init failed: %s\n", esp_err_to_name(imuSpiErr));
+    } else {
+        printf("IMU SPI bus OK (MOSI=%d MISO=%d SCK=%d CS=%d)\n",
+               kIMU_MOSI, kIMU_MISO, kIMU_SCK, kIMU_CS);
+        imu = new ICM42605(*spiIMU, kIMU_CS, 1000000);  // 1 MHz
+        vTaskDelay(pdMS_TO_TICKS(50));  // Let SPI bus + IMU settle before init
+        esp_err_t imuErr = imu->init(ICM42605::AccelScale::kAFS_4G,
                        ICM42605::GyroScale::kGFS_500DPS,
                        ICM42605::AccelODR::kAODR_200Hz,
-                       ICM42605::GyroODR::kGODR_200Hz) == ESP_OK) {
+                       ICM42605::GyroODR::kGODR_200Hz);
+        if (imuErr == ESP_OK) {
             imuOK = true;
             printf("IMU OK (ICM-42605 SPI)\n");
         } else {
-            printf("IMU init failed\n");
+            printf("IMU init failed: %s (0x%x)\n", esp_err_to_name(imuErr), imuErr);
         }
-    } else {
-        printf("IMU SPI bus init failed\n");
     }
 
     /* ---- Reed switch ----------------------------------------------------- */
@@ -788,6 +840,7 @@ extern "C" void app_main() {
     if (sdOK)
         xTaskCreatePinnedToCore(sdWriteTask, "sd",   8192, nullptr, 5, nullptr, 1);
     xTaskCreatePinnedToCore(uartTask,     "uart", 4096, nullptr, 3, nullptr, 0);
+    xTaskCreatePinnedToCore(adcTask,      "adc",  4096, nullptr, configMAX_PRIORITIES - 2, nullptr, 1);
     if (imuOK)
         xTaskCreatePinnedToCore(imuTask,  "imu",  4096, nullptr, 4, nullptr, 1);
 
