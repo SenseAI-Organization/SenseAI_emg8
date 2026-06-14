@@ -110,6 +110,121 @@ Modes can be switched at runtime via UART without rebooting. The reed switch tog
 | Green | Recording |
 | Red | Init error (ADC or SD failure) |
 
+## UART Interface
+
+The bracelet exposes a command-and-stream interface on `UART0`.
+
+### Serial Settings
+
+| Setting | Value |
+|---------|-------|
+| Baud rate | `460800` |
+| Data bits | `8` |
+| Parity | `None` |
+| Stop bits | `1` |
+| Flow control | `None` |
+| Line ending for text commands | `\n` recommended |
+
+The firmware emits a mix of:
+
+- Metadata/status lines prefixed with `#`
+- One CSV header line prefixed with `H`
+- Repeated CSV data lines prefixed with `D`
+- Raw binary payload bytes after a `G<path>` file-transfer command
+
+### Host → Bracelet Commands
+
+| Command | Example | Effect |
+|---------|---------|--------|
+| `1` | `1` | Start or switch to **All** mode |
+| `2` | `2` | Start or switch to **Raw** mode |
+| `3` | `3` | Start or switch to **Env** mode |
+| `0` | `0` | Stop / pause acquisition |
+| `?` | `?` | Query current status |
+| `V1` | `V1` | Enable 5V rail |
+| `V0` | `V0` | Disable 5V rail |
+| `L<id>,<rep>` | `L7,3` | Set current grasp label and repetition |
+| `F` | `F` | List files on the SD card |
+| `G<path>` | `Gs_AABBCCDDEEFF_1713012345/R.bin` | Transfer one file as raw binary |
+
+Command notes:
+
+- `L<id>,<rep>` and `G<path>` are line commands. Send a terminating newline, for example `L7,3\n`.
+- `1`, `2`, and `3` trigger the firmware countdown before acquisition starts.
+- `G<path>` is rejected while recording is active and returns `#ERR:BUSY`.
+- `F` and `G` require a mounted SD card. Otherwise the device returns `#ERR:NO_SD`.
+
+### Bracelet → Host Responses
+
+| Prefix | Meaning |
+|--------|---------|
+| `#READY` | Firmware booted and is ready for commands |
+| `#MAC:<hex>` | Device MAC used in session directory names |
+| `#INIT:ADC=...,SD=...,IMU=...` | Peripheral init summary |
+| `#MODE:<n>` | Current acquisition mode |
+| `#CD:<n>` | Countdown tick before recording starts |
+| `#CD:ABORT` | Countdown cancelled by sending `0` |
+| `#REC` | Recording started or resumed |
+| `#PAUSE` | Recording paused |
+| `#STOP` | Recording stopped |
+| `#LABEL:<id>,<rep>` | Label accepted |
+| `#5V:0` / `#5V:1` | 5V rail state |
+| `#STATUS:...` | Current status snapshot |
+| `#FLIST:<path>` | Start of SD file listing |
+| `#F:<name>,<size>` | One file or directory entry |
+| `#FEND` | End of SD file listing |
+| `#FDATA:<path>,<bytes>` | File transfer header; raw bytes follow immediately |
+| `#FDONE` | File transfer complete |
+| `#ERR:<reason>` | Command rejected or failed |
+
+### `#STATUS` Format
+
+The current firmware replies to `?` with:
+
+```text
+#STATUS:<mode>,<recording>,<sd_ok>,<imu_ok>,<battery_mV>,<battery_pct>,<raw_drops>,<env_drops>,<imu_drops>
+```
+
+Field meanings:
+
+| Field | Meaning |
+|-------|---------|
+| `mode` | `0=Idle`, `1=All`, `2=Raw`, `3=Env` |
+| `recording` | `0` stopped/paused, `1` recording |
+| `sd_ok` | `1` if SD storage is available |
+| `imu_ok` | `1` if the IMU initialized correctly |
+| `battery_mV` | Battery voltage in millivolts |
+| `battery_pct` | Battery estimate in percent |
+| `raw_drops` | Number of dropped raw EMG samples in the current run |
+| `env_drops` | Number of dropped envelope samples in the current run |
+| `imu_drops` | Number of dropped IMU samples in the current run |
+
+### CSV Stream Format
+
+When recording is active, the bracelet prints:
+
+- One `H,...` header line at start of recording and again whenever the mode changes.
+- Repeated `D,...` data lines at about 50 Hz.
+
+Example header in **All** mode:
+
+```text
+H,ts_us,adc1_0,adc1_1,adc1_2,adc1_3,adc2_0,adc2_1,adc2_2,adc2_3,adc3_0,adc3_1,adc3_2,adc3_3,adc4_0,adc4_1,adc4_2,adc4_3,ax,ay,az,gx,gy,gz,label,rep
+```
+
+Example data line:
+
+```text
+D,123456,81,12,204,198,79,9,201,197,84,11,206,199,82,10,203,196,-0.031,0.004,0.998,0.2,-0.1,0.0,7,3
+```
+
+Notes for the Python datalogger:
+
+- `D` lines are low-rate snapshots for monitoring, not the full EMG dataset.
+- The high-rate dataset lives on the SD card in `R.bin`, `E.bin`, `I.bin`, and `M.bin`.
+- After `#FDATA:<path>,<bytes>`, read exactly `<bytes>` raw bytes before parsing the trailing `#FDONE` line.
+- During file transfer, treat the UART stream as binary, not line-oriented text.
+
 ## SD Binary Format
 
 Each file under `s_<epoch>/` contains:

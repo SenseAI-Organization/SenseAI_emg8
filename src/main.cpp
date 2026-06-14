@@ -19,9 +19,11 @@
  *   PC→ESP: '0' stop · '1-3' mode · '?' status · 'L<id>,<rep>\n' label
  *           'V0'/'V1' 5V · 'F' list files · 'G<path>\n' transfer file
  *   ESP→PC: #READY · #MODE:N · #CD:N · #REC · #STOP · #LABEL:id,rep
- *           #STATUS:mode,rec,mV,% · H,… · D,ts,… · #5V:0/1
+ *           #STATUS:mode,rec,sd,imu,mV,%,rawDrops,envDrops,imuDrops
+ *           H,… · D,ts,… · #5V:0/1
  *
- * Sense-AI
+ * UNDERDEVELOPMENT BY DANIEL ESCOBAR. daniel@sense-ai.co
+ * Special thanks to Sense-AI! <3
  ******************************************************************************/
 #include <cstring>
 #include <string>
@@ -138,6 +140,7 @@ static Switch*  reedSw = nullptr;
 static BatteryManager* battery = nullptr;
 static ICM42605*       imu     = nullptr;
 static bool            imuOK   = false;
+static bool            adcOK   = false;
 
 static volatile Mode mode      = Mode::Idle;
 static volatile bool recording = false;
@@ -157,12 +160,59 @@ static constexpr int kLABEL_QLEN = 32;
 // Label state (set by PC via 'L' command)
 static volatile uint16_t curGrasp = 0;         // current Ninapro grasp ID
 static volatile uint16_t curRep   = 0;         // current repetition
+static std::atomic<uint32_t> rawDrops{0};
+static std::atomic<uint32_t> envDrops{0};
+static std::atomic<uint32_t> imuDrops{0};
 
 // Device MAC as hex string  "AABBCCDDEEFF\0"
 static char macStr[13] = {};
 
 // Session directory path (set once at SD init)
 static std::string sessionDir;
+
+static uint32_t recordingTimestampUs() {
+    return (uint32_t)(esp_timer_get_time() - recStart.load(std::memory_order_relaxed));
+}
+
+static void resetDropCounters() {
+    rawDrops.store(0, std::memory_order_relaxed);
+    envDrops.store(0, std::memory_order_relaxed);
+    imuDrops.store(0, std::memory_order_relaxed);
+}
+
+static void updateStatusLed() {
+    if (!led) return;
+
+    if (!adcOK || !sdOK) {
+        led->setColor(255, 0, 0);
+    } else if (recording) {
+        led->setColor(0, 255, 0);
+    } else {
+        led->setColor(0, 0, 255);
+    }
+    led->turnOn();
+}
+
+static void printStatusLine() {
+    uint16_t mv = 0;
+    uint8_t pct = 0;
+    if (battery) {
+        battery->measure();
+        mv = battery->getVoltage();
+        pct = battery->getPercentage();
+    }
+
+    printf("#STATUS:%d,%d,%d,%d,%u,%u,%lu,%lu,%lu\n",
+           (int)mode,
+           recording ? 1 : 0,
+           sdOK ? 1 : 0,
+           imuOK ? 1 : 0,
+           mv,
+           pct,
+           (unsigned long)rawDrops.load(std::memory_order_relaxed),
+           (unsigned long)envDrops.load(std::memory_order_relaxed),
+           (unsigned long)imuDrops.load(std::memory_order_relaxed));
+}
 
 /* ── ADC conversion callback (called from each ADC's FreeRTOS task) ──────── */
 
@@ -175,15 +225,18 @@ static void onSample(uint8_t ch, int16_t val, void* arg) {
     if (mode == Mode::Env &&  fast) return;
 
     Sample s;
-    s.ts  = (uint32_t)(esp_timer_get_time() - recStart);
+    s.ts  = recordingTimestampUs();
     s.adc = id;
     s.ch  = ch;
     s.val = val;
 
-    if (fast)
-        xQueueSend(rawQ, &s, 0);
-    else
-        xQueueSend(envQ, &s, 0);
+    if (fast) {
+        if (xQueueSend(rawQ, &s, 0) != pdTRUE)
+            rawDrops.fetch_add(1, std::memory_order_relaxed);
+    } else {
+        if (xQueueSend(envQ, &s, 0) != pdTRUE)
+            envDrops.fetch_add(1, std::memory_order_relaxed);
+    }
 }
 
 /* ── SD writer task — multi-file via raw FatFs, pinned to core 1, prio 5 ── */
@@ -377,7 +430,7 @@ static void uartTask(void*) {
         int  p = 0;
 
         // Timestamp (µs since recStart)
-        uint32_t ts = (uint32_t)(esp_timer_get_time() - recStart);
+        uint32_t ts = recordingTimestampUs();
         p += snprintf(line + p, sizeof(line) - p, "D,%u", (unsigned)ts);
 
         for (int a = 0; a < 4; a++)
@@ -455,7 +508,7 @@ static void imuTask(void*) {
             float temp = imu->getTemperature();
 
             ImuSample s;
-            s.ts = (uint32_t)(esp_timer_get_time() - recStart);
+            s.ts = recordingTimestampUs();
             // Store as raw int16 scaled: accel in milli-g, gyro in deci-dps
             s.ax = (int16_t)(ac[0] * 1000.0f);
             s.ay = (int16_t)(ac[1] * 1000.0f);
@@ -464,7 +517,8 @@ static void imuTask(void*) {
             s.gy = (int16_t)(gy[1] * 10.0f);
             s.gz = (int16_t)(gy[2] * 10.0f);
             s.temp100 = (int16_t)(temp * 100.0f);
-            xQueueSend(imuQ, &s, 0);
+            if (xQueueSend(imuQ, &s, 0) != pdTRUE)
+                imuDrops.fetch_add(1, std::memory_order_relaxed);
         }
 
         vTaskDelayUntil(&wake, period);
@@ -543,7 +597,7 @@ static void processUartLine(const char* line, int len) {
             // Enqueue label event for SD master file
             if (recording && labelQ) {
                 LabelEvent le = {};
-                le.ts = (uint32_t)(esp_timer_get_time() - recStart);
+                le.ts = recordingTimestampUs();
                 le.grasp_id = (uint16_t)gid;
                 le.repetition = (uint16_t)rep;
                 xQueueSend(labelQ, &le, 0);
@@ -552,6 +606,7 @@ static void processUartLine(const char* line, int len) {
     } else if (line[0] == 'G') {
         // File transfer: G<relative_path>
         if (!sdOK) { printf("#ERR:NO_SD\n"); return; }
+        if (recording) { printf("#ERR:BUSY\n"); return; }
         std::string fpath(line + 1, len - 1);
         // Trim trailing whitespace
         while (!fpath.empty() && (fpath.back() == '\r' || fpath.back() == ' '))
@@ -682,7 +737,7 @@ extern "C" void app_main() {
     adc[2] = new ADS1015(i2c1, ADS1015::ADS111X_ADDR_GND);
     adc[3] = new ADS1015(i2c1, ADS1015::ADS111X_ADDR_VCC);
 
-    bool adcOK = true;
+    adcOK = true;
     for (int i = 0; i < 4; i++)
         if (!adc[i]->checkForDevice()) {
             printf("ADC%d not found\n", i + 1);
@@ -772,12 +827,10 @@ extern "C" void app_main() {
 
     /* ---- Status LED ------------------------------------------------------ */
     if (!adcOK || !sdOK) {
-        led->setColor(255, 0, 0);   // red = init error
         printf("#INIT:ADC=%s,SD=%s,IMU=%s\n", adcOK ? "OK" : "FAIL",
                sdOK ? "OK" : "FAIL", imuOK ? "OK" : "FAIL");
-    } else {
-        led->setColor(0, 255, 0);   // green = all good
     }
+    updateStatusLed();
 
     /* ==== Wait for command ================================================ */
     printf("#READY\n");
@@ -794,9 +847,7 @@ extern "C" void app_main() {
             else if (cmd == '2') mode = Mode::Raw;
             else if (cmd == '3') mode = Mode::Env;
             else if (cmd == '?') {
-                uint16_t mv = 0; uint8_t pct = 0;
-                if (battery) { battery->measure(); mv = battery->getVoltage(); pct = battery->getPercentage(); }
-                printf("#STATUS:0,%d,%u,%u\n", 0, mv, pct);
+                printStatusLine();
             }
             else if (cmd == 'V') {
                 // Read next byte for V0/V1
@@ -832,8 +883,10 @@ extern "C" void app_main() {
 
     if (mode != Mode::Idle) {
         battery->enable5V();
-        recStart  = esp_timer_get_time();
+        recStart.store(esp_timer_get_time(), std::memory_order_relaxed);
+        resetDropCounters();
         recording = true;
+        updateStatusLed();
         printf("#REC\n");
     }
 
@@ -862,15 +915,16 @@ extern "C" void app_main() {
                 recording = false;
                 stopADCs();
                 battery->disable5V();
-                led->setColor(0, 0, 255);
+                updateStatusLed();
                 printf("#PAUSE\n");
             } else {
                 if (countdown(3)) {
                     battery->enable5V();
-                    recStart  = esp_timer_get_time();
+                    recStart.store(esp_timer_get_time(), std::memory_order_relaxed);
+                    resetDropCounters();
                     recording = true;
                     startADCs();
-                    led->setColor(0, 255, 0);
+                    updateStatusLed();
                     printf("#REC\n");
                 }
             }
@@ -886,7 +940,7 @@ extern "C" void app_main() {
                 recording = false;
                 stopADCs();
                 battery->disable5V();
-                led->setColor(0, 0, 255);
+                updateStatusLed();
                 printf("#STOP\n");
             } else if (cmd >= '1' && cmd <= '3') {
                 Mode newM = (Mode)(cmd - '0');
@@ -896,19 +950,19 @@ extern "C" void app_main() {
                     if (countdown(3)) {
                         battery->enable5V();
                         mode      = newM;
-                        recStart  = esp_timer_get_time();
+                        recStart.store(esp_timer_get_time(), std::memory_order_relaxed);
+                        resetDropCounters();
                         recording = true;
                         startADCs();
-                        led->setColor(0, 255, 0);
+                        updateStatusLed();
                         printf("#REC\n");
                     } else {
+                        updateStatusLed();
                         printf("#STOP\n");
                     }
                 }
             } else if (cmd == '?') {
-                uint16_t mv = 0; uint8_t pct = 0;
-                if (battery) { battery->measure(); mv = battery->getVoltage(); pct = battery->getPercentage(); }
-                printf("#STATUS:%d,%d,%u,%u\n", (int)mode, recording ? 1 : 0, mv, pct);
+                printStatusLine();
             } else if (cmd == 'V') {
                 uint8_t vb;
                 if (uart_read_bytes(UART_NUM_0, &vb, 1, pdMS_TO_TICKS(100)) > 0) {
