@@ -8,6 +8,8 @@
  *******************************************************************************
  *******************************************************************************/
 
+#include <cstring>
+
 #include "esp_rom_sys.h"
 #include "smart_sensor_sense.hpp"
 
@@ -26,64 +28,81 @@ I2C::~I2C() {
 
 esp_err_t I2C::init() {
     clearBus();
-    i2c_config_t conf;
-    conf.mode = I2C_MODE_MASTER;
+
+    i2c_master_bus_config_t conf = {};
+    conf.i2c_port = port_;
     conf.sda_io_num = sdaPin_;
     conf.scl_io_num = sclPin_;
-    conf.sda_pullup_en = internalResistor_ ? GPIO_PULLUP_ENABLE : GPIO_PULLUP_DISABLE;
-    conf.scl_pullup_en = internalResistor_ ? GPIO_PULLUP_ENABLE : GPIO_PULLUP_DISABLE;
-    conf.master.clk_speed = frequency_;
-    conf.clk_flags = I2C_SCLK_SRC_FLAG_FOR_NOMAL;
+    conf.clk_source = I2C_CLK_SRC_DEFAULT;
+    conf.glitch_ignore_cnt = 7;
+    conf.intr_priority = 0;              // auto
+    conf.trans_queue_depth = 0;          // synchronous transactions only
+    conf.flags.enable_internal_pullup = internalResistor_;
 
-    esp_err_t err = i2c_param_config(port_, &conf);
+    esp_err_t err = i2c_new_master_bus(&conf, &busHandle_);
     if (err != ESP_OK) {
-        printf("I2C parameter configuration failed: %s\n", esp_err_to_name(err));
-        return err;
+        printf("I2C master bus creation failed: %s\n", esp_err_to_name(err));
     }
-
-    err = i2c_driver_install(port_, conf.mode, 0, 0, 0);
-    if (err != ESP_OK) {
-        printf("I2C driver installation failed: %s\n", esp_err_to_name(err));
-    }
-
     return err;
 }
 
 void I2C::deinit() {
-    i2c_driver_delete(port_);
+    for (uint8_t i = 0; i < numDevices_; i++) {
+        i2c_master_bus_rm_device(devHandles_[i]);
+    }
+    numDevices_ = 0;
+    if (busHandle_ != nullptr) {
+        i2c_del_master_bus(busHandle_);
+        busHandle_ = nullptr;
+    }
+}
+
+i2c_master_dev_handle_t I2C::deviceFor(uint8_t deviceAddress) {
+    for (uint8_t i = 0; i < numDevices_; i++) {
+        if (devAddrs_[i] == deviceAddress) return devHandles_[i];
+    }
+    if (busHandle_ == nullptr || numDevices_ >= kMaxDevices) return nullptr;
+
+    i2c_device_config_t devCfg = {};
+    devCfg.dev_addr_length = I2C_ADDR_BIT_LEN_7;
+    devCfg.device_address = deviceAddress;
+    devCfg.scl_speed_hz = frequency_;
+
+    i2c_master_dev_handle_t handle = nullptr;
+    if (i2c_master_bus_add_device(busHandle_, &devCfg, &handle) != ESP_OK) {
+        return nullptr;
+    }
+    devAddrs_[numDevices_] = deviceAddress;
+    devHandles_[numDevices_] = handle;
+    numDevices_++;
+    return handle;
 }
 
 esp_err_t I2C::write(uint8_t deviceAddress, uint8_t registerAddress, uint8_t* data,
                      size_t len) {
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (deviceAddress << 1) | I2C_MASTER_WRITE, true);
-    i2c_master_write_byte(cmd, registerAddress, true);
-    i2c_master_write(cmd, data, len, true);
-    i2c_master_stop(cmd);
+    i2c_master_dev_handle_t dev = deviceFor(deviceAddress);
+    if (dev == nullptr) return ESP_ERR_INVALID_STATE;
 
-    esp_err_t err = i2c_master_cmd_begin(port_, cmd, pdMS_TO_TICKS(100));
-    i2c_cmd_link_delete(cmd);
+    // Register address and payload must go out in one transaction
+    uint8_t buf[32];
+    if (len + 1 > sizeof(buf)) return ESP_ERR_INVALID_SIZE;
+    buf[0] = registerAddress;
+    memcpy(buf + 1, data, len);
 
-    return err;
+    return i2c_master_transmit(dev, buf, len + 1, kTimeoutMs);
 }
 
 esp_err_t I2C::read(uint8_t deviceAddress, uint8_t registerAddress, uint8_t* data,
                     size_t len) {
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (deviceAddress << 1) | I2C_MASTER_WRITE, true);
-    i2c_master_write_byte(cmd, registerAddress, true);
+    i2c_master_dev_handle_t dev = deviceFor(deviceAddress);
+    if (dev == nullptr) return ESP_ERR_INVALID_STATE;
 
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (deviceAddress << 1) | I2C_MASTER_READ, true);
-    i2c_master_read(cmd, data, len, I2C_MASTER_LAST_NACK);
-    i2c_master_stop(cmd);
+    return i2c_master_transmit_receive(dev, &registerAddress, 1, data, len, kTimeoutMs);
+}
 
-    esp_err_t err = i2c_master_cmd_begin(port_, cmd, pdMS_TO_TICKS(100));
-    i2c_cmd_link_delete(cmd);
-
-    return err;
+esp_err_t I2C::probe(uint8_t deviceAddress) {
+    if (busHandle_ == nullptr) return ESP_ERR_INVALID_STATE;
+    return i2c_master_probe(busHandle_, deviceAddress, kTimeoutMs);
 }
 
 void I2C::clearBus(void) {

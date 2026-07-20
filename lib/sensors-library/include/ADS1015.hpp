@@ -17,6 +17,7 @@
 
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "smart_sensor_sense.hpp"
@@ -402,6 +403,31 @@ public:
     bool serviceConversion();
 
     /**
+     * @brief Register an event queue notified from the DRDY ISR.
+     *
+     * On every DRDY edge the ISR posts `tag` (one byte) to the queue in
+     * addition to giving the internal semaphore. An external task can then
+     * block on one queue for several ADS1015 instances and call
+     * serviceConversion() on the instance identified by the tag — no
+     * polling, no idle-latency.
+     *
+     * @param queue Queue of uint8_t items (created by the caller).
+     * @param tag   Value identifying this instance in the queue.
+     */
+    void setEventQueue(QueueHandle_t queue, uint8_t tag);
+
+    /**
+     * @brief Number of conversions delivered for a channel since the last
+     * resetSampleCounts(). Useful to verify per-channel rate symmetry.
+     */
+    uint32_t getSampleCount(uint8_t channel) const;
+
+    /**
+     * @brief Reset all per-channel conversion counters to zero.
+     */
+    void resetSampleCounts();
+
+    /**
      * @brief Get the actual effective sample rate for a channel in mixed mode.
      *
      * This is an estimate based on the data rate, I2C speed, and scheduling.
@@ -526,6 +552,11 @@ private:
     SemaphoreHandle_t drdySemaphore_ = nullptr;  ///< Given by ISR on DRDY
     TaskHandle_t continuousTaskHandle_ = nullptr;
 
+    QueueHandle_t eventQueue_ = nullptr;  ///< Optional DRDY event queue (see setEventQueue)
+    uint8_t eventTag_ = 0;                ///< Tag posted to eventQueue_ from the ISR
+
+    volatile uint32_t sampleCounts_[kMaxChannels] = {};  ///< Conversions delivered per channel
+
     ConversionCallback convCallback_ = nullptr;
     void* convCallbackArg_ = nullptr;
 
@@ -543,6 +574,7 @@ private:
     uint8_t nextMixedChannel();
 
     ChannelConfig channelConfigs_[kMaxActiveChannels] = {};
+    uint16_t channelConfigWords_[kMaxChannels] = {};  ///< Prebuilt config per channel (hot path)
     uint8_t numChannelConfigs_ = 0;
 
     uint8_t fastChannels_[kMaxActiveChannels] = {};

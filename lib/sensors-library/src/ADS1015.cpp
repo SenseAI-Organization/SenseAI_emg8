@@ -114,11 +114,8 @@ esp_err_t ADS1015::setConfig(uint8_t channel, uint8_t gain, uint8_t sampleFreque
 }
 
 esp_err_t ADS1015::checkForDevice() {
-    // Probe only this instance's address with a read: probing all four
-    // possible addresses fails whenever any of them is unpopulated, and a
-    // write could corrupt the config register.
-    uint8_t data[2] = {0};
-    return i2c_.read(address_, static_cast<uint8_t>(Register::Config), data, 2);
+    // Address-only probe of this instance's address (no register traffic)
+    return i2c_.probe(address_);
 }
 
 int8_t ADS1015::readSingleEnded(uint8_t channel) {
@@ -328,6 +325,11 @@ void IRAM_ATTR ADS1015::alertISR(void* arg) {
     self->drdyTimestampUs_ = (uint32_t)esp_timer_get_time();
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     xSemaphoreGiveFromISR(self->drdySemaphore_, &xHigherPriorityTaskWoken);
+    if (self->eventQueue_ != nullptr) {
+        BaseType_t queueWoken = pdFALSE;
+        xQueueSendFromISR(self->eventQueue_, (const void*)&self->eventTag_, &queueWoken);
+        if (queueWoken) xHigherPriorityTaskWoken = pdTRUE;
+    }
     if (xHigherPriorityTaskWoken) {
         portYIELD_FROM_ISR();
     }
@@ -346,6 +348,7 @@ void ADS1015::continuousTask(void* pvParam) {
             uint8_t ch = self->activeChannels_[self->currentMuxIndex_];
             int16_t value = self->readConversionResult();
             self->latestReading_[ch] = value;
+            self->sampleCounts_[ch] = self->sampleCounts_[ch] + 1;
 
             // Also update the legacy adcData struct
             self->adcData.channels[ch] = (uint16_t)value;
@@ -484,6 +487,20 @@ void ADS1015::onConversion(ConversionCallback cb, void* arg) {
     convCallbackArg_ = arg;
 }
 
+void ADS1015::setEventQueue(QueueHandle_t queue, uint8_t tag) {
+    eventQueue_ = queue;
+    eventTag_ = tag;
+}
+
+uint32_t ADS1015::getSampleCount(uint8_t channel) const {
+    if (channel >= kMaxChannels) return 0;
+    return sampleCounts_[channel];
+}
+
+void ADS1015::resetSampleCounts() {
+    for (uint8_t i = 0; i < kMaxChannels; i++) sampleCounts_[i] = 0;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Mixed-rate continuous mode
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -526,28 +543,16 @@ void ADS1015::mixedContinuousTask(void* pvParam) {
             int16_t value = self->readConversionResult();
             self->latestReading_[ch] = value;
             self->adcData.channels[ch] = (uint16_t)value;
+            self->sampleCounts_[ch] = self->sampleCounts_[ch] + 1;
 
             if (self->convCallback_) {
                 self->convCallback_(ch, value, tsUs, self->convCallbackArg_);
             }
 
-            // Decide next channel and switch MUX
+            // Decide next channel and switch MUX (config word prebuilt at start)
             uint8_t nextCh = self->nextMixedChannel();
             self->activeChannels_[0] = nextCh;  // track what's currently converting
-
-            // Find the gain for this channel
-            ConfigPGA nextGain = self->continuousPGA_;
-            for (uint8_t i = 0; i < self->numChannelConfigs_; i++) {
-                if (self->channelConfigs_[i].channel == nextCh) {
-                    nextGain = self->channelConfigs_[i].gain;
-                    break;
-                }
-            }
-
-            ConfigMux nextMux = channelToMux(nextCh);
-            uint16_t config =
-                self->buildContinuousConfig(nextMux, self->continuousRate_, nextGain);
-            self->writeConfig(config);
+            self->writeConfig(self->channelConfigWords_[nextCh]);
         }
     }
 
@@ -604,6 +609,14 @@ esp_err_t ADS1015::startMixedContinuous(const ChannelConfig* configs, uint8_t nu
     fastIndex_ = 0;
     slowIndex_ = 0;
     memset((void*)latestReading_, 0, sizeof(latestReading_));
+    resetSampleCounts();
+
+    // Prebuild per-channel config words so the service path is a plain
+    // table lookup instead of a gain search + bit assembly per conversion
+    for (uint8_t i = 0; i < numConfigs; i++) {
+        channelConfigWords_[configs[i].channel] = buildContinuousConfig(
+            channelToMux(configs[i].channel), rate, configs[i].gain);
+    }
 
     // Create semaphore
     if (drdySemaphore_ == nullptr) {
@@ -638,19 +651,8 @@ esp_err_t ADS1015::startMixedContinuous(const ChannelConfig* configs, uint8_t nu
         return ESP_ERR_NO_MEM;
     }
 
-    // Find gain for first channel
-    ConfigPGA firstGain = ConfigPGA::One;
-    for (uint8_t i = 0; i < numConfigs; i++) {
-        if (configs[i].channel == firstCh) {
-            firstGain = configs[i].gain;
-            break;
-        }
-    }
-
     // Kick off first conversion
-    ConfigMux firstMux = channelToMux(firstCh);
-    uint16_t config = buildContinuousConfig(firstMux, rate, firstGain);
-    err = writeConfig(config);
+    err = writeConfig(channelConfigWords_[firstCh]);
     if (err != ESP_OK) {
         stopContinuous();
         return err;
@@ -708,6 +710,14 @@ esp_err_t ADS1015::startMixedContinuousExternal(const ChannelConfig* configs,
     fastIndex_ = 0;
     slowIndex_ = 0;
     memset((void*)latestReading_, 0, sizeof(latestReading_));
+    resetSampleCounts();
+
+    // Prebuild per-channel config words so the service path is a plain
+    // table lookup instead of a gain search + bit assembly per conversion
+    for (uint8_t i = 0; i < numConfigs; i++) {
+        channelConfigWords_[configs[i].channel] = buildContinuousConfig(
+            channelToMux(configs[i].channel), rate, configs[i].gain);
+    }
 
     // Create semaphore
     if (drdySemaphore_ == nullptr) {
@@ -733,19 +743,8 @@ esp_err_t ADS1015::startMixedContinuousExternal(const ChannelConfig* configs,
         fastCycleCount_++;
     }
 
-    // Find gain for first channel
-    ConfigPGA firstGain = ConfigPGA::One;
-    for (uint8_t i = 0; i < numConfigs; i++) {
-        if (configs[i].channel == firstCh) {
-            firstGain = configs[i].gain;
-            break;
-        }
-    }
-
     // Kick off first conversion
-    ConfigMux firstMux = channelToMux(firstCh);
-    uint16_t config = buildContinuousConfig(firstMux, rate, firstGain);
-    err = writeConfig(config);
+    err = writeConfig(channelConfigWords_[firstCh]);
     if (err != ESP_OK) {
         stopContinuous();
         return err;
@@ -766,27 +765,16 @@ bool ADS1015::serviceConversion() {
     int16_t value = readConversionResult();
     latestReading_[ch] = value;
     adcData.channels[ch] = (uint16_t)value;
+    sampleCounts_[ch] = sampleCounts_[ch] + 1;
 
     if (convCallback_) {
         convCallback_(ch, value, tsUs, convCallbackArg_);
     }
 
-    // Decide next channel and switch MUX
+    // Decide next channel and switch MUX (config word prebuilt at start)
     uint8_t nextCh = nextMixedChannel();
     activeChannels_[0] = nextCh;
-
-    // Find the gain for this channel
-    ConfigPGA nextGain = continuousPGA_;
-    for (uint8_t i = 0; i < numChannelConfigs_; i++) {
-        if (channelConfigs_[i].channel == nextCh) {
-            nextGain = channelConfigs_[i].gain;
-            break;
-        }
-    }
-
-    ConfigMux nextMux = channelToMux(nextCh);
-    uint16_t config = buildContinuousConfig(nextMux, continuousRate_, nextGain);
-    writeConfig(config);
+    writeConfig(channelConfigWords_[nextCh]);
 
     return true;
 }

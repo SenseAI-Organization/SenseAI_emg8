@@ -80,14 +80,16 @@ Core 0                          Core 1
 │  (main loop) │                │  (batched    │
 │              │                │   binary SD) │
 ├──────────────┤                ├──────────────┤
-│  uartTask    │  priority 3   │  ads_mixed   │  priority MAX
-│  (~50 Hz CSV)│                │  (×4 ADC     │
-└──────────────┘                │   ISR tasks) │
+│  uartTask    │  priority 3    │  adc0 / adc1 │  priority MAX-2
+│  (~50 Hz CSV)│                │  (per-bus    │
+└──────────────┘                │   DRDY svc)  │
+                                ├──────────────┤
+                                │  imuTask     │  priority 4
                                 └──────────────┘
 ```
 
-- **ADC tasks** (×4, core 1): ISR-driven via ALERT/RDY pins. Each conversion triggers a semaphore, the task reads the result and calls `onSample()` which enqueues to a FreeRTOS queue.
-- **SD writer** (core 1, priority 5): Drains the sample queue in batches of 500 (~4 KB). Files rotate every 60 seconds under a session directory.
+- **ADC service tasks** (×2, core 1, one per I2C bus): each ALERT/RDY ISR timestamps the conversion and posts its ADC index to the bus's event queue; the task blocks on the queue (no polling), reads the result over the new `i2c_master` driver, and calls `onSample()` which enqueues to a FreeRTOS queue. Running one task per bus lets transactions on the two buses overlap.
+- **SD writer** (core 1, priority 5): Drains the sample queues in batches (raw 500 × 8 B ≈ 4 KB). One file set (`R<nnn>.bin`, …) per recording start within the session directory.
 - **UART CSV** (core 0, priority 3): Prints latest readings at ~50 Hz with auto-adjusted column headers per mode.
 - **Main loop** (core 0): Monitors UART commands and reed switch for mode changes, start/stop, and pause/resume.
 
@@ -167,6 +169,7 @@ Command notes:
 | `#REC` | Recording started or resumed |
 | `#PAUSE` | Recording paused |
 | `#STOP` | Recording stopped |
+| `#CNT:<adc>,<c0>,<c1>,<c2>,<c3>` | Conversions delivered per channel of ADC `<adc>` during the recording that just stopped (4 lines, one per ADC). Fast channels of one ADC should match within ±1; use this to verify channel-rate symmetry. |
 | `#LABEL:<id>,<rep>` | Label accepted |
 | `#5V:0` / `#5V:1` | 5V rail state |
 | `#STATUS:...` | Current status snapshot |

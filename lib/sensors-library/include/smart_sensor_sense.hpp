@@ -10,7 +10,7 @@
 #pragma once
 
 #include "driver/gptimer.h"
-#include "driver/i2c.h"
+#include "driver/i2c_master.h"
 #include "driver/spi_master.h"
 #include "sensors_sense.hpp"
 
@@ -74,16 +74,39 @@ public:
                    size_t len);
 
     /**
+     * @brief Checks whether a device ACKs its address on the bus.
+     * @param deviceAddress I2C address of the device.
+     * @return esp_err_t ESP_OK if the device responded.
+     */
+    esp_err_t probe(uint8_t deviceAddress);
+
+    /**
      * @brief Clears the I2C bus.
      */
     void clearBus(void);
 
 private:
+    static constexpr uint8_t kMaxDevices = 8;   /**< Device-handle cache size */
+    static constexpr int kTimeoutMs = 20;       /**< Per-transaction timeout */
+
+    /**
+     * @brief Returns the cached device handle for an address, registering it
+     * on first use. Registration is not thread-safe; first contact with each
+     * device must happen before concurrent bus users start (transactions
+     * themselves are serialized by the driver).
+     */
+    i2c_master_dev_handle_t deviceFor(uint8_t deviceAddress);
+
     i2c_port_t port_;       /**< I2C port number */
     gpio_num_t sdaPin_;     /**< GPIO number for SDA pin */
     gpio_num_t sclPin_;     /**< GPIO number for SCL pin */
     uint32_t frequency_;    /**< I2C bus frequency */
     bool internalResistor_; /**< Flag for internal pull-up resistors */
+
+    i2c_master_bus_handle_t busHandle_ = nullptr;
+    uint8_t devAddrs_[kMaxDevices] = {};
+    i2c_master_dev_handle_t devHandles_[kMaxDevices] = {};
+    uint8_t numDevices_ = 0;
 };
 
 /******************************************************************************/

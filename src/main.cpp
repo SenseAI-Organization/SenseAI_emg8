@@ -215,6 +215,19 @@ static void printStatusLine() {
            (unsigned long)imuDrops.load(std::memory_order_relaxed));
 }
 
+/** Per-ADC/channel conversion counts for the recording that just ended —
+ *  lets the host verify channel-rate symmetry (fast channels should match
+ *  within ±1 per ADC, envelope likewise). */
+static void printSampleCounts() {
+    for (int a = 0; a < 4; a++) {
+        printf("#CNT:%d,%lu,%lu,%lu,%lu\n", a + 1,
+               (unsigned long)adc[a]->getSampleCount(0),
+               (unsigned long)adc[a]->getSampleCount(1),
+               (unsigned long)adc[a]->getSampleCount(2),
+               (unsigned long)adc[a]->getSampleCount(3));
+    }
+}
+
 /* ── ADC conversion callback (called from each ADC's FreeRTOS task) ──────── */
 
 static void onSample(uint8_t ch, int16_t val, uint32_t tsUs, void* arg) {
@@ -489,30 +502,24 @@ static void uartTask(void*) {
     }
 }
 
-/* ── Single ADC polling task — handles all 4 ADCs from one task ────────────── */
+/* ── Per-bus ADC service tasks — event-driven via DRDY queues ──────────────── */
 /*
- * Replaces the 4 internal per-ADC tasks. Each ADC's ISR sets a binary semaphore
- * on DRDY; this task polls all four with non-blocking takes. When no conversion
- * is ready, it yields for 1 tick (1 ms at 1000 Hz tick rate) to avoid starving
- * IDLE1. Worst-case added latency: 1 ms, negligible at 2400 SPS.
+ * One task per I2C bus (ADC1/2 on bus 0, ADC3/4 on bus 1) so transactions on
+ * the two buses overlap instead of being serialized through one task. Each
+ * ALERT ISR posts its ADC index to the bus queue; the task blocks on the
+ * queue — no polling, no idle-sleep latency — and services exactly that ADC.
+ * While one task blocks on an I2C transfer the other bus's task runs, and
+ * when nothing converts both tasks sleep, leaving core 1 to SD/IMU/IDLE.
  */
 
-static void adcTask(void*) {
+static QueueHandle_t drdyQ[2] = {nullptr, nullptr};
+
+static void adcBusTask(void* arg) {
+    QueueHandle_t q = (QueueHandle_t)arg;
+    uint8_t idx;
     while (true) {
-        if (!recording) {
-            vTaskDelay(pdMS_TO_TICKS(100));
-            continue;
-        }
-
-        bool anyServiced = false;
-        for (int i = 0; i < 4; i++) {
-            if (adc[i]->serviceConversion()) {
-                anyServiced = true;
-            }
-        }
-
-        if (!anyServiced) {
-            vTaskDelay(1);  // yield 1 tick when no ADC has data
+        if (xQueueReceive(q, &idx, portMAX_DELAY) == pdTRUE) {
+            if (idx < 4) adc[idx]->serviceConversion();
         }
     }
 }
@@ -773,10 +780,13 @@ extern "C" void app_main() {
             adcOK = false;
         }
 
-    // Configure ALERT/RDY pins + register callbacks
+    // Configure ALERT/RDY pins + register callbacks + per-bus DRDY queues
+    drdyQ[0] = xQueueCreate(64, sizeof(uint8_t));
+    drdyQ[1] = xQueueCreate(64, sizeof(uint8_t));
     for (int i = 0; i < 4; i++) {
         adc[i]->configureAlertPin(kRDY[i]);
         adc[i]->onConversion(onSample, (void*)(uintptr_t)i);
+        adc[i]->setEventQueue(drdyQ[i / 2], (uint8_t)i);
     }
 
     /* ---- SD card --------------------------------------------------------- */
@@ -922,7 +932,8 @@ extern "C" void app_main() {
     if (sdOK)
         xTaskCreatePinnedToCore(sdWriteTask, "sd",   8192, nullptr, 5, nullptr, 1);
     xTaskCreatePinnedToCore(uartTask,     "uart", 4096, nullptr, 3, nullptr, 0);
-    xTaskCreatePinnedToCore(adcTask,      "adc",  4096, nullptr, configMAX_PRIORITIES - 2, nullptr, 1);
+    xTaskCreatePinnedToCore(adcBusTask,   "adc0", 4096, drdyQ[0], configMAX_PRIORITIES - 2, nullptr, 1);
+    xTaskCreatePinnedToCore(adcBusTask,   "adc1", 4096, drdyQ[1], configMAX_PRIORITIES - 2, nullptr, 1);
     if (imuOK)
         xTaskCreatePinnedToCore(imuTask,  "imu",  4096, nullptr, 4, nullptr, 1);
 
@@ -943,6 +954,7 @@ extern "C" void app_main() {
             if (recording) {
                 recording = false;
                 stopADCs();
+                printSampleCounts();
                 battery->disable5V();
                 updateStatusLed();
                 printf("#PAUSE\n");
@@ -968,6 +980,7 @@ extern "C" void app_main() {
             if (cmd == '0') {
                 recording = false;
                 stopADCs();
+                printSampleCounts();
                 battery->disable5V();
                 updateStatusLed();
                 printf("#STOP\n");
@@ -980,6 +993,7 @@ extern "C" void app_main() {
                         // not leave a half-recording state behind.
                         recording = false;
                         stopADCs();
+                        printSampleCounts();
                         battery->disable5V();
                         updateStatusLed();
                     }
