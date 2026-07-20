@@ -1,0 +1,5 @@
+# EMG8 bracelet — 8 MB flash (ESP32-S3-WROOM-1-N8)
+# Name,   Type, SubType, Offset,  Size, Flags
+nvs,      data, nvs,     0x9000,  0x6000,
+phy_init, data, phy,     0xf000,  0x1000,
+factory,  app,  factory, 0x10000, 3M,

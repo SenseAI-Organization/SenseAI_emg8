@@ -98,32 +98,8 @@ static constexpr uint16_t kIMU_ODR_HZ = 200;      // IMU polling rate
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
-struct __attribute__((packed)) Sample {
-    uint32_t ts;    // µs since recording start
-    uint8_t  adc;   // 0–3
-    uint8_t  ch;    // 0–3
-    int16_t  val;   // signed 12-bit
-};
-static_assert(sizeof(Sample) == 8, "Sample must be 8 bytes");
-
-/** @brief IMU sample for SD logging (20 bytes, raw int16 for compactness). */
-struct __attribute__((packed)) ImuSample {
-    uint32_t ts;       // µs since recording start
-    int16_t  ax, ay, az;
-    int16_t  gx, gy, gz;
-    int16_t  temp100;  // temperature × 100
-    uint16_t _pad;     // pad to 20 bytes
-};
-static_assert(sizeof(ImuSample) == 20, "ImuSample must be 20 bytes");
-
-/** @brief Label event written to master file when PC sends L command. */
-struct __attribute__((packed)) LabelEvent {
-    uint32_t ts;           // µs since recStart
-    uint16_t grasp_id;     // Ninapro movement number (0 = rest)
-    uint16_t repetition;   // current repetition
-    uint32_t _reserved;    // pad to 12 bytes
-};
-static_assert(sizeof(LabelEvent) == 12, "LabelEvent must be 12 bytes");
+#include "emg8_types.hpp"   // Sample / ImuSample / LabelEvent (shared with net_stream)
+#include "net_stream.hpp"
 
 enum class Mode : uint8_t { Idle = 0, All = 1, Raw = 2, Env = 3 };
 
@@ -252,6 +228,10 @@ static void onSample(uint8_t ch, int16_t val, uint32_t tsUs, void* arg) {
     } else {
         if (xQueueSend(envQ, &s, 0) != pdTRUE)
             envDrops.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    if (netStreamActive()) {
+        fast ? netEnqueueRaw(s) : netEnqueueEnv(s);
     }
 }
 
@@ -555,6 +535,7 @@ static void imuTask(void*) {
             s.temp100 = (int16_t)(temp * 100.0f);
             if (xQueueSend(imuQ, &s, 0) != pdTRUE)
                 imuDrops.fetch_add(1, std::memory_order_relaxed);
+            if (netStreamActive()) netEnqueueImu(s);
         }
 
         vTaskDelayUntil(&wake, period);
@@ -896,6 +877,19 @@ extern "C" void app_main() {
                     else if (vb == '0' && battery) { battery->disable5V(); printf("#5V:0\n"); }
                 }
             }
+            else if (cmd == 'W') {
+                // WiFi SoftAP + UDP streaming on/off (W1/W0)
+                uint8_t wb;
+                if (uart_read_bytes(UART_NUM_0, &wb, 1, pdMS_TO_TICKS(100)) > 0) {
+                    if (wb == '1') {
+                        if (netStreamStart(macStr) == ESP_OK) printf("#WIFI:1\n");
+                        else printf("#ERR:WIFI\n");
+                    } else if (wb == '0') {
+                        netStreamStop();
+                        printf("#WIFI:0\n");
+                    }
+                }
+            }
             else if (cmd == 'F') {
                 if (sdOK) {
                     std::string root = sdCard->getCurrentDir();
@@ -1019,6 +1013,17 @@ extern "C" void app_main() {
                 if (uart_read_bytes(UART_NUM_0, &vb, 1, pdMS_TO_TICKS(100)) > 0) {
                     if (vb == '1' && battery) { battery->enable5V(); printf("#5V:1\n"); }
                     else if (vb == '0' && battery) { battery->disable5V(); printf("#5V:0\n"); }
+                }
+            } else if (cmd == 'W') {
+                uint8_t wb;
+                if (uart_read_bytes(UART_NUM_0, &wb, 1, pdMS_TO_TICKS(100)) > 0) {
+                    if (wb == '1') {
+                        if (netStreamStart(macStr) == ESP_OK) printf("#WIFI:1\n");
+                        else printf("#ERR:WIFI\n");
+                    } else if (wb == '0') {
+                        netStreamStop();
+                        printf("#WIFI:0\n");
+                    }
                 }
             } else if (cmd == 'F') {
                 if (sdOK) {

@@ -145,6 +145,8 @@ The firmware emits a mix of:
 | `?` | `?` | Query current status |
 | `V1` | `V1` | Enable 5V rail |
 | `V0` | `V0` | Disable 5V rail |
+| `W1` | `W1` | Enable WiFi SoftAP + UDP streaming |
+| `W0` | `W0` | Disable WiFi (prints `#NET` stats) |
 | `L<id>,<rep>` | `L7,3` | Set current grasp label and repetition |
 | `F` | `F` | List files on the SD card |
 | `G<path>` | `Gs_AABBCCDDEEFF_1713012345/R000.bin` | Transfer one file as raw binary |
@@ -172,6 +174,9 @@ Command notes:
 | `#CNT:<adc>,<c0>,<c1>,<c2>,<c3>` | Conversions delivered per channel of ADC `<adc>` during the recording that just stopped (4 lines, one per ADC). Fast channels of one ADC should match within ±1; use this to verify channel-rate symmetry. |
 | `#LABEL:<id>,<rep>` | Label accepted |
 | `#5V:0` / `#5V:1` | 5V rail state |
+| `#WIFI:0` / `#WIFI:1` | WiFi radio + streaming state |
+| `#NET:<ip>:<port>` | UDP client subscribed at this endpoint |
+| `#NET:TX=<n>,ERR=<n>,DROP=<n>` | Streaming stats, printed on `W0` |
 | `#STATUS:...` | Current status snapshot |
 | `#FLIST:<path>` | Start of SD file listing |
 | `#F:<name>,<size>` | One file or directory entry |
@@ -227,6 +232,44 @@ Notes for the Python datalogger:
 - The high-rate dataset lives on the SD card in `R<nnn>.bin`, `E<nnn>.bin`, `I<nnn>.bin`, and `M<nnn>.bin`, where `<nnn>` is a zero-padded index that increments on every recording start within a session (so pause/resume never overwrites earlier data).
 - After `#FDATA:<path>,<bytes>`, read exactly `<bytes>` raw bytes before parsing the trailing `#FDONE` line.
 - During file transfer, treat the UART stream as binary, not line-oriented text.
+
+## WiFi / UDP Streaming
+
+Off by default (radio adds 120–250 mA draw). Send `W1` over UART to enable, `W0` to disable.
+
+- The bracelet hosts a WPA2 SoftAP: SSID `EMG8-<MAC>`, password `emg8sense`, bracelet IP `192.168.4.1`.
+- Subscribe by sending **any** UDP datagram to `192.168.4.1:3333`; the firmware streams to the sender's address/port from then on. Re-send periodically if your viewer's port may change.
+- The stream carries **everything at full rate** (raw + envelope + IMU, ~85 KB/s in All mode). The SD card remains the ground-truth record.
+
+**Packet format** (little-endian, ≤1404 bytes):
+
+| Offset | Size | Field |
+|--------|------|-------|
+| 0 | 2 | Magic `"E8"` |
+| 2 | 1 | Version (1) |
+| 3 | 1 | Type: 0 = raw `Sample[]`, 1 = envelope `Sample[]`, 2 = `ImuSample[]` |
+| 4 | 4 | Per-type sequence number (gaps ⇒ lost packets) |
+| 8 | 2 | Record count |
+| 10 | 2 | Reserved |
+| 12 | … | Records (8-byte `Sample` or 20-byte `ImuSample`, same layouts as SD) |
+
+Partial batches flush after 30 ms, so envelope/IMU packets arrive promptly even though raw packets fill first (~53 packets/s in All mode).
+
+Minimal Python receiver:
+
+```python
+import socket, struct
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.sendto(b"HI", ("192.168.4.1", 3333))          # subscribe
+while True:
+    pkt = s.recv(2048)
+    magic, ver, ptype, seq, count = struct.unpack_from("<2sBBIH", pkt, 0)
+    if magic != b"E8":
+        continue
+    if ptype in (0, 1):                          # raw / envelope
+        for i in range(count):
+            ts, adc, ch, val = struct.unpack_from("<IBBh", pkt, 12 + 8 * i)
+```
 
 ## SD Binary Format
 
