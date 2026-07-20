@@ -548,7 +548,9 @@ esp_err_t ADXL345::getInterruptReason(InterruptFlags& flags) const {
 }
 
 bool ADXL345::isIntFlagUp(InterruptFlags flag) const {
-    InterruptFlags flags;
-    getInterruptReason(flags);
+    InterruptFlags flags = static_cast<InterruptFlags>(0);
+    if (getInterruptReason(flags) != ESP_OK) {
+        return false;
+    }
     return static_cast<bool>(flags & flag);
 }
