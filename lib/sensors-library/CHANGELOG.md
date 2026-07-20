@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 <!-- The format is based on [Keep a Changelog](https://keepachangelog.com/), -->
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/). -->
 
+## [0.9.0] - 2026-07-20
+### Added
+- **I2C**: New `probe(deviceAddress)` method — address-only presence check via `i2c_master_probe`, no register traffic.
+- **ADS1015**: `setEventQueue(queue, tag)` — the ALERT/RDY ISR posts a caller-supplied tag to a queue on every DRDY edge, letting an external task block on one queue across several instances (e.g. one task per I2C bus) instead of polling.
+- **ADS1015**: `getSampleCount(channel)` / `resetSampleCounts()` — per-channel conversion counters for verifying rate symmetry between fast/slow channels.
+
+### Changed
+- **I2C**: Migrated from the legacy `driver/i2c.h` (`i2c_master_cmd_begin`, command-link alloc/free per transaction) to the new `driver/i2c_master.h` API, with per-address device handles cached on first use. Public `write()`/`read()` signatures are unchanged; transaction timeout is now a fixed 20 ms.
+- **ADS1015**: `checkForDevice()` now probes only the instance's own address (via the new `I2C::probe()`) instead of writing to all four possible ADS1015 addresses and failing whenever any is unpopulated — the old behavior always failed on a 2-devices-per-bus layout.
+- **ADS1015**: Mixed-rate continuous mode prebuilds one config word per channel at `startMixedContinuous[External]()` instead of searching `channelConfigs_` for the gain and rebuilding the config word on every conversion — the DRDY-serviced hot path is now a table lookup.
+
+### Fixed
+- **ADS1015**: Mixed-rate scheduler (`nextMixedChannel()`) could lock into slow-channel-only sampling: it compared `fastCycleCount_ % divider`, which stays true on every call once the count reaches the divider (the count only advances while servicing fast channels), so once triggered the round-robin never returned to fast channels. Replaced with a per-slow-channel next-due counter.
+- **ADS1015**: Conversion timestamps are now captured in the DRDY ISR (`esp_timer_get_time()`, IRAM-safe) rather than in the conversion callback, removing FreeRTOS scheduling jitter from the sample time axis. **Breaking:** `ConversionCallback` gained a `uint32_t timestampUs` parameter — `void (*)(uint8_t channel, int16_t value, void* arg)` is now `void (*)(uint8_t channel, int16_t value, uint32_t timestampUs, void* arg)`.
+- **ADXL345**: `isIntFlagUp()` read an uninitialized `flags` local when `getInterruptReason()` failed over I2C (only surfaced as `-Werror=maybe-uninitialized` once consuming projects build at `-O2`/`-O3`).
+
 ## [0.8.3] - 2026-01-27
 ### Added
 - **UART**: Added `rxInternalPullup` parameter to base constructor to enable internal pull-up resistor on RX pin during initialization.

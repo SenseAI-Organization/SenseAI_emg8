@@ -273,30 +273,55 @@ while True:
 
 ## SD Binary Format
 
-Each recording within a session directory `s_<MAC>_<epoch>/` produces one file set `M<nnn>.bin` / `R<nnn>.bin` / `E<nnn>.bin` / `I<nnn>.bin`. Each sample file contains:
+Each recording start within a session directory `s_<MAC>_<epoch>/` produces one file set: `M<nnn>.bin`, `R<nnn>.bin`, `E<nnn>.bin`, `I<nnn>.bin`. Only `M<nnn>.bin` has a header — `R`/`E`/`I` are pure record streams with no framing, so file size alone gives the record count.
 
-**Header (16 bytes):**
+**`M<nnn>.bin` — master file: 32-byte header, then a stream of 12-byte label events**
 
 | Offset | Size | Field |
 |--------|------|-------|
 | 0 | 4 | Magic `"EMG8"` |
-| 4 | 1 | Version (1) |
+| 4 | 1 | Version (4) |
 | 5 | 1 | Number of ADCs (4) |
 | 6 | 1 | Channels per ADC (4) |
 | 7 | 1 | Slow divider (20) |
-| 8 | 4 | File epoch (seconds) |
-| 12 | 4 | Reserved |
+| 8 | 4 | Epoch (seconds **since boot**, not wall-clock — the device has no RTC) |
+| 12 | 2 | Battery voltage (mV) at recording start |
+| 14 | 1 | Battery percentage at recording start |
+| 15 | 1 | Battery state (see `BatteryManager::State`) |
+| 16 | 2 | IMU output data rate (Hz) |
+| 18 | 6 | Device MAC address |
+| 24 | 1 | Mode (`1`=All, `2`=Raw, `3`=Env) |
+| 25 | 7 | Reserved |
 
-**Sample records (8 bytes each):**
+Label event (12 bytes, repeated for each `L<id>,<rep>` command received while recording):
 
 | Offset | Size | Field |
 |--------|------|-------|
 | 0 | 4 | Timestamp (µs since recording start) |
+| 4 | 2 | Grasp/movement ID |
+| 6 | 2 | Repetition |
+| 8 | 4 | Reserved |
+
+**`R<nnn>.bin` / `E<nnn>.bin` — raw EMG / envelope: stream of 8-byte sample records, no header**
+
+| Offset | Size | Field |
+|--------|------|-------|
+| 0 | 4 | Timestamp (µs since recording start, captured in the ADC's DRDY ISR) |
 | 4 | 1 | ADC index (0–3) |
 | 5 | 1 | Channel index (0–3) |
 | 6 | 2 | Value (signed 12-bit) |
 
-Files rotate every 60 seconds.
+**`I<nnn>.bin` — IMU: stream of 20-byte records, no header**
+
+| Offset | Size | Field |
+|--------|------|-------|
+| 0 | 4 | Timestamp (µs since recording start) |
+| 4 | 2×3 | Accel X/Y/Z, milli-g (int16) |
+| 10 | 2×3 | Gyro X/Y/Z, deci-dps (int16) |
+| 16 | 2 | Temperature × 100 (int16) |
+| 18 | 2 | Reserved |
+
+These layouts are defined in [src/emg8_types.hpp](src/emg8_types.hpp) (`Sample`, `ImuSample`, `LabelEvent`) — the same structs are used for the UDP stream records (see above).
 
 ## Building
 
@@ -310,16 +335,21 @@ Files rotate every 60 seconds.
 ```bash
 pio run                    # build
 pio run -t upload          # flash
-pio device monitor -b 115200   # serial monitor
+pio device monitor -b 460800   # serial monitor (app UART runs at 460800, not the 115200 boot-log rate)
 ```
+
+Flashing rewrites the partition table (a custom [partitions.csv](partitions.csv): 3 MB app partition on the 8 MB flash, needed for WiFi/lwIP), which erases NVS — nothing in this firmware currently depends on data stored there.
 
 ### Library Dependencies
 
-| Library | Branch | Source |
-|---------|--------|--------|
-| [sensors-library](https://github.com/SenseAI-Organization/sensors-library) | `feature/ads1xxx` | ADS1015 driver with mixed-rate continuous mode |
-| [data-logging-library](https://github.com/SenseAI-Organization/data-logging-library) | `dev` | SD card (FATFS), SPI bus management |
-| [actuators-library](https://github.com/SenseAI-Organization/actuators-library) | `dev` | RGB LED (WS2812), Switch |
+The libraries below are **vendored directly into [lib/](lib/)** as plain files (not git submodules or PlatformIO registry packages), so the repository is self-contained and cloneable without access to the private Sense AI GitHub organization. Each still carries its own `README.md`/`CHANGELOG.md` documenting its own version history.
+
+| Library | Path | Provides |
+|---------|------|----------|
+| sensors-library | [lib/sensors-library](lib/sensors-library) | ADS1015 driver (mixed-rate continuous mode), ICM-42605 IMU, I2C/SPI wrappers, misc sensors |
+| data-logging-library | [lib/data-logging-library](lib/data-logging-library) | SD card (FATFS) and flash storage |
+| actuators-library | [lib/actuators-library](lib/actuators-library) | RGB LED (WS2812), reed switch |
+| battery-library | [lib/battery-library](lib/battery-library) | Battery voltage/percentage/charge-state monitoring, 5V rail control |
 
 ## License
 

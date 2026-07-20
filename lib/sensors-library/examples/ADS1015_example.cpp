@@ -45,10 +45,10 @@ extern "C" void app_main() {
     ADS1015 ads1(i2c0, ADS1015::ADS111X_Address::ADS111X_ADDR_GND);
     ADS1015 ads2(i2c1, ADS1015::ADS111X_Address::ADS111X_ADDR_GND);
 
-    if (!ads1.checkForDevice()){
+    if (ads1.checkForDevice() != ESP_OK){
         printf("ADS1 not found\n");
     }
-    if (!ads2.checkForDevice()){
+    if (ads2.checkForDevice() != ESP_OK){
         printf("ADS2 not found\n");
     }
 
