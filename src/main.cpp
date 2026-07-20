@@ -9,11 +9,12 @@
  *
  * Multi-file SD logging  ·  UART CSV @460800  ·  Reed switch + serial commands
  *
- * SD layout per session directory  s_<MAC>_<epoch>/
- *   M.bin — master  (32-byte header + 12-byte label events)
- *   R.bin — raw EMG  (8-byte Sample records, ch 0-1)
- *   E.bin — envelope (8-byte Sample records, ch 2-3)
- *   I.bin — IMU      (20-byte ImuSample records)
+ * SD layout per session directory  s_<MAC>_<epoch>/  (one set per recording,
+ * <nnn> increments on every recording start — pause/resume never truncates)
+ *   M<nnn>.bin — master  (32-byte header + 12-byte label events)
+ *   R<nnn>.bin — raw EMG  (8-byte Sample records, ch 0-1)
+ *   E<nnn>.bin — envelope (8-byte Sample records, ch 2-3)
+ *   I<nnn>.bin — IMU      (20-byte ImuSample records)
  *
  * UART baud 460800.  Protocol:
  *   PC→ESP: '0' stop · '1-3' mode · '?' status · 'L<id>,<rep>\n' label
@@ -253,17 +254,34 @@ static void onSample(uint8_t ch, int16_t val, void* arg) {
 
 static FIL filMaster, filRaw, filEnv, filImu;
 static bool filesOpen = false;
+static uint16_t recIndex = 0;   // per-recording file set index within the session
 
-static void sdOpenFiles(const std::string& base) {
-    std::string mPath = base + "/M.bin";
-    std::string rPath = base + "/R.bin";
-    std::string ePath = base + "/E.bin";
-    std::string iPath = base + "/I.bin";
+static bool sdOpenFiles(const std::string& base) {
+    // One file set per recording start (R000.bin, R001.bin, ...) so a
+    // pause/resume or stop/start never truncates earlier data.
+    char suffix[16];
+    snprintf(suffix, sizeof(suffix), "%03u.bin", (unsigned)recIndex);
+    std::string mPath = base + "/M" + suffix;
+    std::string rPath = base + "/R" + suffix;
+    std::string ePath = base + "/E" + suffix;
+    std::string iPath = base + "/I" + suffix;
 
-    f_open(&filMaster, mPath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
-    f_open(&filRaw,    rPath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
-    f_open(&filEnv,    ePath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
-    f_open(&filImu,    iPath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
+    FRESULT fr[4];
+    fr[0] = f_open(&filMaster, mPath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
+    fr[1] = f_open(&filRaw,    rPath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
+    fr[2] = f_open(&filEnv,    ePath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
+    fr[3] = f_open(&filImu,    iPath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
+    if (fr[0] != FR_OK || fr[1] != FR_OK || fr[2] != FR_OK || fr[3] != FR_OK) {
+        printf("#ERR:SD_OPEN:%d,%d,%d,%d\n", fr[0], fr[1], fr[2], fr[3]);
+        if (fr[0] == FR_OK) f_close(&filMaster);
+        if (fr[1] == FR_OK) f_close(&filRaw);
+        if (fr[2] == FR_OK) f_close(&filEnv);
+        if (fr[3] == FR_OK) f_close(&filImu);
+        sdOK = false;
+        updateStatusLed();
+        return false;
+    }
+    recIndex++;
 
     // Write master header (32 bytes, v4)
     // [0-3] "EMG8"  [4] ver=4  [5] nADC  [6] nCh  [7] div
@@ -297,6 +315,7 @@ static void sdOpenFiles(const std::string& base) {
     f_sync(&filMaster);
 
     filesOpen = true;
+    return true;
 }
 
 static void sdCloseFiles() {
@@ -323,16 +342,18 @@ static void sdWriteTask(void*) {
     uint32_t syncTick = 0;
 
     while (true) {
-        /* ---- idle when not recording ---- */
-        if (!recording) {
-            if (filesOpen) sdCloseFiles();
+        /* ---- idle when not recording and nothing left to flush ---- */
+        if (!recording && !filesOpen) {
             vTaskDelay(pdMS_TO_TICKS(100));
             continue;
         }
 
         /* ---- open files on first iteration of a new recording ---- */
         if (!filesOpen) {
-            sdOpenFiles(sessionDir);
+            if (!sdOK || !sdOpenFiles(sessionDir)) {
+                vTaskDelay(pdMS_TO_TICKS(500));
+                continue;
+            }
         }
 
         /* ---- drain raw EMG queue → R.bin ---- */
@@ -358,6 +379,12 @@ static void sdWriteTask(void*) {
         while (nL < LBL_BATCH && xQueueReceive(labelQ, &lblBuf[nL], 0) == pdTRUE) nL++;
         if (nL > 0)
             f_write(&filMaster, lblBuf, nL * sizeof(LabelEvent), &bw);
+
+        /* ---- recording stopped: keep draining until empty, then close ---- */
+        if (!recording) {
+            if (nR == 0 && nE == 0 && nI == 0 && nL == 0) sdCloseFiles();
+            continue;
+        }
 
         /* ---- periodic sync (every ~500 ms) ---- */
         if (nR || nE || nI || nL) {

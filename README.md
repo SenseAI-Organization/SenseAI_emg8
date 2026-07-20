@@ -145,7 +145,7 @@ The firmware emits a mix of:
 | `V0` | `V0` | Disable 5V rail |
 | `L<id>,<rep>` | `L7,3` | Set current grasp label and repetition |
 | `F` | `F` | List files on the SD card |
-| `G<path>` | `Gs_AABBCCDDEEFF_1713012345/R.bin` | Transfer one file as raw binary |
+| `G<path>` | `Gs_AABBCCDDEEFF_1713012345/R000.bin` | Transfer one file as raw binary |
 
 Command notes:
 
@@ -221,13 +221,13 @@ D,123456,81,12,204,198,79,9,201,197,84,11,206,199,82,10,203,196,-0.031,0.004,0.9
 Notes for the Python datalogger:
 
 - `D` lines are low-rate snapshots for monitoring, not the full EMG dataset.
-- The high-rate dataset lives on the SD card in `R.bin`, `E.bin`, `I.bin`, and `M.bin`.
+- The high-rate dataset lives on the SD card in `R<nnn>.bin`, `E<nnn>.bin`, `I<nnn>.bin`, and `M<nnn>.bin`, where `<nnn>` is a zero-padded index that increments on every recording start within a session (so pause/resume never overwrites earlier data).
 - After `#FDATA:<path>,<bytes>`, read exactly `<bytes>` raw bytes before parsing the trailing `#FDONE` line.
 - During file transfer, treat the UART stream as binary, not line-oriented text.
 
 ## SD Binary Format
 
-Each file under `s_<epoch>/` contains:
+Each recording within a session directory `s_<MAC>_<epoch>/` produces one file set `M<nnn>.bin` / `R<nnn>.bin` / `E<nnn>.bin` / `I<nnn>.bin`. Each sample file contains:
 
 **Header (16 bytes):**
 
