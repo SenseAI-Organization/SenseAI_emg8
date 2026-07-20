@@ -972,7 +972,15 @@ extern "C" void app_main() {
             } else if (cmd >= '1' && cmd <= '3') {
                 Mode newM = (Mode)(cmd - '0');
                 if (newM != mode || !recording) {
-                    if (recording) stopADCs();
+                    if (recording) {
+                        // Stop cleanly first: the SD writer drains and closes
+                        // the current file set, and an aborted countdown must
+                        // not leave a half-recording state behind.
+                        recording = false;
+                        stopADCs();
+                        battery->disable5V();
+                        updateStatusLed();
+                    }
                     printf("#MODE:%d\n", (int)newM);
                     if (countdown(3)) {
                         battery->enable5V();
