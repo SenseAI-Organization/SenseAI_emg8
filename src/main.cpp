@@ -217,7 +217,7 @@ static void printStatusLine() {
 
 /* ── ADC conversion callback (called from each ADC's FreeRTOS task) ──────── */
 
-static void onSample(uint8_t ch, int16_t val, void* arg) {
+static void onSample(uint8_t ch, int16_t val, uint32_t tsUs, void* arg) {
     uint8_t id = (uint8_t)(uintptr_t)arg;
     bool fast  = (ch == kEMG0 || ch == kEMG1);
 
@@ -226,7 +226,9 @@ static void onSample(uint8_t ch, int16_t val, void* arg) {
     if (mode == Mode::Env &&  fast) return;
 
     Sample s;
-    s.ts  = recordingTimestampUs();
+    // tsUs was captured in the DRDY ISR — unsigned 32-bit subtraction gives
+    // the correct offset even across the µs-counter wrap (~71 min)
+    s.ts  = tsUs - (uint32_t)recStart.load(std::memory_order_relaxed);
     s.adc = id;
     s.ch  = ch;
     s.val = val;

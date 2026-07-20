@@ -13,6 +13,8 @@
 
 #include "ADS1015.hpp"
 
+#include "esp_timer.h"
+
 ADS1015::ADS1015(I2C& i2cInstance, uint8_t address)
     : i2c_(i2cInstance), address_(static_cast<ADS1015::ADS111X_Address>(address)) {
 }
@@ -320,6 +322,10 @@ esp_err_t ADS1015::configureAlertPin(gpio_num_t alertPin, bool activeLow) {
 
 void IRAM_ATTR ADS1015::alertISR(void* arg) {
     ADS1015* self = static_cast<ADS1015*>(arg);
+    // Timestamp at the DRDY edge; 32-bit store is atomic on Xtensa. If edges
+    // merge before servicing, the latest one matches the value left in the
+    // conversion register.
+    self->drdyTimestampUs_ = (uint32_t)esp_timer_get_time();
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     xSemaphoreGiveFromISR(self->drdySemaphore_, &xHigherPriorityTaskWoken);
     if (xHigherPriorityTaskWoken) {
@@ -336,6 +342,7 @@ void ADS1015::continuousTask(void* pvParam) {
             if (!self->continuousRunning_) break;
 
             // Read the conversion result for the current channel
+            uint32_t tsUs = self->drdyTimestampUs_;
             uint8_t ch = self->activeChannels_[self->currentMuxIndex_];
             int16_t value = self->readConversionResult();
             self->latestReading_[ch] = value;
@@ -345,7 +352,7 @@ void ADS1015::continuousTask(void* pvParam) {
 
             // Notify user callback if registered
             if (self->convCallback_) {
-                self->convCallback_(ch, value, self->convCallbackArg_);
+                self->convCallback_(ch, value, tsUs, self->convCallbackArg_);
             }
 
             // Advance to next channel in the round-robin
@@ -514,13 +521,14 @@ void ADS1015::mixedContinuousTask(void* pvParam) {
             if (!self->continuousRunning_) break;
 
             // Read the result of the conversion that just finished
+            uint32_t tsUs = self->drdyTimestampUs_;
             uint8_t ch = self->activeChannels_[0];  // current channel being read
             int16_t value = self->readConversionResult();
             self->latestReading_[ch] = value;
             self->adcData.channels[ch] = (uint16_t)value;
 
             if (self->convCallback_) {
-                self->convCallback_(ch, value, self->convCallbackArg_);
+                self->convCallback_(ch, value, tsUs, self->convCallbackArg_);
             }
 
             // Decide next channel and switch MUX
@@ -753,13 +761,14 @@ bool ADS1015::serviceConversion() {
     if (!continuousRunning_) return false;
 
     // Read the result of the conversion that just finished
+    uint32_t tsUs = drdyTimestampUs_;
     uint8_t ch = activeChannels_[0];
     int16_t value = readConversionResult();
     latestReading_[ch] = value;
     adcData.channels[ch] = (uint16_t)value;
 
     if (convCallback_) {
-        convCallback_(ch, value, convCallbackArg_);
+        convCallback_(ch, value, tsUs, convCallbackArg_);
     }
 
     // Decide next channel and switch MUX

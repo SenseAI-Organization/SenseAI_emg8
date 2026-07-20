@@ -31,7 +31,13 @@ public:
     static constexpr uint8_t kMaxChannels = 4;
     static constexpr uint8_t kMaxActiveChannels = 4;
 
-    typedef void (*ConversionCallback)(uint8_t channel, int16_t value, void* arg);
+    /**
+     * @brief Conversion callback. timestampUs is captured in the DRDY ISR
+     * (µs, lower 32 bits of esp_timer_get_time()), so it reflects conversion
+     * completion time rather than task service time.
+     */
+    typedef void (*ConversionCallback)(uint8_t channel, int16_t value,
+                                       uint32_t timestampUs, void* arg);
 
     /**
      * @enum ADS111X_Address
@@ -508,6 +514,7 @@ private:
     gpio_num_t alertPin_ = GPIO_NUM_NC;                  ///< ALERT/RDY GPIO pin
     volatile bool continuousRunning_ = false;            ///< Flag: continuous mode active
     volatile int16_t latestReading_[kMaxChannels] = {};  ///< Latest per-channel values
+    volatile uint32_t drdyTimestampUs_ = 0;  ///< µs timestamp of last DRDY edge (set in ISR)
 
     uint8_t activeChannels_[kMaxActiveChannels] = {};  ///< Channels to cycle through
     uint8_t numActiveChannels_ = 0;                    ///< Number of active channels
