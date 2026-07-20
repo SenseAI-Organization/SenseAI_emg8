@@ -766,7 +766,7 @@ extern "C" void app_main() {
 
     adcOK = true;
     for (int i = 0; i < 4; i++)
-        if (!adc[i]->checkForDevice()) {
+        if (adc[i]->checkForDevice() != ESP_OK) {
             printf("ADC%d not found\n", i + 1);
             adcOK = false;
         }

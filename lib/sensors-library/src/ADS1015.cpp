@@ -112,16 +112,11 @@ esp_err_t ADS1015::setConfig(uint8_t channel, uint8_t gain, uint8_t sampleFreque
 }
 
 esp_err_t ADS1015::checkForDevice() {
-    // Use i2c_ instead of i2cInstance
-    uint8_t data[1] = {0};
-    for (int addr = ADS111X_ADDR_GND; addr <= ADS111X_ADDR_SCL; ++addr) {
-        esp_err_t err = i2c_.write(addr, static_cast<uint8_t>(Register::Config), data, 1);
-        if (err) {
-            return err;
-        }
-    }
-    // printf("ADS seems to be working\n");
-    return ESP_OK;
+    // Probe only this instance's address with a read: probing all four
+    // possible addresses fails whenever any of them is unpopulated, and a
+    // write could corrupt the config register.
+    uint8_t data[2] = {0};
+    return i2c_.read(address_, static_cast<uint8_t>(Register::Config), data, 2);
 }
 
 int8_t ADS1015::readSingleEnded(uint8_t channel) {
