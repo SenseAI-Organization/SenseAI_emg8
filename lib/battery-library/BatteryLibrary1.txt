@@ -1,0 +1,575 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x2b (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2810,len:0x15a0
+load:0x403c8700,len:0x4
+load:0x403c8704,len:0xd20
+load:0x403cb700,len:0x2f00
+entry 0x403c8920
+I (27) boot: ESP-IDF 5.4.1 2nd stage bootloader
+I (27) boot: compile time Mar 16 2026 11:39:04
+I (27) boot: Multicore bootloader
+I (27) boot: chip revision: v0.2
+I (30) boot: efuse block revision: v1.3
+I (33) boot.esp32s3: Boot SPI Speed : 80MHz
+I (37) boot.esp32s3: SPI Mode       : DIO
+I (41) boot.esp32s3: SPI Flash Size : 8MB
+I (45) boot: Enabling RNG early entropy source...
+I (49) boot: Partition Table:
+I (52) boot: ## Label            Usage          Type ST Offset   Length
+I (58) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (65) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (71) boot:  2 factory          factory app      00 00 00010000 00100000
+I (78) boot: End of partition table
+I (81) esp_image: segment 0: paddr=00010020 vaddr=3c020020 size=0bb18h ( 47896) map
+I (97) esp_image: segment 1: paddr=0001bb40 vaddr=3fc92400 size=02a88h ( 10888) load
+I (99) esp_image: segment 2: paddr=0001e5d0 vaddr=40374000 size=01a48h (  6728) load
+I (105) esp_image: segment 3: paddr=00020020 vaddr=42000020 size=1f478h (128120) map
+I (133) esp_image: segment 4: paddr=0003f4a0 vaddr=40375a48 size=0c8b8h ( 51384) load
+I (145) esp_image: segment 5: paddr=0004bd60 vaddr=600fe100 size=0001ch (    28) load
+I (151) boot: Loaded app from partition at offset 0x10000
+I (151) boot: Disabling RNG early entropy source...
+I (163) cpu_start: Multicore app
+I (172) cpu_start: Pro cpu start user code
+I (172) cpu_start: cpu freq: 160000000 Hz
+I (172) app_init: Application information:
+I (172) app_init: Project name:     battery-library
+I (176) app_init: App version:      8547576-dirty
+I (181) app_init: Compile time:     Mar 16 2026 11:38:08
+I (186) app_init: ELF file SHA256:  bd7352db3...
+I (190) app_init: ESP-IDF:          5.4.1
+I (194) efuse_init: Min chip rev:     v0.0
+I (198) efuse_init: Max chip rev:     v0.99 
+I (202) efuse_init: Chip rev:         v0.2
+I (206) heap_init: Initializing. RAM available for dynamic allocation:
+I (212) heap_init: At 3FC95978 len 00053D98 (335 KiB): RAM
+I (217) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (222) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+I (227) heap_init: At 600FE11C len 00001ECC (7 KiB): RTCRAM
+I (234) spi_flash: detected chip: gd
+I (236) spi_flash: flash io: dio
+I (239) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+I (245) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+I (252) main_task: Started on CPU0
+I (292) main_task: Calling app_main()
+
+
+====================================
+  BatteryManager Example
+  Version 1.0.0
+====================================
+
+I (302) gpio: GPIO[15]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 1| Intr:0 
+I (302) gpio: GPIO[16]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 1| Intr:0 
+====================================
+BatteryManager initialized successfully
+====================================
+
+
+====================================
+  Battery Monitoring System
+====================================
+Iteration 0 | State: Disconnected
+  Voltage:    3217 mV (raw: 3230 mV)
+  Charge:       1% (raw:   3%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+
+Battery Report:
+  State:       Disconnected
+  Voltage:     3217 mV (raw: 3230 mV)
+  Charge:      1% (raw: 3%)
+  Charging:    NO
+  Connected:   NO
+  Calibration: Enabled
+
+I (362) main_task: Returned from app_main()
+Iteration 1 | State: Disconnected
+  Voltage:    3222 mV (raw: 3240 mV)
+  Charge:       2% (raw:   4%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 2 | State: Disconnected
+  Voltage:    3226 mV (raw: 3234 mV)
+  Charge:       2% (raw:   3%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 3 | State: Disconnected
+  Voltage:    3231 mV (raw: 3238 mV)
+  Charge:       2% (raw:   3%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 4 | State: Disconnected
+  Voltage:    3236 mV (raw: 3242 mV)
+  Charge:       3% (raw:   4%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 5 | State: Disconnected
+  Voltage:    3239 mV (raw: 3242 mV)
+  Charge:       3% (raw:   4%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 6 | State: Disconnected
+  Voltage:    3240 mV (raw: 3244 mV)
+  Charge:       3% (raw:   4%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 7 | State: Disconnected
+  Voltage:    3241 mV (raw: 3242 mV)
+  Charge:       3% (raw:   4%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 8 | State: Disconnected
+  Voltage:    3242 mV (raw: 3240 mV)
+  Charge:       4% (raw:   4%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 9 | State: Disconnected
+  Voltage:    3240 mV (raw: 3234 mV)
+  Charge:       3% (raw:   3%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+
+====================================
+  Battery Monitoring System
+====================================
+Iteration 10 | State: Disconnected
+  Voltage:    3240 mV (raw: 3242 mV)
+  Charge:       3% (raw:   4%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 11 | State: Disconnected
+  Voltage:    3238 mV (raw: 3236 mV)
+  Charge:       3% (raw:   3%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 12 | State: Disconnected
+  Voltage:    3238 mV (raw: 3242 mV)
+  Charge:       3% (raw:   4%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 13 | State: Disconnected
+  Voltage:    3239 mV (raw: 3242 mV)
+  Charge:       3% (raw:   4%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 14 | State: Disconnected
+  Voltage:    3241 mV (raw: 3244 mV)
+  Charge:       3% (raw:   4%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 15 | State: Disconnected
+  Voltage:    3241 mV (raw: 3242 mV)
+  Charge:       3% (raw:   4%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 16 | State: Disconnected
+  Voltage:    3242 mV (raw: 3242 mV)
+  Charge:       4% (raw:   4%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 17 | State: Disconnected
+  Voltage:    3242 mV (raw: 3242 mV)
+  Charge:       4% (raw:   4%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 18 | State: Disconnected
+  Voltage:    3242 mV (raw: 3242 mV)
+  Charge:       4% (raw:   4%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 19 | State: Disconnected
+  Voltage:    3240 mV (raw: 3236 mV)
+  Charge:       3% (raw:   3%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+
+====================================
+  Battery Monitoring System
+====================================
+Iteration 20 | State: Disconnected
+  Voltage:    3240 mV (raw: 3242 mV)
+  Charge:       3% (raw:   4%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+
+Battery Report:
+  State:       Disconnected
+  Voltage:     3240 mV (raw: 3242 mV)
+  Charge:      3% (raw: 4%)
+  Charging:    NO
+  Connected:   NO
+  Calibration: Enabled
+
+Iteration 21 | State: Disconnected
+  Voltage:    3240 mV (raw: 3238 mV)
+  Charge:       3% (raw:   3%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 22 | State: Disconnected
+  Voltage:    3240 mV (raw: 3242 mV)
+  Charge:       3% (raw:   4%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 23 | State: Disconnected
+  Voltage:    3239 mV (raw: 3238 mV)
+  Charge:       3% (raw:   3%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 24 | State: Disconnected
+  Voltage:    3238 mV (raw: 3234 mV)
+  Charge:       3% (raw:   3%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 25 | State: Disconnected
+  Voltage:    3238 mV (raw: 3238 mV)
+  Charge:       3% (raw:   3%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 26 | State: Disconnected
+  Voltage:    3238 mV (raw: 3242 mV)
+  Charge:       3% (raw:   4%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 27 | State: Disconnected
+  Voltage:    3238 mV (raw: 3242 mV)
+  Charge:       3% (raw:   4%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 28 | State: Disconnected
+  Voltage:    3238 mV (raw: 3234 mV)
+  Charge:       3% (raw:   3%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 29 | State: Charging
+  Voltage:    3374 mV (raw: 3918 mV)
+  Charge:      17% (raw:  71%)
+  Charging:   YES
+  Connected:  YES
+------------------------------------
+
+====================================
+  Battery Monitoring System
+====================================
+Iteration 30 | State: Charging
+  Voltage:    3505 mV (raw: 3890 mV)
+  Charge:      30% (raw:  69%)
+  Charging:   YES
+  Connected:  YES
+------------------------------------
+Iteration 31 | State: Charging
+  Voltage:    3637 mV (raw: 3902 mV)
+  Charge:      43% (raw:  70%)
+  Charging:   YES
+  Connected:  YES
+------------------------------------
+Iteration 32 | State: Charging
+  Voltage:    3771 mV (raw: 3914 mV)
+  Charge:      56% (raw:  71%)
+  Charging:   YES
+  Connected:  YES
+------------------------------------
+Iteration 33 | State: Charging
+  Voltage:    3911 mV (raw: 3934 mV)
+  Charge:      70% (raw:  73%)
+  Charging:   YES
+  Connected:  YES
+------------------------------------
+Iteration 34 | State: Charging
+  Voltage:    3897 mV (raw: 3848 mV)
+  Charge:      69% (raw:  64%)
+  Charging:   YES
+  Connected:  YES
+------------------------------------
+Iteration 35 | State: Charging
+  Voltage:    3883 mV (raw: 3820 mV)
+  Charge:      68% (raw:  62%)
+  Charging:   YES
+  Connected:  YES
+------------------------------------
+Iteration 36 | State: Charging
+  Voltage:    3877 mV (raw: 3872 mV)
+  Charge:      67% (raw:  67%)
+  Charging:   YES
+  Connected:  YES
+------------------------------------
+Iteration 37 | State: Charging
+  Voltage:    3871 mV (raw: 3882 mV)
+  Charge:      66% (raw:  68%)
+  Charging:   YES
+  Connected:  YES
+------------------------------------
+Iteration 38 | State: Charging
+  Voltage:    3873 mV (raw: 3946 mV)
+  Charge:      67% (raw:  74%)
+  Charging:   YES
+  Connected:  YES
+------------------------------------
+Iteration 39 | State: Charging
+  Voltage:    3898 mV (raw: 3974 mV)
+  Charge:      69% (raw:  77%)
+  Charging:   YES
+  Connected:  YES
+------------------------------------
+
+====================================
+  Battery Monitoring System
+====================================
+Iteration 40 | State: Charging
+  Voltage:    3929 mV (raw: 3974 mV)
+  Charge:      72% (raw:  77%)
+  Charging:   YES
+  Connected:  YES
+------------------------------------
+
+Battery Report:
+  State:       Charging
+  Voltage:     3929 mV (raw: 3974 mV)
+  Charge:      72% (raw: 77%)
+  Charging:    YES
+  Connected:   YES
+  Calibration: Enabled
+
+Iteration 41 | State: Charging
+  Voltage:    3948 mV (raw: 3966 mV)
+  Charge:      74% (raw:  76%)
+  Charging:   YES
+  Connected:  YES
+------------------------------------
+Iteration 42 | State: Charging
+  Voltage:    3958 mV (raw: 3932 mV)
+  Charge:      75% (raw:  73%)
+  Charging:   YES
+  Connected:  YES
+------------------------------------
+Iteration 43 | State: Charging
+  Voltage:    3962 mV (raw: 3966 mV)
+  Charge:      75% (raw:  76%)
+  Charging:   YES
+  Connected:  YES
+------------------------------------
+Iteration 44 | State: Charging
+  Voltage:    3954 mV (raw: 3934 mV)
+  Charge:      75% (raw:  73%)
+  Charging:   YES
+  Connected:  YES
+------------------------------------
+Iteration 45 | State: Charging
+  Voltage:    3956 mV (raw: 3986 mV)
+  Charge:      75% (raw:  78%)
+  Charging:   YES
+  Connected:  YES
+------------------------------------
+Iteration 46 | State: Disconnected
+  Voltage:    3817 mV (raw: 3268 mV)
+  Charge:      61% (raw:   6%)
+  Charging:   NO
+  Connected:  NO
+------------------------------------
+Iteration 47 | State: Disconnected
+  Voltage:    3682 mV (raw: 3260 mV)
+  Charge:      47% (raw:   6%)
+  Charging:   NO
+  Connected:  NO
+------------------------------------
+Iteration 48 | State: Disconnected
+  Voltage:    3541 mV (raw: 3260 mV)
+  Charge:      33% (raw:   6%)
+  Charging:   NO
+  Connected:  NO
+------------------------------------
+Iteration 49 | State: Disconnected
+  Voltage:    3406 mV (raw: 3260 mV)
+  Charge:      20% (raw:   6%)
+  Charging:   NO
+  Connected:  NO
+------------------------------------
+
+====================================
+  Battery Monitoring System
+====================================
+Iteration 50 | State: Disconnected
+  Voltage:    3261 mV (raw: 3260 mV)
+  Charge:       6% (raw:   6%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 51 | State: Disconnected
+  Voltage:    3259 mV (raw: 3256 mV)
+  Charge:       5% (raw:   5%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 52 | State: Disconnected
+  Voltage:    3259 mV (raw: 3260 mV)
+  Charge:       5% (raw:   6%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 53 | State: Disconnected
+  Voltage:    3260 mV (raw: 3264 mV)
+  Charge:       5% (raw:   6%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 54 | State: Disconnected
+  Voltage:    3258 mV (raw: 3250 mV)
+  Charge:       5% (raw:   5%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 55 | State: Disconnected
+  Voltage:    3257 mV (raw: 3256 mV)
+  Charge:       5% (raw:   5%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 56 | State: Disconnected
+  Voltage:    3258 mV (raw: 3264 mV)
+  Charge:       5% (raw:   6%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 57 | State: Disconnected
+  Voltage:    3256 mV (raw: 3250 mV)
+  Charge:       5% (raw:   5%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 58 | State: Disconnected
+  Voltage:    3256 mV (raw: 3264 mV)
+  Charge:       5% (raw:   6%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 59 | State: Disconnected
+  Voltage:    3256 mV (raw: 3250 mV)
+  Charge:       5% (raw:   5%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+
+====================================
+  Battery Monitoring System
+====================================
+Iteration 60 | State: Disconnected
+  Voltage:    3255 mV (raw: 3250 mV)
+  Charge:       5% (raw:   5%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+
+Battery Report:
+  State:       Disconnected
+  Voltage:     3255 mV (raw: 3250 mV)
+  Charge:      5% (raw: 5%)
+  Charging:    NO
+  Connected:   NO
+  Calibration: Enabled
+
+Iteration 61 | State: Disconnected
+  Voltage:    3252 mV (raw: 3250 mV)
+  Charge:       5% (raw:   5%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 62 | State: Disconnected
+  Voltage:    3254 mV (raw: 3260 mV)
+  Charge:       5% (raw:   6%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 63 | State: Disconnected
+  Voltage:    3253 mV (raw: 3258 mV)
+  Charge:       5% (raw:   5%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 64 | State: Disconnected
+  Voltage:    3255 mV (raw: 3260 mV)
+  Charge:       5% (raw:   6%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------
+Iteration 65 | State: Disconnected
+  Voltage:    3255 mV (raw: 3250 mV)
+  Charge:       5% (raw:   5%)
+  Charging:   NO
+  Connected:  NO
+    WARNING: Battery critically low!
+------------------------------------

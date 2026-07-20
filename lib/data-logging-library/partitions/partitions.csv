@@ -1,0 +1,9 @@
+# Name,      Type,   SubType,   Offset,   Size,  Flags
+nvs_key,     data,   nvs_keys,  0x9000,   4K,    encrypted
+nvs,         data,   nvs,       0xA000,   252K
+otadata,     data,   ota,       0x49000,  8K
+phy,         data,   phy,       0x4B000,  4K
+app0,        app,    ota_0,     0x50000,  2700K
+app1,        app,    ota_1,     0x320000, 2700K
+spiffs,      data,   spiffs,    0x5F0000, 1184K
+coredump,    data,   coredump,  0x720000, 512K

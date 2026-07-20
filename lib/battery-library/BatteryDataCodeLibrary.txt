@@ -1,0 +1,332 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x2b (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2810,len:0x490
+load:0x403c8700,len:0x4
+load:0x403c8704,len:0xa80
+load:0x403cb700,len:0x2768
+entry 0x403c8878
+Battery sensor initialized successfully (ID: 0x11)
+ADC calibration enabled
+-------------------------------
+Charge:  60% | Voltage: 3800 mV
+  Raw ADC:     2285
+  Calibrated:  1900 mV
+  Report:      ID: 0x11, Charge: 60%, Voltage: 3800 mV
+-------------------------------
+Charge:  60% | Voltage: 3800 mV
+  Raw ADC:     2285
+  Calibrated:  1900 mV
+  Report:      ID: 0x11, Charge: 60%, Voltage: 3800 mV
+-------------------------------
+Charge:  60% | Voltage: 3800 mV
+  Raw ADC:     2285
+  Calibrated:  1900 mV
+  Report:      ID: 0x11, Charge: 60%, Voltage: 3800 mV
+-------------------------------
+Charge:  60% | Voltage: 3804 mV
+  Raw ADC:     2287
+  Calibrated:  1902 mV
+  Report:      ID: 0x11, Charge: 60%, Voltage: 3804 mV
+-------------------------------
+Charge:  60% | Voltage: 3804 mV
+  Raw ADC:     2287
+  Calibrated:  1902 mV
+  Report:      ID: 0x11, Charge: 60%, Voltage: 3804 mV
+-------------------------------
+Charge:  60% | Voltage: 3800 mV
+  Raw ADC:     2286
+  Calibrated:  1900 mV
+  Report:      ID: 0x11, Charge: 60%, Voltage: 3800 mV
+-------------------------------
+Charge:  60% | Voltage: 3800 mV
+  Raw ADC:     2285
+  Calibrated:  1900 mV
+  Report:      ID: 0x11, Charge: 60%, Voltage: 3800 mV
+-------------------------------
+Charge:  59% | Voltage: 3798 mV
+  Raw ADC:     2284
+  Calibrated:  1899 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3798 mV
+-------------------------------
+Charge:  60% | Voltage: 3800 mV
+  Raw ADC:     2285
+  Calibrated:  1900 mV
+  Report:      ID: 0x11, Charge: 60%, Voltage: 3800 mV
+-------------------------------
+Charge:  59% | Voltage: 3796 mV
+  Raw ADC:     2283
+  Calibrated:  1898 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3796 mV
+-------------------------------
+Charge:  59% | Voltage: 3796 mV
+  Raw ADC:     2283
+  Calibrated:  1898 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3796 mV
+-------------------------------
+Charge:  59% | Voltage: 3796 mV
+  Raw ADC:     2283
+  Calibrated:  1898 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3796 mV
+-------------------------------
+Charge:  60% | Voltage: 3800 mV
+  Raw ADC:     2285
+  Calibrated:  1900 mV
+  Report:      ID: 0x11, Charge: 60%, Voltage: 3800 mV
+-------------------------------
+Charge:  59% | Voltage: 3796 mV
+  Raw ADC:     2283
+  Calibrated:  1898 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3796 mV
+-------------------------------
+Charge:  59% | Voltage: 3796 mV
+  Raw ADC:     2283
+  Calibrated:  1898 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3796 mV
+-------------------------------
+Charge:  60% | Voltage: 3800 mV
+  Raw ADC:     2285
+  Calibrated:  1900 mV
+  Report:      ID: 0x11, Charge: 60%, Voltage: 3800 mV
+-------------------------------
+Charge:  60% | Voltage: 3800 mV
+  Raw ADC:     2285
+  Calibrated:  1900 mV
+  Report:      ID: 0x11, Charge: 60%, Voltage: 3800 mV
+-------------------------------
+Charge:  60% | Voltage: 3800 mV
+  Raw ADC:     2285
+  Calibrated:  1900 mV
+  Report:      ID: 0x11, Charge: 60%, Voltage: 3800 mV
+-------------------------------
+Charge:  60% | Voltage: 3800 mV
+  Raw ADC:     2285
+  Calibrated:  1900 mV
+  Report:      ID: 0x11, Charge: 60%, Voltage: 3800 mV
+-------------------------------
+Charge:  59% | Voltage: 3796 mV
+  Raw ADC:     2283
+  Calibrated:  1898 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3796 mV
+-------------------------------
+Charge:  59% | Voltage: 3796 mV
+  Raw ADC:     2283
+  Calibrated:  1898 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3796 mV
+-------------------------------
+Charge:  59% | Voltage: 3796 mV
+  Raw ADC:     2283
+  Calibrated:  1898 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3796 mV
+-------------------------------
+Charge:  59% | Voltage: 3796 mV
+  Raw ADC:     2283
+  Calibrated:  1898 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3796 mV
+-------------------------------
+Charge:  59% | Voltage: 3796 mV
+  Raw ADC:     2283
+  Calibrated:  1898 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3796 mV
+-------------------------------
+Charge:  59% | Voltage: 3794 mV
+  Raw ADC:     2282
+  Calibrated:  1897 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3794 mV
+-------------------------------
+Charge:  60% | Voltage: 3800 mV
+  Raw ADC:     2285
+  Calibrated:  1900 mV
+  Report:      ID: 0x11, Charge: 60%, Voltage: 3800 mV
+-------------------------------
+Charge:  59% | Voltage: 3796 mV
+  Raw ADC:     2283
+  Calibrated:  1898 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3796 mV
+-------------------------------
+Charge:  59% | Voltage: 3798 mV
+  Raw ADC:     2284
+  Calibrated:  1899 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3798 mV
+-------------------------------
+Charge:  59% | Voltage: 3796 mV
+  Raw ADC:     2283
+  Calibrated:  1898 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3796 mV
+-------------------------------
+Charge:  60% | Voltage: 3800 mV
+  Raw ADC:     2285
+  Calibrated:  1900 mV
+  Report:      ID: 0x11, Charge: 60%, Voltage: 3800 mV
+-------------------------------
+Charge:  60% | Voltage: 3800 mV
+  Raw ADC:     2285
+  Calibrated:  1900 mV
+  Report:      ID: 0x11, Charge: 60%, Voltage: 3800 mV
+-------------------------------
+Charge:  59% | Voltage: 3796 mV
+  Raw ADC:     2283
+  Calibrated:  1898 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3796 mV
+-------------------------------
+Charge:  59% | Voltage: 3798 mV
+  Raw ADC:     2284
+  Calibrated:  1899 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3798 mV
+-------------------------------
+Charge:  59% | Voltage: 3796 mV
+  Raw ADC:     2283
+  Calibrated:  1898 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3796 mV
+-------------------------------
+Charge:  60% | Voltage: 3800 mV
+  Raw ADC:     2285
+  Calibrated:  1900 mV
+  Report:      ID: 0x11, Charge: 60%, Voltage: 3800 mV
+-------------------------------
+Charge:  59% | Voltage: 3796 mV
+  Raw ADC:     2283
+  Calibrated:  1898 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3796 mV
+-------------------------------
+Charge:  59% | Voltage: 3796 mV
+  Raw ADC:     2283
+  Calibrated:  1898 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3796 mV
+-------------------------------
+Charge:  60% | Voltage: 3800 mV
+  Raw ADC:     2285
+  Calibrated:  1900 mV
+  Report:      ID: 0x11, Charge: 60%, Voltage: 3800 mV
+-------------------------------
+Charge:  59% | Voltage: 3790 mV
+  Raw ADC:     2281
+  Calibrated:  1895 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3790 mV
+-------------------------------
+Charge:  59% | Voltage: 3794 mV
+  Raw ADC:     2282
+  Calibrated:  1897 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3794 mV
+-------------------------------
+Charge:  59% | Voltage: 3796 mV
+  Raw ADC:     2283
+  Calibrated:  1898 mV
+  Report:      ID: 0x11, Charge: 59%, Voltage: 3796 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge: 100% | Voltage: 4216 mV
+  Raw ADC:     2542
+  Calibrated:  2108 mV
+  Report:      ID: 0x11, Charge: 100%, Voltage: 4216 mV
+-------------------------------
+Charge: 100% | Voltage: 4212 mV
+  Raw ADC:     2539
+  Calibrated:  2106 mV
+  Report:      ID: 0x11, Charge: 100%, Voltage: 4212 mV
+-------------------------------
+Charge: 100% | Voltage: 4210 mV
+  Raw ADC:     2537
+  Calibrated:  2105 mV
+  Report:      ID: 0x11, Charge: 100%, Voltage: 4210 mV
+-------------------------------
+Charge: 100% | Voltage: 4216 mV
+  Raw ADC:     2541
+  Calibrated:  2108 mV
+  Report:      ID: 0x11, Charge: 100%, Voltage: 4216 mV
+-------------------------------
+Charge: 100% | Voltage: 4212 mV
+  Raw ADC:     2539
+  Calibrated:  2106 mV
+  Report:      ID: 0x11, Charge: 100%, Voltage: 4212 mV
+-------------------------------
+Charge: 100% | Voltage: 4220 mV
+  Raw ADC:     2543
+  Calibrated:  2110 mV
+  Report:      ID: 0x11, Charge: 100%, Voltage: 4220 mV
+-------------------------------
+Charge: 100% | Voltage: 4212 mV
+  Raw ADC:     2539
+  Calibrated:  2106 mV
+  Report:      ID: 0x11, Charge: 100%, Voltage: 4212 mV
+-------------------------------
+Charge: 100% | Voltage: 4212 mV
+  Raw ADC:     2539
+  Calibrated:  2106 mV
+  Report:      ID: 0x11, Charge: 100%, Voltage: 4212 mV
+-------------------------------
+Charge: 100% | Voltage: 4208 mV
+  Raw ADC:     2535
+  Calibrated:  2104 mV
+  Report:      ID: 0x11, Charge: 100%, Voltage: 4208 mV
+-------------------------------
+Charge: 100% | Voltage: 4212 mV
+  Raw ADC:     2539
+  Calibrated:  2106 mV
+  Report:      ID: 0x11, Charge: 100%, Voltage: 4212 mV
+-------------------------------
+Charge: 100% | Voltage: 4210 mV
+  Raw ADC:     2537
+  Calibrated:  2105 mV
+  Report:      ID: 0x11, Charge: 100%, Voltage: 4210 mV
+-------------------------------
+Charge: 100% | Voltage: 4216 mV
+  Raw ADC:     2541
+  Calibrated:  2108 mV
+  Report:      ID: 0x11, Charge: 100%, Voltage: 4216 mV
+-------------------------------
+Charge: 100% | Voltage: 4220 mV
+  Raw ADC:     2543
+  Calibrated:  2110 mV
+  Report:      ID: 0x11, Charge: 100%, Voltage: 4220 mV
+-------------------------------
+Charge: 100% | Voltage: 4216 mV
+  Raw ADC:     2541
+  Calibrated:  2108 mV
+  Report:      ID: 0x11, Charge: 100%, Voltage: 4216 mV
+-------------------------------
+Charge: 100% | Voltage: 4220 mV
+  Raw ADC:     2543
+  Calibrated:  2110 mV
+  Report:      ID: 0x11, Charge: 100%, Voltage: 4220 mV
+-------------------------------
+Charge:  96% | Voltage: 4168 mV
+  Raw ADC:     2511
+  Calibrated:  2084 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4168 mV
+-------------------------------
+Charge:  61% | Voltage: 3814 mV
+  Raw ADC:     2294
+  Calibrated:  1907 mV
+  Report:      ID: 0x11, Charge: 61%, Voltage: 3814 mV
+-------------------------------
+Charge:  61% | Voltage: 3816 mV
+  Raw ADC:     2295
+  Calibrated:  1908 mV
+  Report:      ID: 0x11, Charge: 61%, Voltage: 3816 mV
+-------------------------------
+Charge:  61% | Voltage: 3812 mV
+  Raw ADC:     2291
+  Calibrated:  1906 mV
+  Report:      ID: 0x11, Charge: 61%, Voltage: 3812 mV
+-------------------------------
+Charge:  61% | Voltage: 3814 mV
+  Raw ADC:     2293
+  Calibrated:  1907 mV
+  Report:      ID: 0x11, Charge: 61%, Voltage: 3814 mV
+-------------------------------
+Charge:  61% | Voltage: 3812 mV
+  Raw ADC:     2291
+  Calibrated:  1906 mV
+  Report:      ID: 0x11, Charge: 61%, Voltage: 3812 mV
+-------------------------------
+Charge:  60% | Voltage: 3804 mV
+  Raw ADC:     2288
+  Calibrated:  1902 mV
+  Report:      ID: 0x11, Charge: 60%, Voltage: 3804 mV

@@ -1,0 +1,54 @@
+# .clang-format
+# Based on Google Style with Sense AI customizations
+# Documentation here: https://clang.llvm.org/docs/index.html
+
+BasedOnStyle: Google
+# --- Customizations Based on Your Guide ---
+
+# 1.8 Format: Line length
+ColumnLimit: 90
+
+# 1.8 Format: Spacing - Access specifiers (public/protected/private) not indented
+# Google uses IndentWidth: 2, so offset is -2. If you use IndentWidth: 4, set this to -4.
+AccessModifierOffset: -4
+
+# 1.8 Format: Spacing - No indentation within namespaces
+NamespaceIndentation: None
+
+# 1.8 Format: Spacing - Keep 'else' on the same line as the preceding '}'
+BreakBeforeBraces: Attach
+
+# 1.1 Header files: Order of Includes
+# Configure include categories to match the specified order.
+IncludeBlocks: Regroup
+IncludeCategories:
+  # 1. Corresponding Header (handled by IncludeIsMainRegex)
+  # 2. C System Headers (<*.h>)
+  - Regex:           '^<.*\.h>'
+    Priority:        10
+  # 3. C++ System Headers (<string>, <vector> etc.)
+  - Regex:           '^<[a-zA-Z0-9_]+>$'
+    Priority:        20
+  # 4. IDF Libraries (esp_*, nvs_*, etc.)
+  - Regex:           '^(esp_|nvs_|driver/|soc/).*\.h'
+    Priority:        30
+  # 5. FreeRTOS Headers (explicit category)
+  - Regex:           '^(freertos/|FreeRTOS).*\.h'
+    Priority:        35
+  # 6. Third-party Libraries (quoted or <>)
+  - Regex:           '^third_party/'
+    Priority:        40
+  # 7. Project Headers (quoted, not matching other categories)
+  - Regex:           '^(?!.*(esp_|nvs_|freertos/|third_party/)).*"'
+    Priority:        50
+
+# Helps sort the corresponding .h file first for .cpp files.
+# Adjust regex if your source/header extensions differ (e.g., .cc/.hh)
+IncludeIsMainRegex: '([-_](test|unittest))?\.c(c|pp)?$'
+
+# --- Other Style Preferences (Defaults from Google unless specified) ---
+AllowShortFunctionsOnASingleLine: None  # Consistent with Google, keep functions multi-line
+PointerAlignment: Left # Google default, change to Right if preferred (`int* p` vs `int *p`)
+IndentWidth: 4 # Assumed default, change to 4 if needed (also change AccessModifierOffset)
+TabWidth: 4    # Match IndentWidth
+UseTab: Never  # Use spaces

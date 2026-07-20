@@ -1,0 +1,56 @@
+# .clang-format
+# Based on Google Style with Sense AI customizations
+# Documentation here: https://clang.llvm.org/docs/index.html
+
+BasedOnStyle: Google
+# --- Customizations Based on Your Guide ---
+
+# 1.8 Format: Line length
+ColumnLimit: 90
+
+# 1.8 Format: Spacing - Access specifiers (public/protected/private) not indented
+# Google uses IndentWidth: 2, so offset is -2. If you use IndentWidth: 4, set this to -4.
+AccessModifierOffset: -4
+
+# 1.8 Format: Spacing - No indentation within namespaces
+NamespaceIndentation: None
+
+# 1.8 Format: Spacing - Keep 'else' on the same line as the preceding '}'
+BreakBeforeBraces: Attach
+
+# 1.1 Header files: Order of Includes
+# Configure include categories to match the specified order.
+IncludeBlocks: Regroup
+IncludeCategories:
+  # 1. Corresponding Header (if available) - Handled by IncludeIsMainRegex below
+  # 2. C System Headers (<*.h>)
+  - Regex:           '^<.*\.h>'
+    Priority:        10
+  # 3. C++ System Headers (<string>, <vector>, etc.)
+  - Regex:           '^<[a-zA-Z0-9_]+>$' # Match headers without '.'
+    Priority:        20
+  # 4. IDF Libraries (ESP-IDF specific - adjust regex if needed)
+  - Regex:           '^(esp_|nvs_|freertos/|driver/|soc/).*\.h' # Common ESP-IDF prefixes
+    Priority:        30
+  # 5. FreeRTOS Headers (Often included via ESP-IDF, but can be explicit)
+  # Already partially covered by IDF regex, add specific if needed
+  - Regex:           '^(freertos/|FreeRTOS).*\.h'
+    Priority:        35 # Slightly higher than generic IDF if direct FreeRTOS includes are used
+  # 6. Third-party Libraries ("third_party/...")
+  - Regex:           '^third_party/.*'
+    Priority:        40
+  # 7. Project Headers ("base/...", "foo/...", etc.) - Assume these don't match system paths
+  # This regex catches relative includes with "" that are not third_party
+  - Regex:           '^".*"' # Catches project headers using quotes
+    Priority:        50
+
+# Helps sort the corresponding .h file first for .cpp files.
+# Adjust regex if your source/header extensions differ (e.g., .cc/.hh)
+IncludeIsMainRegex: '([-_](test|unittest))?\.c(c|pp)?$'
+
+# --- Other Style Preferences (Defaults from Google unless specified) ---
+AllowShortFunctionsOnASingleLine: None  # Consistent with Google, keep functions multi-line
+PointerAlignment: Left # Google default, change to Right if preferred (`int* p` vs `int *p`)
+IndentWidth: 4 # Assumed default, change to 4 if needed (also change AccessModifierOffset)
+TabWidth: 4    # Match IndentWidth
+UseTab: Never  # Use spaces

@@ -1,0 +1,5942 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x2b (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2810,len:0x490
+load:0x403c8700,len:0x4
+load:0x403c8704,len:0xa80
+load:0x403cb700,len:0x2768
+entry 0x403c8878
+Battery sensor initialized successfully (ID: 0x11)
+ADC calibration enabled
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2504
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  93% | Voltage: 4136 mV
+  Raw ADC:     2491
+  Calibrated:  2068 mV
+  Report:      ID: 0x11, Charge: 93%, Voltage: 4136 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2426
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2504
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4168 mV
+  Raw ADC:     2511
+  Calibrated:  2084 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4168 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  96% | Voltage: 4166 mV
+  Raw ADC:     2510
+  Calibrated:  2083 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4166 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  96% | Voltage: 4168 mV
+  Raw ADC:     2511
+  Calibrated:  2084 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4168 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2501
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2504
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2504
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2501
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2425
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2502
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2440
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  93% | Voltage: 4138 mV
+  Raw ADC:     2493
+  Calibrated:  2069 mV
+  Report:      ID: 0x11, Charge: 93%, Voltage: 4138 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  94% | Voltage: 4144 mV
+  Raw ADC:     2496
+  Calibrated:  2072 mV
+  Report:      ID: 0x11, Charge: 94%, Voltage: 4144 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2425
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2501
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2504
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  94% | Voltage: 4142 mV
+  Raw ADC:     2495
+  Calibrated:  2071 mV
+  Report:      ID: 0x11, Charge: 94%, Voltage: 4142 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4166 mV
+  Raw ADC:     2510
+  Calibrated:  2083 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4166 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2502
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2504
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2426
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2501
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4166 mV
+  Raw ADC:     2510
+  Calibrated:  2083 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4166 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2440
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  97% | Voltage: 4174 mV
+  Raw ADC:     2515
+  Calibrated:  2087 mV
+  Report:      ID: 0x11, Charge: 97%, Voltage: 4174 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2440
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2502
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  96% | Voltage: 4166 mV
+  Raw ADC:     2510
+  Calibrated:  2083 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4166 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  96% | Voltage: 4168 mV
+  Raw ADC:     2511
+  Calibrated:  2084 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4168 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2426
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2501
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  99% | Voltage: 4190 mV
+  Raw ADC:     2525
+  Calibrated:  2095 mV
+  Report:      ID: 0x11, Charge: 99%, Voltage: 4190 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  94% | Voltage: 4142 mV
+  Raw ADC:     2495
+  Calibrated:  2071 mV
+  Report:      ID: 0x11, Charge: 94%, Voltage: 4142 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2501
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2426
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2440
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2502
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge: 100% | Voltage: 4208 mV
+  Raw ADC:     2535
+  Calibrated:  2104 mV
+  Report:      ID: 0x11, Charge: 100%, Voltage: 4208 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2504
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  96% | Voltage: 4168 mV
+  Raw ADC:     2511
+  Calibrated:  2084 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4168 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2425
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2504
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  98% | Voltage: 4182 mV
+  Raw ADC:     2521
+  Calibrated:  2091 mV
+  Report:      ID: 0x11, Charge: 98%, Voltage: 4182 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2425
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  98% | Voltage: 4186 mV
+  Raw ADC:     2523
+  Calibrated:  2093 mV
+  Report:      ID: 0x11, Charge: 98%, Voltage: 4186 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  99% | Voltage: 4190 mV
+  Raw ADC:     2525
+  Calibrated:  2095 mV
+  Report:      ID: 0x11, Charge: 99%, Voltage: 4190 mV
+-------------------------------
+Charge:  81% | Voltage: 4010 mV
+  Raw ADC:     2415
+  Calibrated:  2005 mV
+  Report:      ID: 0x11, Charge: 81%, Voltage: 4010 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  92% | Voltage: 4124 mV
+  Raw ADC:     2483
+  Calibrated:  2062 mV
+  Report:      ID: 0x11, Charge: 92%, Voltage: 4124 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2504
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  94% | Voltage: 4144 mV
+  Raw ADC:     2496
+  Calibrated:  2072 mV
+  Report:      ID: 0x11, Charge: 94%, Voltage: 4144 mV
+-------------------------------
+Charge:  96% | Voltage: 4168 mV
+  Raw ADC:     2511
+  Calibrated:  2084 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4168 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  93% | Voltage: 4136 mV
+  Raw ADC:     2491
+  Calibrated:  2068 mV
+  Report:      ID: 0x11, Charge: 93%, Voltage: 4136 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2436
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2501
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  96% | Voltage: 4168 mV
+  Raw ADC:     2511
+  Calibrated:  2084 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4168 mV
+-------------------------------
+Charge:  94% | Voltage: 4142 mV
+  Raw ADC:     2495
+  Calibrated:  2071 mV
+  Report:      ID: 0x11, Charge: 94%, Voltage: 4142 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2501
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  82% | Voltage: 4024 mV
+  Raw ADC:     2422
+  Calibrated:  2012 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4024 mV
+-------------------------------
+Charge:  93% | Voltage: 4136 mV
+  Raw ADC:     2491
+  Calibrated:  2068 mV
+  Report:      ID: 0x11, Charge: 93%, Voltage: 4136 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  96% | Voltage: 4166 mV
+  Raw ADC:     2510
+  Calibrated:  2083 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4166 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  86% | Voltage: 4060 mV
+  Raw ADC:     2444
+  Calibrated:  2030 mV
+  Report:      ID: 0x11, Charge: 86%, Voltage: 4060 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2440
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4168 mV
+  Raw ADC:     2511
+  Calibrated:  2084 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4168 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  85% | Voltage: 4056 mV
+  Raw ADC:     2442
+  Calibrated:  2028 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4056 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2502
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  96% | Voltage: 4168 mV
+  Raw ADC:     2511
+  Calibrated:  2084 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4168 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2440
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  82% | Voltage: 4020 mV
+  Raw ADC:     2421
+  Calibrated:  2010 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4020 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2426
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  94% | Voltage: 4144 mV
+  Raw ADC:     2496
+  Calibrated:  2072 mV
+  Report:      ID: 0x11, Charge: 94%, Voltage: 4144 mV
+-------------------------------
+Charge:  96% | Voltage: 4168 mV
+  Raw ADC:     2511
+  Calibrated:  2084 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4168 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  85% | Voltage: 4056 mV
+  Raw ADC:     2443
+  Calibrated:  2028 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4056 mV
+-------------------------------
+Charge:  96% | Voltage: 4168 mV
+  Raw ADC:     2511
+  Calibrated:  2084 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4168 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2426
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2502
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  94% | Voltage: 4142 mV
+  Raw ADC:     2495
+  Calibrated:  2071 mV
+  Report:      ID: 0x11, Charge: 94%, Voltage: 4142 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4168 mV
+  Raw ADC:     2511
+  Calibrated:  2084 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4168 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2504
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2501
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  93% | Voltage: 4132 mV
+  Raw ADC:     2489
+  Calibrated:  2066 mV
+  Report:      ID: 0x11, Charge: 93%, Voltage: 4132 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2426
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4168 mV
+  Raw ADC:     2511
+  Calibrated:  2084 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4168 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  93% | Voltage: 4130 mV
+  Raw ADC:     2488
+  Calibrated:  2065 mV
+  Report:      ID: 0x11, Charge: 93%, Voltage: 4130 mV
+-------------------------------
+Charge:  97% | Voltage: 4174 mV
+  Raw ADC:     2515
+  Calibrated:  2087 mV
+  Report:      ID: 0x11, Charge: 97%, Voltage: 4174 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2426
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4168 mV
+  Raw ADC:     2511
+  Calibrated:  2084 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4168 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4166 mV
+  Raw ADC:     2510
+  Calibrated:  2083 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4166 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2502
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  94% | Voltage: 4144 mV
+  Raw ADC:     2496
+  Calibrated:  2072 mV
+  Report:      ID: 0x11, Charge: 94%, Voltage: 4144 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2502
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  92% | Voltage: 4126 mV
+  Raw ADC:     2485
+  Calibrated:  2063 mV
+  Report:      ID: 0x11, Charge: 92%, Voltage: 4126 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2502
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  98% | Voltage: 4182 mV
+  Raw ADC:     2520
+  Calibrated:  2091 mV
+  Report:      ID: 0x11, Charge: 98%, Voltage: 4182 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4166 mV
+  Raw ADC:     2510
+  Calibrated:  2083 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4166 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2504
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2440
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  85% | Voltage: 4056 mV
+  Raw ADC:     2442
+  Calibrated:  2028 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4056 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2504
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  94% | Voltage: 4142 mV
+  Raw ADC:     2495
+  Calibrated:  2071 mV
+  Report:      ID: 0x11, Charge: 94%, Voltage: 4142 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  93% | Voltage: 4136 mV
+  Raw ADC:     2492
+  Calibrated:  2068 mV
+  Report:      ID: 0x11, Charge: 93%, Voltage: 4136 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2426
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  96% | Voltage: 4168 mV
+  Raw ADC:     2511
+  Calibrated:  2084 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4168 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  98% | Voltage: 4182 mV
+  Raw ADC:     2520
+  Calibrated:  2091 mV
+  Report:      ID: 0x11, Charge: 98%, Voltage: 4182 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2425
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2426
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  86% | Voltage: 4060 mV
+  Raw ADC:     2445
+  Calibrated:  2030 mV
+  Report:      ID: 0x11, Charge: 86%, Voltage: 4060 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4168 mV
+  Raw ADC:     2511
+  Calibrated:  2084 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4168 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2426
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2426
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  94% | Voltage: 4140 mV
+  Raw ADC:     2494
+  Calibrated:  2070 mV
+  Report:      ID: 0x11, Charge: 94%, Voltage: 4140 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  94% | Voltage: 4142 mV
+  Raw ADC:     2495
+  Calibrated:  2071 mV
+  Report:      ID: 0x11, Charge: 94%, Voltage: 4142 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2425
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  94% | Voltage: 4142 mV
+  Raw ADC:     2495
+  Calibrated:  2071 mV
+  Report:      ID: 0x11, Charge: 94%, Voltage: 4142 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4168 mV
+  Raw ADC:     2511
+  Calibrated:  2084 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4168 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2504
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  85% | Voltage: 4056 mV
+  Raw ADC:     2442
+  Calibrated:  2028 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4056 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  87% | Voltage: 4074 mV
+  Raw ADC:     2452
+  Calibrated:  2037 mV
+  Report:      ID: 0x11, Charge: 87%, Voltage: 4074 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2504
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  97% | Voltage: 4174 mV
+  Raw ADC:     2516
+  Calibrated:  2087 mV
+  Report:      ID: 0x11, Charge: 97%, Voltage: 4174 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2426
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2501
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2440
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  82% | Voltage: 4024 mV
+  Raw ADC:     2423
+  Calibrated:  2012 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4024 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  90% | Voltage: 4104 mV
+  Raw ADC:     2471
+  Calibrated:  2052 mV
+  Report:      ID: 0x11, Charge: 90%, Voltage: 4104 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  94% | Voltage: 4142 mV
+  Raw ADC:     2495
+  Calibrated:  2071 mV
+  Report:      ID: 0x11, Charge: 94%, Voltage: 4142 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2504
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2425
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  80% | Voltage: 4008 mV
+  Raw ADC:     2413
+  Calibrated:  2004 mV
+  Report:      ID: 0x11, Charge: 80%, Voltage: 4008 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2501
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2504
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4166 mV
+  Raw ADC:     2510
+  Calibrated:  2083 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4166 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2440
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2440
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2425
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4168 mV
+  Raw ADC:     2511
+  Calibrated:  2084 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4168 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2424
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2440
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2504
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2424
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  93% | Voltage: 4138 mV
+  Raw ADC:     2493
+  Calibrated:  2069 mV
+  Report:      ID: 0x11, Charge: 93%, Voltage: 4138 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2440
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2425
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  97% | Voltage: 4170 mV
+  Raw ADC:     2513
+  Calibrated:  2085 mV
+  Report:      ID: 0x11, Charge: 97%, Voltage: 4170 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2440
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  95% | Voltage: 4152 mV
+  Raw ADC:     2501
+  Calibrated:  2076 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4152 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2425
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2440
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2425
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2504
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4166 mV
+  Raw ADC:     2510
+  Calibrated:  2083 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4166 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  94% | Voltage: 4142 mV
+  Raw ADC:     2495
+  Calibrated:  2071 mV
+  Report:      ID: 0x11, Charge: 94%, Voltage: 4142 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2425
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2508
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2426
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4032 mV
+  Raw ADC:     2428
+  Calibrated:  2016 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4032 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2441
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  82% | Voltage: 4024 mV
+  Raw ADC:     2423
+  Calibrated:  2012 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4024 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  94% | Voltage: 4144 mV
+  Raw ADC:     2496
+  Calibrated:  2072 mV
+  Report:      ID: 0x11, Charge: 94%, Voltage: 4144 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2438
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  90% | Voltage: 4104 mV
+  Raw ADC:     2471
+  Calibrated:  2052 mV
+  Report:      ID: 0x11, Charge: 90%, Voltage: 4104 mV
+-------------------------------
+Charge:  83% | Voltage: 4036 mV
+  Raw ADC:     2430
+  Calibrated:  2018 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4036 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2426
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  96% | Voltage: 4168 mV
+  Raw ADC:     2511
+  Calibrated:  2084 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4168 mV
+-------------------------------
+Charge:  82% | Voltage: 4024 mV
+  Raw ADC:     2422
+  Calibrated:  2012 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4024 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2439
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
+-------------------------------
+Charge:  82% | Voltage: 4024 mV
+  Raw ADC:     2423
+  Calibrated:  2012 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4024 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2425
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  95% | Voltage: 4158 mV
+  Raw ADC:     2506
+  Calibrated:  2079 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4158 mV
+-------------------------------
+Charge:  86% | Voltage: 4060 mV
+  Raw ADC:     2445
+  Calibrated:  2030 mV
+  Report:      ID: 0x11, Charge: 86%, Voltage: 4060 mV
+-------------------------------
+Charge:  96% | Voltage: 4164 mV
+  Raw ADC:     2509
+  Calibrated:  2082 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4164 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2503
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  83% | Voltage: 4034 mV
+  Raw ADC:     2429
+  Calibrated:  2017 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4034 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2426
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  83% | Voltage: 4030 mV
+  Raw ADC:     2427
+  Calibrated:  2015 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4030 mV
+-------------------------------
+Charge:  82% | Voltage: 4028 mV
+  Raw ADC:     2424
+  Calibrated:  2014 mV
+  Report:      ID: 0x11, Charge: 82%, Voltage: 4028 mV
+-------------------------------
+Charge:  85% | Voltage: 4052 mV
+  Raw ADC:     2440
+  Calibrated:  2026 mV
+  Report:      ID: 0x11, Charge: 85%, Voltage: 4052 mV
+-------------------------------
+Charge:  86% | Voltage: 4060 mV
+  Raw ADC:     2445
+  Calibrated:  2030 mV
+  Report:      ID: 0x11, Charge: 86%, Voltage: 4060 mV
+-------------------------------
+Charge:  86% | Voltage: 4068 mV
+  Raw ADC:     2449
+  Calibrated:  2034 mV
+  Report:      ID: 0x11, Charge: 86%, Voltage: 4068 mV
+-------------------------------
+Charge:  95% | Voltage: 4156 mV
+  Raw ADC:     2505
+  Calibrated:  2078 mV
+  Report:      ID: 0x11, Charge: 95%, Voltage: 4156 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4048 mV
+  Raw ADC:     2437
+  Calibrated:  2024 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4048 mV
+-------------------------------
+Charge:  96% | Voltage: 4160 mV
+  Raw ADC:     2507
+  Calibrated:  2080 mV
+  Report:      ID: 0x11, Charge: 96%, Voltage: 4160 mV
+-------------------------------
+Charge:  83% | Voltage: 4038 mV
+  Raw ADC:     2431
+  Calibrated:  2019 mV
+  Report:      ID: 0x11, Charge: 83%, Voltage: 4038 mV
+-------------------------------
+Charge:  84% | Voltage: 4040 mV
+  Raw ADC:     2432
+  Calibrated:  2020 mV
+  Report:      ID: 0x11, Charge: 84%, Voltage: 4040 mV
