@@ -487,10 +487,15 @@ void ADS1015::onConversion(ConversionCallback cb, void* arg) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 uint8_t ADS1015::nextMixedChannel() {
-    // Check if any slow channel is due for a sample
+    // Check if any slow channel is due for a sample. Each slow channel keeps
+    // its own next-due cycle count, advanced on injection — a plain
+    // (fastCycleCount_ % divider) test would keep matching while slow
+    // channels are injected (the count only advances on fast cycles) and
+    // lock the round-robin into slow channels forever.
     for (uint8_t i = 0; i < numSlowChannels_; i++) {
         uint8_t idx = (slowIndex_ + i) % numSlowChannels_;
-        if (fastCycleCount_ > 0 && (fastCycleCount_ % slowDividers_[idx]) == 0) {
+        if (fastCycleCount_ >= slowNextDue_[idx]) {
+            slowNextDue_[idx] += slowDividers_[idx];
             slowIndex_ = (idx + 1) % numSlowChannels_;
             return slowChannels_[idx];
         }
@@ -581,6 +586,7 @@ esp_err_t ADS1015::startMixedContinuous(const ChannelConfig* configs, uint8_t nu
         } else {
             slowChannels_[numSlowChannels_] = configs[i].channel;
             slowDividers_[numSlowChannels_] = configs[i].divider;
+            slowNextDue_[numSlowChannels_] = configs[i].divider;
             numSlowChannels_++;
         }
     }
@@ -684,6 +690,7 @@ esp_err_t ADS1015::startMixedContinuousExternal(const ChannelConfig* configs,
         } else {
             slowChannels_[numSlowChannels_] = configs[i].channel;
             slowDividers_[numSlowChannels_] = configs[i].divider;
+            slowNextDue_[numSlowChannels_] = configs[i].divider;
             numSlowChannels_++;
         }
     }

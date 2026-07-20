@@ -543,6 +543,7 @@ private:
 
     uint8_t slowChannels_[kMaxActiveChannels] = {};
     uint8_t slowDividers_[kMaxActiveChannels] = {};
+    uint32_t slowNextDue_[kMaxActiveChannels] = {};  ///< Fast-cycle count at which each slow channel fires next
     uint8_t numSlowChannels_ = 0;
 
     uint32_t fastCycleCount_ = 0;  ///< Counts fast round-robin cycles
