@@ -85,6 +85,26 @@ static constexpr gpio_num_t k5V_EN    = GPIO_NUM_14;  // 5V boost enable
 static constexpr gpio_num_t kCHG      = GPIO_NUM_5;   // Charge status (active LOW)
 static constexpr gpio_num_t kPGOOD    = GPIO_NUM_4;   // Power-good (active LOW)
 
+//UART communication electrode-user interface
+#define MEDICION_UART_PORT    UART_NUM_1
+#define MEDICION_UART_TX_PIN  GPIO_NUM_17
+#define MEDICION_UART_RX_PIN  GPIO_NUM_18
+#define MEDICION_UART_BAUD    115200
+#define MEDICION_UART_BUF     256
+
+// Byte que se manda al ESP de medicion.
+// DEBE coincidir con TRIGGER_BYTE en main_simplificado.cpp (0x01).
+// El ESP de medicion ignora cualquier otro valor.
+#define TRIGGER_BYTE    0x01
+
+// Byte que el ESP de medicion manda de vuelta cuando termina el
+// ciclo completo (cases 1-7). No lo esperamos de forma bloqueante:
+// el brazalete manda el trigger y sigue grabando sin detenerse,
+// el ESP de medicion trabaja de forma independiente.
+#define DONE_BYTE       0xAA
+
+static const char* TAG = "MAESTRO";
+
 /* ── Channel layout (identical on every ADC) ───────────────────────────────── */
 
 static constexpr uint8_t kEMG0     = 0;   // fast — raw EMG
@@ -146,6 +166,45 @@ static char macStr[13] = {};
 
 // Session directory path (set once at SD init)
 static std::string sessionDir;
+
+// ─────────────────────────────────────────────
+//  Inicializacion del UART hacia el ESP de medicion
+// ─────────────────────────────────────────────
+static void medicionUartInit(void)
+{
+    uart_config_t cfg = {};
+    cfg.baud_rate           = MEDICION_UART_BAUD;
+    cfg.data_bits           = UART_DATA_8_BITS;
+    cfg.parity              = UART_PARITY_DISABLE;
+    cfg.stop_bits           = UART_STOP_BITS_1;
+    cfg.flow_ctrl           = UART_HW_FLOWCTRL_DISABLE;
+    cfg.source_clk          = UART_SCLK_DEFAULT;
+    cfg.rx_flow_ctrl_thresh = 0;
+
+    ESP_ERROR_CHECK(uart_driver_install(MEDICION_UART_PORT, MEDICION_UART_BUF, 0, 0, NULL, 0));
+    ESP_ERROR_CHECK(uart_param_config(MEDICION_UART_PORT, &cfg));
+    ESP_ERROR_CHECK(uart_set_pin(MEDICION_UART_PORT,
+                                 MEDICION_UART_TX_PIN,
+                                 MEDICION_UART_RX_PIN,
+                                 UART_PIN_NO_CHANGE,
+                                 UART_PIN_NO_CHANGE));
+
+    ESP_LOGI(TAG, "UART1 listo (TX=GPIO%d, RX=GPIO%d, %d baud)",
+             MEDICION_UART_TX_PIN, MEDICION_UART_RX_PIN, MEDICION_UART_BAUD);
+}
+
+// ─────────────────────────────────────────────
+//  Manda el trigger al ESP de medicion (fire-and-forget:
+//  no esperamos DONE_BYTE de vuelta, el brazalete sigue
+//  grabando sin bloquearse mientras el ESP de medicion
+//  mide por su cuenta).
+// ─────────────────────────────────────────────
+static void mandarTrigger(void)
+{
+    uint8_t byte = TRIGGER_BYTE;
+    uart_write_bytes(MEDICION_UART_PORT, &byte, 1);
+    ESP_LOGI(TAG, "Trigger enviado (0x%02X)", byte);
+}
 
 static uint32_t recordingTimestampUs() {
     return (uint32_t)(esp_timer_get_time() - recStart.load(std::memory_order_relaxed));
@@ -608,6 +667,7 @@ static void processUartLine(const char* line, int len) {
         // Label: L<grasp_id>,<rep>
         int gid = 0, rep = 0;
         if (sscanf(line + 1, "%d,%d", &gid, &rep) >= 1) {
+            uint16_t prevGrasp = curGrasp;   // valor antes de sobreescribir
             curGrasp = (uint16_t)gid;
             curRep   = (uint16_t)rep;
             printf("#LABEL:%d,%d\n", gid, rep);
@@ -618,6 +678,19 @@ static void processUartLine(const char* line, int len) {
                 le.grasp_id = (uint16_t)gid;
                 le.repetition = (uint16_t)rep;
                 xQueueSend(labelQ, &le, 0);
+            }
+
+            // ─────────────────────────────────────────
+            //  Fin de agarre: veniamos de un grasp activo
+            //  (prevGrasp != 0) y la nueva etiqueta es reposo
+            //  (gid == 0) -> dispara el trigger hacia el ESP
+            //  de medicion. Fire-and-forget: no esperamos
+            //  DONE_BYTE, el brazalete sigue grabando sin
+            //  bloquearse mientras el ESP de medicion mide
+            //  por su cuenta.
+            // ─────────────────────────────────────────
+            if (prevGrasp != 0 && gid == 0) {
+                mandarTrigger();
             }
         }
     } else if (line[0] == 'G') {
@@ -729,6 +802,9 @@ extern "C" void app_main() {
     };
     uart_driver_install(UART_NUM_0, 1024, 0, 0, nullptr, 0);
     uart_param_config(UART_NUM_0, &uart_cfg);
+
+    // UART1: hacia el ESP de medicion
+    medicionUartInit();
 
     /* ---- Device MAC → hex string ----------------------------------------- */
     {
