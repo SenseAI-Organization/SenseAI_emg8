@@ -1,9 +1,10 @@
 /*******************************************************************************
  * main4ADC.cpp — EMG8 Bracelet Firmware  (v4 — multi-file SD + label protocol)
  *
- * 4× ADS1015 mixed-rate continuous sampling with ALERT/RDY interrupts:
- *   ch 0, 2 = fast  (raw EMG   ≈ 1150 Hz per channel in All mode)
- *   ch 1, 3 = slow  (envelope  ≈   57 Hz per channel in All mode)
+ * 4× ADS1015 mixed-rate continuous sampling with ALERT/RDY interrupts
+ * (rates below net of the MUX-bleed discard, ADS1015 datasheet Sec 9.3.3):
+ *   ch 0, 2 = fast  (raw EMG   ≈  786 Hz per channel in All mode)
+ *   ch 1, 3 = slow  (envelope  ≈   39 Hz per channel in All mode)
  *
  * ICM-42605 6-axis IMU at 200 Hz via SPI
  *
@@ -127,8 +128,13 @@ static constexpr uint8_t kEMG0     = 0;   // fast — raw EMG
 static constexpr uint8_t kEMG1     = 2;   // fast — raw EMG
 static constexpr uint8_t kENV0     = 1;   // slow — envelope
 static constexpr uint8_t kENV1     = 3;   // slow — envelope
-static constexpr uint8_t kSLOW_DIV = 20;  // ≈ 57 Hz envelope at 2400 SPS w/ 2 fast ch
-static constexpr auto    kADC_RATE = ADS1015::ConfigRate::Rate_2400Hz;
+// Effective rates account for the MUX-bleed discard (ADS1015 datasheet
+// Sec 9.3.3): every channel switch costs one discarded hardware conversion,
+// halving raw throughput vs. the nominal hardware SPS. At 3300 SPS, All mode
+// gives ~786 Hz/ch raw and ~39 Hz/ch envelope; Raw/Env-only modes (no
+// divider) give ~825 Hz/ch.
+static constexpr uint8_t kSLOW_DIV = 20;
+static constexpr auto    kADC_RATE = ADS1015::ConfigRate::Rate_3300Hz;
 
 static constexpr uint16_t kIMU_ODR_HZ = 200;      // IMU polling rate
 

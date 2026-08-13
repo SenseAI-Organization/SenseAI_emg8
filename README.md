@@ -60,14 +60,16 @@
 
 ## Channel Layout (per ADC)
 
+Channel indices are **interleaved**, not split into "first half raw, second half envelope":
+
 | Channel | Function | Rate (All mode) |
 |---------|----------|-----------------|
-| 0 | Raw EMG | ~1150 Hz |
-| 1 | Raw EMG | ~1150 Hz |
-| 2 | Envelope | ~57 Hz |
-| 3 | Envelope | ~57 Hz |
+| 0 | Raw EMG | ~786 Hz |
+| 1 | Envelope | ~39 Hz |
+| 2 | Raw EMG | ~786 Hz |
+| 3 | Envelope | ~39 Hz |
 
-With 4 ADCs this gives **8 raw EMG channels** and **8 envelope channels**.
+With 4 ADCs this gives **8 raw EMG channels** and **8 envelope channels**. Rates are net of the MUX-bleed discard (ADS1015 datasheet §9.3.3 — the first conversion after every channel switch is read but thrown away, since it still reflects the previous channel's input) at the configured 3300 SPS hardware rate.
 
 ## Firmware Architecture
 
@@ -97,9 +99,9 @@ Core 0                          Core 1
 
 | Command | Mode | Channels | Description |
 |---------|------|----------|-------------|
-| `1` | All | 0, 1, 2, 3 | Raw EMG (fast) + Envelope (slow, 1/20 divider) |
-| `2` | Raw | 0, 1 | Raw EMG only at full speed (~1200 Hz/ch) |
-| `3` | Env | 2, 3 | Envelope only at full speed (~1200 Hz/ch) |
+| `1` | All | 0, 1, 2, 3 | Raw EMG (fast, ch 0/2) + Envelope (slow, ch 1/3, 1/20 divider) |
+| `2` | Raw | 0, 2 | Raw EMG only at full speed (~825 Hz/ch) |
+| `3` | Env | 1, 3 | Envelope only at full speed (~825 Hz/ch) |
 | `0` | Stop | — | Stop recording |
 
 Modes can be switched at runtime via UART without rebooting. The reed switch toggles between pause and resume (defaults to All mode on first press).
