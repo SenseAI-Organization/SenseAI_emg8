@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 <!-- The format is based on [Keep a Changelog](https://keepachangelog.com/), -->
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/). -->
 
+## [0.10.0] - 2026-07-20
+### Added
+- **ADS1015**: `retriggerIfStalled(timeoutUs)` — watchdog that re-arms a single-shot round-robin whose trigger write or DRDY edge was lost. Re-triggering names the channel explicitly, so stall recovery cannot corrupt channel attribution.
+- **ADS1015**: `getI2cErrorCount()` / `getRetriggerCount()` for observability of bus health.
+
+### Changed
+- **ADS1015**: `startMixedContinuousExternal()` now drives the round-robin in **single-shot** mode instead of free-running continuous mode. Each conversion is explicitly requested for one named channel (`OS=1`, `MODE=single-shot`, MUX=ch), so the result provably belongs to that channel. Callers must now also call `retriggerIfStalled()` periodically (single-shot only advances when triggered, so a lost trigger would otherwise park the channel permanently).
+- **ADS1015**: `getEffectiveSampleRate()` models the single-shot path (conversion time + per-sample I2C overhead) instead of the continuous-mode divider math.
+
+### Fixed
+- **ADS1015**: **Channel attribution could desync at random in multi-channel continuous mode**, delivering one channel's conversion under another channel's label — observed on hardware as raw EMG and envelope values swapping columns intermittently, while per-channel counts stayed perfectly symmetric. In continuous mode the MUX change only takes effect after the in-progress conversion completes, so a config write lands before or after that internal boundary depending on I2C timing, yielding one stale conversion or none unpredictably; the previous fixed "discard one after each switch" rule therefore mislabeled whenever it guessed wrong, and each miss shifted the phase until another miss shifted it back. Single-shot triggering removes the race entirely (this is also TI's recommendation for frequent channel swapping).
+- **ADS1015**: I2C failures on the conversion read no longer return a silent `0` that is indistinguishable from a real reading — `readConversionValue()` propagates the error, and the service path drops and counts the sample instead of recording a fake zero.
+
 ## [0.9.0] - 2026-07-20
 ### Added
 - **I2C**: New `probe(deviceAddress)` method — address-only presence check via `i2c_master_probe`, no register traffic.

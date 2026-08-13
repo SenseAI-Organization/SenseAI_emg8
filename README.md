@@ -62,14 +62,18 @@
 
 Channel indices are **interleaved**, not split into "first half raw, second half envelope":
 
-| Channel | Function | Rate (All mode) |
-|---------|----------|-----------------|
-| 0 | Raw EMG | ~786 Hz |
-| 1 | Envelope | ~39 Hz |
-| 2 | Raw EMG | ~786 Hz |
-| 3 | Envelope | ~39 Hz |
+| Channel | Function | Rate (All mode, approx) |
+|---------|----------|-------------------------|
+| 0 | Raw EMG | ~1100 Hz |
+| 1 | Envelope | ~55 Hz |
+| 2 | Raw EMG | ~1100 Hz |
+| 3 | Envelope | ~55 Hz |
 
-With 4 ADCs this gives **8 raw EMG channels** and **8 envelope channels**. Rates are net of the MUX-bleed discard (ADS1015 datasheet §9.3.3 — the first conversion after every channel switch is read but thrown away, since it still reflects the previous channel's input) at the configured 3300 SPS hardware rate.
+With 4 ADCs this gives **8 raw EMG channels** and **8 envelope channels**.
+
+Sampling uses **single-shot triggered round-robin**, not free-running continuous mode. In continuous mode the ADS1015 only applies a new MUX setting *after* the conversion already in progress finishes, so a config write lands either before or after that internal boundary depending on I2C timing — producing one stale conversion or none, unpredictably. No fixed "discard N" rule survives that race, and every miss shifts channel attribution by one until another miss shifts it back (observed on hardware as raw and envelope values swapping columns at random). Single-shot removes the race: nothing converts until the firmware asks, so each result provably belongs to the channel named in its own trigger. TI recommends single-shot whenever channels are swapped frequently.
+
+Rates above are estimates — they are I2C-bound rather than purely conversion-bound. The authoritative figures are the per-channel counts the device reports in `#CNT` after each recording.
 
 ## Firmware Architecture
 
@@ -173,7 +177,7 @@ Command notes:
 | `#REC` | Recording started or resumed |
 | `#PAUSE` | Recording paused |
 | `#STOP` | Recording stopped |
-| `#CNT:<adc>,<c0>,<c1>,<c2>,<c3>` | Conversions delivered per channel of ADC `<adc>` during the recording that just stopped (4 lines, one per ADC). Fast channels of one ADC should match within ±1; use this to verify channel-rate symmetry. |
+| `#CNT:<adc>,<c0>,<c1>,<c2>,<c3>,<i2c_err>,<retrig>` | Per-channel conversion counts for ADC `<adc>` during the recording that just stopped (4 lines, one per ADC), plus that ADC's failed-I2C-transaction count and stall recoveries. Fast channels of one ADC should match within ±1, envelope channels likewise, at the configured divider ratio. `<i2c_err>` and `<retrig>` should both be 0 or near-0 on healthy hardware — sustained nonzero values mean bus trouble. |
 | `#LABEL:<id>,<rep>` | Label accepted |
 | `#5V:0` / `#5V:1` | 5V rail state |
 | `#WIFI:0` / `#WIFI:1` | WiFi radio + streaming state |

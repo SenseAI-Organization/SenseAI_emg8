@@ -297,11 +297,13 @@ static void printStatusLine() {
  *  within ±1 per ADC, envelope likewise). */
 static void printSampleCounts() {
     for (int a = 0; a < 4; a++) {
-        printf("#CNT:%d,%lu,%lu,%lu,%lu\n", a + 1,
+        printf("#CNT:%d,%lu,%lu,%lu,%lu,%lu,%lu\n", a + 1,
                (unsigned long)adc[a]->getSampleCount(0),
                (unsigned long)adc[a]->getSampleCount(1),
                (unsigned long)adc[a]->getSampleCount(2),
-               (unsigned long)adc[a]->getSampleCount(3));
+               (unsigned long)adc[a]->getSampleCount(3),
+               (unsigned long)adc[a]->getI2cErrorCount(),
+               (unsigned long)adc[a]->getRetriggerCount());
     }
 }
 
@@ -591,16 +593,26 @@ static void uartTask(void*) {
  * queue — no polling, no idle-sleep latency — and services exactly that ADC.
  * While one task blocks on an I2C transfer the other bus's task runs, and
  * when nothing converts both tasks sleep, leaving core 1 to SD/IMU/IDLE.
+ *
+ * The ADCs sample in single-shot mode, so the round-robin only advances when
+ * we trigger it: a lost trigger write or a missed DRDY edge would otherwise
+ * park that ADC forever. The queue wait therefore has a timeout, and on
+ * expiry both ADCs on the bus get a stall check (a no-op unless one really
+ * is overdue).
  */
 
 static QueueHandle_t drdyQ[2] = {nullptr, nullptr};
 
 static void adcBusTask(void* arg) {
-    QueueHandle_t q = (QueueHandle_t)arg;
+    const int bus = (int)(intptr_t)arg;
+    QueueHandle_t q = drdyQ[bus];
     uint8_t idx;
     while (true) {
-        if (xQueueReceive(q, &idx, portMAX_DELAY) == pdTRUE) {
+        if (xQueueReceive(q, &idx, pdMS_TO_TICKS(10)) == pdTRUE) {
             if (idx < 4) adc[idx]->serviceConversion();
+        } else if (recording) {
+            adc[bus * 2]->retriggerIfStalled();
+            adc[bus * 2 + 1]->retriggerIfStalled();
         }
     }
 }
@@ -1253,8 +1265,8 @@ extern "C" void app_main() {
     if (sdOK)
         xTaskCreatePinnedToCore(sdWriteTask, "sd",   8192, nullptr, 5, nullptr, 1);
     xTaskCreatePinnedToCore(uartTask,     "uart", 4096, nullptr, 3, nullptr, 0);
-    xTaskCreatePinnedToCore(adcBusTask,   "adc0", 4096, drdyQ[0], configMAX_PRIORITIES - 2, nullptr, 1);
-    xTaskCreatePinnedToCore(adcBusTask,   "adc1", 4096, drdyQ[1], configMAX_PRIORITIES - 2, nullptr, 1);
+    xTaskCreatePinnedToCore(adcBusTask,   "adc0", 4096, (void*)0, configMAX_PRIORITIES - 2, nullptr, 1);
+    xTaskCreatePinnedToCore(adcBusTask,   "adc1", 4096, (void*)1, configMAX_PRIORITIES - 2, nullptr, 1);
     if (imuOK)
         xTaskCreatePinnedToCore(imuTask,  "imu",  4096, nullptr, 4, nullptr, 1);
 

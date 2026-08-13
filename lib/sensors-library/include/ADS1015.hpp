@@ -375,11 +375,23 @@ public:
                                    ConfigRate rate = ConfigRate::Rate_3300Hz);
 
     /**
-     * @brief Start mixed-rate continuous sampling without creating an internal task.
+     * @brief Start mixed-rate round-robin sampling without creating an
+     * internal task (single-shot triggered — see below).
      *
-     * Sets up ISR, channel scheduling, and kicks off the first conversion,
-     * but does NOT create a FreeRTOS task. The caller must poll
-     * serviceConversion() from their own task.
+     * Sets up the ISR and channel scheduling, triggers the first conversion,
+     * but does NOT create a FreeRTOS task. The caller must call
+     * serviceConversion() from their own task on each DRDY event, and
+     * retriggerIfStalled() periodically as a watchdog.
+     *
+     * **Uses single-shot triggering, not free-running continuous mode.**
+     * In continuous mode the input MUX only changes *after* the conversion
+     * in progress finishes, so whether a config write produces one stale
+     * conversion or zero depends on where the write lands relative to the
+     * internal conversion boundary — a race that no fixed "discard N"
+     * rule can win, and each miss permanently shifts channel attribution
+     * by one until another miss shifts it back. Single-shot removes the
+     * race entirely: nothing converts until we ask, so the result is
+     * unambiguously the channel we just requested.
      *
      * @param configs  Array of ChannelConfig descriptors.
      * @param numConfigs Number of entries (1-4).
@@ -391,16 +403,37 @@ public:
                                            ConfigRate rate = ConfigRate::Rate_3300Hz);
 
     /**
-     * @brief Service one pending conversion (non-blocking).
+     * @brief Service one completed conversion (non-blocking).
      *
      * Checks the DRDY semaphore. If a conversion is ready, reads it,
-     * invokes the callback, and switches the MUX to the next channel.
-     * Designed to be called in a loop from an external task that handles
-     * multiple ADS1015 instances.
+     * attributes it to the channel that was explicitly requested for it,
+     * invokes the callback, and triggers the next channel's conversion.
+     * Designed to be called from an external task that handles multiple
+     * ADS1015 instances.
      *
      * @return true if a conversion was serviced, false if none pending.
      */
     bool serviceConversion();
+
+    /**
+     * @brief Watchdog: re-arm the round-robin if it has stalled.
+     *
+     * Single-shot sampling advances only when we trigger it, so a lost
+     * trigger write (I2C error) or a missed DRDY edge would otherwise stop
+     * the channel forever. Call this periodically (e.g. whenever the DRDY
+     * event queue has been idle for a few ms). Re-triggering names the
+     * channel explicitly, so recovery cannot corrupt attribution.
+     *
+     * @param timeoutUs Consider a triggered conversion lost after this long.
+     * @return true if a conversion was re-triggered.
+     */
+    bool retriggerIfStalled(uint32_t timeoutUs = 5000);
+
+    /** @brief Count of failed I2C transactions since the last start. */
+    uint32_t getI2cErrorCount() const;
+
+    /** @brief Count of stall recoveries (see retriggerIfStalled). */
+    uint32_t getRetriggerCount() const;
 
     /**
      * @brief Register an event queue notified from the DRDY ISR.
@@ -519,8 +552,29 @@ private:
 
     /**
      * @brief Read the 16-bit conversion register and return the signed 12-bit result.
+     * @note Returns 0 on I2C error, indistinguishable from a real 0 reading —
+     * prefer readConversionValue() on any path where correctness matters.
      */
     int16_t readConversionResult();
+
+    /**
+     * @brief Read the conversion register, propagating I2C errors.
+     * @param out Receives the signed 12-bit result on success.
+     */
+    esp_err_t readConversionValue(int16_t* out);
+
+    /**
+     * @brief Build a config word that starts one single-shot conversion
+     * (OS=1, MODE=single-shot) on the given mux, with ALERT/RDY enabled.
+     */
+    uint16_t buildSingleShotConfig(ConfigMux mux, ConfigRate rate, ConfigPGA gain);
+
+    /**
+     * @brief Trigger one single-shot conversion on `channel` and record it
+     * as the pending conversion. Returns false on I2C error (the caller is
+     * left stalled; retriggerIfStalled() recovers).
+     */
+    bool triggerConversion(uint8_t channel);
 
     /**
      * @brief Map channel index (0-3) to ConfigMux for single-ended input.
@@ -585,8 +639,21 @@ private:
     uint8_t nextMixedChannel();
 
     ChannelConfig channelConfigs_[kMaxActiveChannels] = {};
-    uint16_t channelConfigWords_[kMaxChannels] = {};  ///< Prebuilt config per channel (hot path)
+    uint16_t channelConfigWords_[kMaxChannels] = {};  ///< Prebuilt continuous config per channel
+    uint16_t singleShotWords_[kMaxChannels] = {};     ///< Prebuilt single-shot trigger per channel
     uint8_t numChannelConfigs_ = 0;
+
+    // ─── Single-shot round-robin state ───────────────────────────────────────
+    // Attribution is structural here: `pendingChannel_` is the channel we
+    // explicitly asked the chip to convert, so the result that follows can
+    // only belong to it. Nothing is inferred from timing.
+
+    bool singleShot_ = false;           ///< Round-robin runs in single-shot mode
+    uint8_t pendingChannel_ = 0;        ///< Channel of the outstanding conversion
+    bool conversionPending_ = false;    ///< A single-shot conversion is in flight
+    uint32_t lastTriggerUs_ = 0;        ///< When it was triggered (stall detection)
+    uint32_t i2cErrors_ = 0;            ///< Failed I2C transactions since start
+    uint32_t retriggers_ = 0;           ///< Stall recoveries since start
 
     uint8_t fastChannels_[kMaxActiveChannels] = {};
     uint8_t numFastChannels_ = 0;

@@ -283,15 +283,57 @@ esp_err_t ADS1015::writeRegister(Register reg, uint16_t value) {
 }
 
 int16_t ADS1015::readConversionResult() {
+    int16_t value = 0;
+    if (readConversionValue(&value) != ESP_OK) {
+        return 0;
+    }
+    return value;
+}
+
+esp_err_t ADS1015::readConversionValue(int16_t* out) {
     uint8_t buf[2] = {0, 0};
     esp_err_t err =
         i2c_.read(address_, static_cast<uint8_t>(Register::Conversion), buf, 2);
     if (err != ESP_OK) {
-        return 0;
+        return err;
     }
     // ADS1015: 12-bit result in the upper 12 bits of the 16-bit register
     int16_t raw = (int16_t)((buf[0] << 8) | buf[1]);
-    return raw >> 4;  // Sign-extending arithmetic shift
+    *out = raw >> 4;  // Sign-extending arithmetic shift
+    return ESP_OK;
+}
+
+uint16_t ADS1015::buildSingleShotConfig(ConfigMux mux, ConfigRate rate, ConfigPGA gain) {
+    uint16_t config = 0;
+    config |= static_cast<uint16_t>(ConfigOS::Single);  // writing 1 starts a conversion
+    config |= static_cast<uint16_t>(mux);
+    config |= static_cast<uint16_t>(gain);
+    config |= static_cast<uint16_t>(ConfigMode::Single);  // single-shot (powers down after)
+    config |= static_cast<uint16_t>(rate);
+    // Same comparator setup as continuous mode: with ThreshLo MSB=0 and
+    // ThreshHi MSB=1 the ALERT/RDY pin pulses on conversion-complete, which
+    // works in single-shot mode too.
+    config |= static_cast<uint16_t>(ConfigComparatorMode::Traditional);
+    config |= static_cast<uint16_t>(ConfigComparatorPolarity::ActiveLow);
+    config |= static_cast<uint16_t>(ConfigComparatorLatching::NonLatching);
+    config |= static_cast<uint16_t>(ConfigComparatorQueue::OneConversion);
+    return config;
+}
+
+bool ADS1015::triggerConversion(uint8_t channel) {
+    if (channel >= kMaxChannels) return false;
+    esp_err_t err = writeConfig(singleShotWords_[channel]);
+    if (err != ESP_OK) {
+        // Leave conversionPending_ false: nothing is in flight, and
+        // retriggerIfStalled() will re-arm rather than mislabel anything.
+        i2cErrors_++;
+        conversionPending_ = false;
+        return false;
+    }
+    pendingChannel_ = channel;
+    conversionPending_ = true;
+    lastTriggerUs_ = (uint32_t)esp_timer_get_time();
+    return true;
 }
 
 esp_err_t ADS1015::configureAlertPin(gpio_num_t alertPin, bool activeLow) {
@@ -460,6 +502,9 @@ esp_err_t ADS1015::startContinuous(const uint8_t* channels, uint8_t numChannels,
 
 esp_err_t ADS1015::stopContinuous() {
     continuousRunning_ = false;
+    singleShot_ = false;
+    conversionPending_ = false;
+    settling_ = false;
 
     // Remove the ISR handler
     if (alertPin_ != GPIO_NUM_NC) {
@@ -738,10 +783,10 @@ esp_err_t ADS1015::startMixedContinuousExternal(const ChannelConfig* configs,
     memset((void*)latestReading_, 0, sizeof(latestReading_));
     resetSampleCounts();
 
-    // Prebuild per-channel config words so the service path is a plain
-    // table lookup instead of a gain search + bit assembly per conversion
+    // Prebuild per-channel single-shot trigger words so the service path is
+    // a plain table lookup instead of a gain search + bit assembly.
     for (uint8_t i = 0; i < numConfigs; i++) {
-        channelConfigWords_[configs[i].channel] = buildContinuousConfig(
+        singleShotWords_[configs[i].channel] = buildSingleShotConfig(
             channelToMux(configs[i].channel), rate, configs[i].gain);
     }
 
@@ -757,6 +802,12 @@ esp_err_t ADS1015::startMixedContinuousExternal(const ChannelConfig* configs,
 
     continuousRunning_ = true;
     continuousTaskHandle_ = nullptr;  // No internal task
+    singleShot_ = true;
+    settling_ = false;                // not used on the single-shot path
+    conversionPending_ = false;
+    lastTriggerUs_ = 0;
+    i2cErrors_ = 0;
+    retriggers_ = 0;
 
     // First channel to convert
     uint8_t firstCh = fastChannels_[0];
@@ -769,14 +820,11 @@ esp_err_t ADS1015::startMixedContinuousExternal(const ChannelConfig* configs,
         fastCycleCount_++;
     }
 
-    // Kick off first conversion. Discard it too: the chip's previous state
-    // (idle/power-down, or a leftover channel from an earlier session)
-    // doesn't match this MUX either.
-    err = writeConfig(channelConfigWords_[firstCh]);
-    settling_ = (numConfigs > 1);
-    if (err != ESP_OK) {
+    // Trigger the first conversion. No discard needed: single-shot results
+    // belong to the channel named in the trigger, with no pipeline.
+    if (!triggerConversion(firstCh)) {
         stopContinuous();
-        return err;
+        return ESP_FAIL;
     }
 
     return ESP_OK;
@@ -788,20 +836,24 @@ bool ADS1015::serviceConversion() {
     if (xSemaphoreTake(drdySemaphore_, 0) != pdTRUE) return false;
     if (!continuousRunning_) return false;
 
-    if (settling_) {
-        // MUX-bleed discard (see settling_ doc comment): this conversion
-        // still reflects the channel before the last switch. Must still
-        // read the register to clear the DRDY condition, but don't
-        // attribute, count, or deliver it.
-        readConversionResult();
-        settling_ = false;
+    // No conversion in flight → this is a stale/spurious edge (e.g. one that
+    // arrived after a stall recovery already re-armed). Ignore it rather
+    // than attributing a result to a channel we never requested.
+    if (!conversionPending_) return false;
+
+    uint32_t tsUs = drdyTimestampUs_;
+    uint8_t ch = pendingChannel_;  // exact: we explicitly requested this conversion
+    conversionPending_ = false;
+
+    int16_t value = 0;
+    if (readConversionValue(&value) != ESP_OK) {
+        // Drop the sample rather than record a fake 0, then keep the
+        // round-robin moving so one bad read doesn't stall the channel.
+        i2cErrors_++;
+        triggerConversion(nextMixedChannel());
         return true;
     }
 
-    // Read the result of the conversion that just finished
-    uint32_t tsUs = drdyTimestampUs_;
-    uint8_t ch = activeChannels_[0];
-    int16_t value = readConversionResult();
     latestReading_[ch] = value;
     adcData.channels[ch] = (uint16_t)value;
     sampleCounts_[ch] = sampleCounts_[ch] + 1;
@@ -810,15 +862,45 @@ bool ADS1015::serviceConversion() {
         convCallback_(ch, value, tsUs, convCallbackArg_);
     }
 
-    // Decide next channel and switch MUX (config word prebuilt at start)
-    uint8_t nextCh = nextMixedChannel();
-    activeChannels_[0] = nextCh;
-    if (nextCh != ch) {
-        writeConfig(channelConfigWords_[nextCh]);
-        settling_ = true;
+    triggerConversion(nextMixedChannel());
+    return true;
+}
+
+bool ADS1015::retriggerIfStalled(uint32_t timeoutUs) {
+    if (!continuousRunning_ || !singleShot_) return false;
+
+    uint32_t now = (uint32_t)esp_timer_get_time();
+    if (conversionPending_ && (now - lastTriggerUs_) < timeoutUs) {
+        return false;  // still within the expected conversion window
+    }
+    if (!conversionPending_ && lastTriggerUs_ != 0 &&
+        (now - lastTriggerUs_) < timeoutUs) {
+        return false;  // a trigger failed very recently; give it a moment
     }
 
-    return true;
+    // Either the trigger write failed (nothing in flight) or the DRDY edge
+    // was lost. Re-arm the same channel if one was outstanding — its result
+    // is gone either way, and naming the channel explicitly keeps
+    // attribution exact.
+    uint8_t ch = conversionPending_ ? pendingChannel_ : nextMixedChannel();
+    conversionPending_ = false;
+
+    // Drop any stale edge so it can't be serviced against the new trigger.
+    if (drdySemaphore_) xSemaphoreTake(drdySemaphore_, 0);
+
+    if (triggerConversion(ch)) {
+        retriggers_++;
+        return true;
+    }
+    return false;
+}
+
+uint32_t ADS1015::getI2cErrorCount() const {
+    return i2cErrors_;
+}
+
+uint32_t ADS1015::getRetriggerCount() const {
+    return retriggers_;
 }
 
 float ADS1015::getEffectiveSampleRate(uint8_t channel) const {
@@ -874,11 +956,22 @@ float ADS1015::getEffectiveSampleRate(uint8_t channel) const {
         effectiveRate = effectiveRate / cfg->divider;
     }
 
-    // MUX-bleed discard (see settling_) halves usable throughput whenever
-    // the round-robin has more than one channel — every switch costs one
-    // discarded hardware conversion. With a single channel the MUX never
-    // moves, so nothing is discarded.
-    if (numFastChannels_ + numSlowChannels_ > 1) {
+    if (singleShot_) {
+        // Single-shot: no conversion is wasted (nothing free-runs), but each
+        // sample additionally costs its I2C trigger write + result read, so
+        // the real ceiling is bus-bound rather than purely conversion-bound.
+        // Treat ~80 µs of I2C per sample as overhead on top of the
+        // conversion time. This is an estimate — the authoritative number
+        // is the measured per-channel count reported after a recording.
+        float convUs = 1e6f / baseSps;
+        float perSampleUs = convUs + 80.0f;
+        float samplesPerSec = 1e6f / perSampleUs;
+        effectiveRate = samplesPerSec / slotsPerCycle;
+        if (cfg->divider > 1) {
+            effectiveRate = effectiveRate / cfg->divider;
+        }
+    } else if (numFastChannels_ + numSlowChannels_ > 1) {
+        // Free-running continuous with a MUX-bleed discard per switch.
         effectiveRate = effectiveRate / 2.0f;
     }
 
