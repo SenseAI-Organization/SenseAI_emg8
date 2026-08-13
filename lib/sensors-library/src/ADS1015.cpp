@@ -343,6 +343,13 @@ void ADS1015::continuousTask(void* pvParam) {
         if (xSemaphoreTake(self->drdySemaphore_, pdMS_TO_TICKS(50)) == pdTRUE) {
             if (!self->continuousRunning_) break;
 
+            if (self->settling_) {
+                // MUX-bleed discard — see settling_ doc comment.
+                self->readConversionResult();
+                self->settling_ = false;
+                continue;
+            }
+
             // Read the conversion result for the current channel
             uint32_t tsUs = self->drdyTimestampUs_;
             uint8_t ch = self->activeChannels_[self->currentMuxIndex_];
@@ -366,11 +373,14 @@ void ADS1015::continuousTask(void* pvParam) {
 
             // Switch MUX to the next channel (still in continuous mode,
             // so the ADC immediately starts a new conversion)
-            uint8_t nextCh = self->activeChannels_[self->currentMuxIndex_];
-            ConfigMux nextMux = channelToMux(nextCh);
-            uint16_t config = self->buildContinuousConfig(nextMux, self->continuousRate_,
-                                                          self->continuousPGA_);
-            self->writeConfig(config);
+            if (self->numActiveChannels_ > 1) {
+                uint8_t nextCh = self->activeChannels_[self->currentMuxIndex_];
+                ConfigMux nextMux = channelToMux(nextCh);
+                uint16_t config = self->buildContinuousConfig(
+                    nextMux, self->continuousRate_, self->continuousPGA_);
+                self->writeConfig(config);
+                self->settling_ = true;
+            }
         }
     }
 
@@ -441,6 +451,9 @@ esp_err_t ADS1015::startContinuous(const uint8_t* channels, uint8_t numChannels,
         stopContinuous();
         return err;
     }
+    // The chip's previous state (idle/power-down, or a different channel from
+    // an earlier session) doesn't match this MUX either — discard sample 1.
+    settling_ = (numChannels > 1);
 
     return ESP_OK;
 }
@@ -537,6 +550,13 @@ void ADS1015::mixedContinuousTask(void* pvParam) {
         if (xSemaphoreTake(self->drdySemaphore_, pdMS_TO_TICKS(50)) == pdTRUE) {
             if (!self->continuousRunning_) break;
 
+            if (self->settling_) {
+                // MUX-bleed discard — see settling_ doc comment.
+                self->readConversionResult();
+                self->settling_ = false;
+                continue;
+            }
+
             // Read the result of the conversion that just finished
             uint32_t tsUs = self->drdyTimestampUs_;
             uint8_t ch = self->activeChannels_[0];  // current channel being read
@@ -552,7 +572,10 @@ void ADS1015::mixedContinuousTask(void* pvParam) {
             // Decide next channel and switch MUX (config word prebuilt at start)
             uint8_t nextCh = self->nextMixedChannel();
             self->activeChannels_[0] = nextCh;  // track what's currently converting
-            self->writeConfig(self->channelConfigWords_[nextCh]);
+            if (nextCh != ch) {
+                self->writeConfig(self->channelConfigWords_[nextCh]);
+                self->settling_ = true;
+            }
         }
     }
 
@@ -651,8 +674,11 @@ esp_err_t ADS1015::startMixedContinuous(const ChannelConfig* configs, uint8_t nu
         return ESP_ERR_NO_MEM;
     }
 
-    // Kick off first conversion
+    // Kick off first conversion. Discard it too: the chip's previous state
+    // (idle/power-down, or a leftover channel from an earlier session)
+    // doesn't match this MUX either.
     err = writeConfig(channelConfigWords_[firstCh]);
+    settling_ = (numConfigs > 1);
     if (err != ESP_OK) {
         stopContinuous();
         return err;
@@ -743,8 +769,11 @@ esp_err_t ADS1015::startMixedContinuousExternal(const ChannelConfig* configs,
         fastCycleCount_++;
     }
 
-    // Kick off first conversion
+    // Kick off first conversion. Discard it too: the chip's previous state
+    // (idle/power-down, or a leftover channel from an earlier session)
+    // doesn't match this MUX either.
     err = writeConfig(channelConfigWords_[firstCh]);
+    settling_ = (numConfigs > 1);
     if (err != ESP_OK) {
         stopContinuous();
         return err;
@@ -758,6 +787,16 @@ bool ADS1015::serviceConversion() {
 
     if (xSemaphoreTake(drdySemaphore_, 0) != pdTRUE) return false;
     if (!continuousRunning_) return false;
+
+    if (settling_) {
+        // MUX-bleed discard (see settling_ doc comment): this conversion
+        // still reflects the channel before the last switch. Must still
+        // read the register to clear the DRDY condition, but don't
+        // attribute, count, or deliver it.
+        readConversionResult();
+        settling_ = false;
+        return true;
+    }
 
     // Read the result of the conversion that just finished
     uint32_t tsUs = drdyTimestampUs_;
@@ -774,7 +813,10 @@ bool ADS1015::serviceConversion() {
     // Decide next channel and switch MUX (config word prebuilt at start)
     uint8_t nextCh = nextMixedChannel();
     activeChannels_[0] = nextCh;
-    writeConfig(channelConfigWords_[nextCh]);
+    if (nextCh != ch) {
+        writeConfig(channelConfigWords_[nextCh]);
+        settling_ = true;
+    }
 
     return true;
 }
@@ -830,6 +872,14 @@ float ADS1015::getEffectiveSampleRate(uint8_t channel) const {
     if (cfg->divider > 1) {
         // Slow channel: sampled once per divider fast-cycles
         effectiveRate = effectiveRate / cfg->divider;
+    }
+
+    // MUX-bleed discard (see settling_) halves usable throughput whenever
+    // the round-robin has more than one channel — every switch costs one
+    // discarded hardware conversion. With a single channel the MUX never
+    // moves, so nothing is discarded.
+    if (numFastChannels_ + numSlowChannels_ > 1) {
+        effectiveRate = effectiveRate / 2.0f;
     }
 
     return effectiveRate;

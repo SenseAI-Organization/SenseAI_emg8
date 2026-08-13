@@ -30,16 +30,12 @@
 - **Single polling ADC task → per-bus event-driven tasks** (`c35c779`) — replaced the one task doing non-blocking polls across all 4 ADCs (1 ms worst-case added latency per poll, and it serialized both I2C buses through one task) with `adc0`/`adc1`, one per bus, each blocking on a DRDY event queue fed from the ALERT ISR. Buses now transact concurrently; idle tasks sleep instead of polling. This is also what resolved the IDLE1 starvation risk from the April review — the four max-priority polling tasks are gone.
 - **No way to verify per-channel rate symmetry** — `getSampleCount()`/`resetSampleCounts()` added to `ADS1015`; `main.cpp` prints `#CNT:<adc>,<c0>,<c1>,<c2>,<c3>` on every stop/pause. Verify this on hardware: after a ~30 s All-mode recording, fast-channel counts on one ADC should match within ±1, envelope channels likewise.
 - **WiFi/UDP streaming feasibility → implemented** (`1577192`) — SoftAP + UDP added as an optional, off-by-default feature (`net_stream.cpp/hpp`); see the README's "WiFi / UDP Streaming" section. SD remains the ground-truth record; the network path is non-blocking and fan-out from `onSample()`/`imuTask` so a WiFi stall cannot affect acquisition or SD logging.
+- **MUX bleed — samples attributed to the wrong channel** — confirmed on real hardware 2026-07-20: raw EMG columns intermittently read ~0 (the true value of the envelope channel converted immediately before them) while envelope columns intermittently read raw-magnitude values (~600), even though `#CNT` showed correct, symmetric per-channel counts (20:1 fast:slow ratio, matching across all 4 ADCs) — proving the *scheduling* was correct and the *bug was in which channel a given conversion actually reflects*. Per the ADS1015 datasheet (§9.3.3), the first conversion completed after a MUX switch still reflects the *previous* channel; because this round-robin's fast channels always alternate (`ch0, ch2, ch0, ch2, ...`) and slow channels are injected as one-off substitutions, **the MUX switches on effectively every service call**, so effectively every sample — not "a fraction" as originally scoped here — was one channel behind its label. Fixed: a `settling_` flag set right after every `writeConfig()` mux switch (including the very first conversion after `start*()`, since the chip's prior state doesn't match either); the next DRDY-triggered conversion is read (to clear the ALERT condition) but discarded — not attributed, not counted, not delivered to the callback. Applied to all three service paths (`serviceConversion()`, `mixedContinuousTask()`, `continuousTask()`) for consistency, though only `serviceConversion()` is on the bracelet's live path. `getEffectiveSampleRate()` updated to reflect the resulting ~2× throughput cost of any multi-channel round-robin (single-channel configs are unaffected — the MUX never moves, so nothing is discarded).
+  **Verify on hardware:** re-run the same recording and check `#CNT` — expect roughly *half* the previous per-channel counts (same duration, one discard per kept sample now) but the same 20:1 fast:slow ratio and cross-ADC symmetry as before; and check that D-line/UDP/SD raw columns now hover consistently near the true signal level instead of toggling between that and ~0.
 
 ---
 
 ## Open
-
-### MUX bleed — first sample after a channel switch is stale (data quality)
-
-Per the ADS1015 datasheet (§9.3.3), after a MUX change in continuous mode the **next conversion still reflects the previous channel** — the ADC needs one full conversion cycle to settle on the new input. The driver currently reads and delivers every conversion under the *new* channel's label, so a fraction of samples near each MUX transition carry stale data. This is a correctness issue independent of the scheduler-lockup fix above.
-
-**Fix:** after `writeConfig()` switches the MUX, mark the *next* DRDY result as "settling" and discard it (don't call the callback, don't count it in `sampleCounts_`) rather than delivering it. In mixed mode this costs one discarded conversion per channel switch — with 2 fast + 2 slow channels sharing the round-robin, that's a meaningful fraction of the fast-channel budget, so measure the resulting effective rate via `getEffectiveSampleRate()` / `#CNT` after implementing.
 
 ### No cross-ADC sync event
 
@@ -75,8 +71,7 @@ Not part of this firmware repository, but noted for whoever owns the datalogger:
 
 ## Suggested order for the open items
 
-1. MUX bleed discard — data-quality fix, cheap, directly affects dataset correctness.
-2. Cross-ADC sync (post-hoc resampling approach) — needed before trusting multi-ADC time alignment in any downstream ML pipeline.
-3. Semaphore timeout logging — cheap observability win.
-4. File transfer isolation — only matters once WiFi streaming and file transfer might overlap in a real workflow.
-5. SD sequence numbers — only if a concrete need for it shows up; otherwise skip.
+1. Cross-ADC sync (post-hoc resampling approach) — needed before trusting multi-ADC time alignment in any downstream ML pipeline.
+2. Semaphore timeout logging — cheap observability win.
+3. File transfer isolation — only matters once WiFi streaming and file transfer might overlap in a real workflow.
+4. SD sequence numbers — only if a concrete need for it shows up; otherwise skip.

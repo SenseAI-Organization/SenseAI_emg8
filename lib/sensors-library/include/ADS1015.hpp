@@ -546,6 +546,17 @@ private:
     uint8_t numActiveChannels_ = 0;                    ///< Number of active channels
     uint8_t currentMuxIndex_ = 0;                      ///< Index into activeChannels_
 
+    /**
+     * @brief True when the next DRDY-signaled conversion must be discarded.
+     *
+     * Per the ADS1015 datasheet (§9.3.3), the first conversion completed
+     * after a MUX switch in continuous mode still reflects the *previous*
+     * channel's input — the analog front end hasn't settled. Every service
+     * path sets this after writing a new MUX config and discards the very
+     * next result instead of attributing/counting/delivering it.
+     */
+    bool settling_ = false;
+
     ConfigRate continuousRate_ = ConfigRate::Rate_3300Hz;
     ConfigPGA continuousPGA_ = ConfigPGA::One;
 
