@@ -9,19 +9,22 @@
  *
  * Multi-file SD logging  ·  UART CSV @460800  ·  Reed switch + serial commands
  *
- * SD layout per session directory  s_<MAC>_<epoch>/
- *   M.bin — master  (32-byte header + 12-byte label events)
- *   R.bin — raw EMG  (8-byte Sample records, ch 0-1)
- *   E.bin — envelope (8-byte Sample records, ch 2-3)
- *   I.bin — IMU      (20-byte ImuSample records)
+ * SD layout per session directory  s_<MAC>_<epoch>/  (one set per recording,
+ * <nnn> increments on every recording start — pause/resume never truncates)
+ *   M<nnn>.bin — master  (32-byte header + 12-byte label events)
+ *   R<nnn>.bin — raw EMG  (8-byte Sample records, ch 0-1)
+ *   E<nnn>.bin — envelope (8-byte Sample records, ch 2-3)
+ *   I<nnn>.bin — IMU      (20-byte ImuSample records)
  *
  * UART baud 460800.  Protocol:
  *   PC→ESP: '0' stop · '1-3' mode · '?' status · 'L<id>,<rep>\n' label
  *           'V0'/'V1' 5V · 'F' list files · 'G<path>\n' transfer file
  *   ESP→PC: #READY · #MODE:N · #CD:N · #REC · #STOP · #LABEL:id,rep
- *           #STATUS:mode,rec,mV,% · H,… · D,ts,… · #5V:0/1
+ *           #STATUS:mode,rec,sd,imu,mV,%,rawDrops,envDrops,imuDrops
+ *           H,… · D,ts,… · #5V:0/1
  *
- * Sense-AI
+ * UNDERDEVELOPMENT BY DANIEL ESCOBAR. daniel@sense-ai.co
+ * Special thanks to Sense-AI! <3
  ******************************************************************************/
 #include <cstring>
 #include <string>
@@ -32,7 +35,9 @@
 #include "freertos/queue.h"
 #include "esp_timer.h"
 #include "esp_log.h"
+#include "esp_attr.h"     // IRAM_ATTR (button ISR)
 #include "driver/uart.h"
+#include "driver/gpio.h"  // gpio_config, gpio_install_isr_service, gpio_isr_handler_add (button ISR)
 #include "esp_mac.h"
 #include "ff.h"
 
@@ -69,6 +74,18 @@ static constexpr gpio_num_t kSD_MISO = GPIO_NUM_13;
 static constexpr gpio_num_t kLED  = GPIO_NUM_2;   // WS2812 RGB
 static constexpr gpio_num_t kREED = GPIO_NUM_9;    // Reed switch
 
+// Physical backup/OR button:
+// short press starts the test, held 3+ sec stops it in a controlled
+// way. Pull-up (active LOW), NormallyOpen.
+//
+// NOTE: shares GPIO8 with kBAT_ADC below -- the battery voltage
+// divider is not wired up on this board revision, so the pin was
+// reassigned to the button instead. Because of this, botonIsrInit()
+// is called AFTER battery->init() in app_main() (see botonIsrInit()
+// and the BotonEdge/botonEdgeQ interrupt setup near checkStartButton()).
+
+static constexpr gpio_num_t kBOTON_INICIO = GPIO_NUM_8;
+
 // IMU SPI (SPI3 / VSPI)
 static constexpr gpio_num_t kIMU_MOSI = GPIO_NUM_35;
 static constexpr gpio_num_t kIMU_SCK  = GPIO_NUM_36;
@@ -76,11 +93,33 @@ static constexpr gpio_num_t kIMU_MISO = GPIO_NUM_37;
 static constexpr gpio_num_t kIMU_CS   = GPIO_NUM_38;
 static constexpr gpio_num_t kIMU_INT  = GPIO_NUM_16;
 
-// Battery / Power (Carguita 5V)
-static constexpr gpio_num_t kBAT_ADC  = GPIO_NUM_8;   // %Bat voltage divider
+// Battery / Power (5V charging board) - Battery and charge information is
+// read on the other ESP32 (ESP32 #2), not used on this board.
+/*static constexpr gpio_num_t kBAT_ADC  = GPIO_NUM_8;   // %Bat voltage divider
 static constexpr gpio_num_t k5V_EN    = GPIO_NUM_14;  // 5V boost enable
 static constexpr gpio_num_t kCHG      = GPIO_NUM_5;   // Charge status (active LOW)
-static constexpr gpio_num_t kPGOOD    = GPIO_NUM_4;   // Power-good (active LOW)
+static constexpr gpio_num_t kPGOOD    = GPIO_NUM_4;   // Power-good (active LOW)*/
+
+//UART communication electrode-user interface
+#define MEDICION_UART_PORT    UART_NUM_1
+#define MEDICION_UART_TX_PIN  GPIO_NUM_17
+#define MEDICION_UART_RX_PIN  GPIO_NUM_18
+#define MEDICION_UART_BAUD    115200
+#define MEDICION_UART_BUF     256
+
+// Byte sent to the measurement ESP (impedance, temperature, pressure) to signal "test finished" to close the current
+//recording and stop the sweep.
+#define TRIGGER_BYTE    0x01
+
+// Byte THIS side (bracelet) sends to the measurement ESP when it
+// starts a recording, regardless of the origin (PC/python command,
+// or the physical button.
+// this way the measurement ESP also starts its impedance sweep even
+// if the test is started from python without touching any button.
+
+#define START_TEST_BYTE 0x03
+
+static const char* TAG = "MASTER";
 
 /* ── Channel layout (identical on every ADC) ───────────────────────────────── */
 
@@ -95,32 +134,8 @@ static constexpr uint16_t kIMU_ODR_HZ = 200;      // IMU polling rate
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
-struct __attribute__((packed)) Sample {
-    uint32_t ts;    // µs since recording start
-    uint8_t  adc;   // 0–3
-    uint8_t  ch;    // 0–3
-    int16_t  val;   // signed 12-bit
-};
-static_assert(sizeof(Sample) == 8, "Sample must be 8 bytes");
-
-/** @brief IMU sample for SD logging (20 bytes, raw int16 for compactness). */
-struct __attribute__((packed)) ImuSample {
-    uint32_t ts;       // µs since recording start
-    int16_t  ax, ay, az;
-    int16_t  gx, gy, gz;
-    int16_t  temp100;  // temperature × 100
-    uint16_t _pad;     // pad to 20 bytes
-};
-static_assert(sizeof(ImuSample) == 20, "ImuSample must be 20 bytes");
-
-/** @brief Label event written to master file when PC sends L command. */
-struct __attribute__((packed)) LabelEvent {
-    uint32_t ts;           // µs since recStart
-    uint16_t grasp_id;     // Ninapro movement number (0 = rest)
-    uint16_t repetition;   // current repetition
-    uint32_t _reserved;    // pad to 12 bytes
-};
-static_assert(sizeof(LabelEvent) == 12, "LabelEvent must be 12 bytes");
+#include "emg8_types.hpp"   // Sample / ImuSample / LabelEvent (shared with net_stream)
+#include "net_stream.hpp"
 
 enum class Mode : uint8_t { Idle = 0, All = 1, Raw = 2, Env = 3 };
 
@@ -135,9 +150,14 @@ static SPI*     spiIMU = nullptr;
 static SD*      sdCard = nullptr;
 static RGB*     led    = nullptr;
 static Switch*  reedSw = nullptr;
+// Physical backup/OR button: interrupt-driven (see botonIsrInit() /
+// botonEdgeQ below), not a Switch* like reedSw -- a polled read can miss
+// a fast tap if the whole press+release happens between two loop
+// iterations; the GPIO interrupt guarantees every edge is captured.
 static BatteryManager* battery = nullptr;
 static ICM42605*       imu     = nullptr;
 static bool            imuOK   = false;
+static bool            adcOK   = false;
 
 static volatile Mode mode      = Mode::Idle;
 static volatile bool recording = false;
@@ -157,6 +177,9 @@ static constexpr int kLABEL_QLEN = 32;
 // Label state (set by PC via 'L' command)
 static volatile uint16_t curGrasp = 0;         // current Ninapro grasp ID
 static volatile uint16_t curRep   = 0;         // current repetition
+static std::atomic<uint32_t> rawDrops{0};
+static std::atomic<uint32_t> envDrops{0};
+static std::atomic<uint32_t> imuDrops{0};
 
 // Device MAC as hex string  "AABBCCDDEEFF\0"
 static char macStr[13] = {};
@@ -164,9 +187,121 @@ static char macStr[13] = {};
 // Session directory path (set once at SD init)
 static std::string sessionDir;
 
+// ─────────────────────────────────────────────
+//  UART initialization toward the measurement ESP
+// ─────────────────────────────────────────────
+static void measurementUartInit(void)
+{
+    uart_config_t cfg = {};
+    cfg.baud_rate           = MEDICION_UART_BAUD;
+    cfg.data_bits           = UART_DATA_8_BITS;
+    cfg.parity              = UART_PARITY_DISABLE;
+    cfg.stop_bits           = UART_STOP_BITS_1;
+    cfg.flow_ctrl           = UART_HW_FLOWCTRL_DISABLE;
+    cfg.source_clk          = UART_SCLK_DEFAULT;
+    cfg.rx_flow_ctrl_thresh = 0;
+
+    ESP_ERROR_CHECK(uart_driver_install(MEDICION_UART_PORT, MEDICION_UART_BUF, 0, 0, NULL, 0));
+    ESP_ERROR_CHECK(uart_param_config(MEDICION_UART_PORT, &cfg));
+    ESP_ERROR_CHECK(uart_set_pin(MEDICION_UART_PORT,
+                                 MEDICION_UART_TX_PIN,
+                                 MEDICION_UART_RX_PIN,
+                                 UART_PIN_NO_CHANGE,
+                                 UART_PIN_NO_CHANGE));
+
+    ESP_LOGI(TAG, "UART1 ready (TX=GPIO%d, RX=GPIO%d, %d baud)",
+             MEDICION_UART_TX_PIN, MEDICION_UART_RX_PIN, MEDICION_UART_BAUD);
+}
+
+// ─────────────────────────────────────────────
+//  Sends the trigger to the measurement ESP (fire-and-forget: the
+//  bracelet keeps recording without blocking while the measurement
+//  ESP works on its own).
+// ─────────────────────────────────────────────
+static void sendTrigger(void)
+{
+    uint8_t byte = TRIGGER_BYTE;
+    uart_write_bytes(MEDICION_UART_PORT, &byte, 1);
+    ESP_LOGI(TAG, "Trigger sent (0x%02X)", byte);
+}
+
+// ─────────────────────────────────────────────
+//  Tells the measurement ESP that THIS side (the bracelet) started a
+//  recording, so it also starts its impedance sweep if it's still
+//  idle. Sent every time a recording starts, regardless of the origin
+//  (PC/python, reed switch, or the bracelet's physical button) -- if
+//  the measurement ESP already started on its own (it shouldn't,
+//  since its own button was removed), the byte is simply discarded
+//  later as garbage (it's not TRIGGER_BYTE). Fire-and-forget, same as
+//  sendTrigger().
+// ─────────────────────────────────────────────
+static void sendStartToSlave(void)
+{
+    uint8_t byte = START_TEST_BYTE;
+    uart_write_bytes(MEDICION_UART_PORT, &byte, 1);
+    ESP_LOGI(TAG, "Test start notified to measurement ESP (0x%02X)", byte);
+}
+
+static uint32_t recordingTimestampUs() {
+    return (uint32_t)(esp_timer_get_time() - recStart.load(std::memory_order_relaxed));
+}
+
+static void resetDropCounters() {
+    rawDrops.store(0, std::memory_order_relaxed);
+    envDrops.store(0, std::memory_order_relaxed);
+    imuDrops.store(0, std::memory_order_relaxed);
+}
+
+static void updateStatusLed() {
+    if (!led) return;
+
+    if (!adcOK || !sdOK) {
+        led->setColor(255, 0, 0);
+    } else if (recording) {
+        led->setColor(0, 255, 0);
+    } else {
+        led->setColor(0, 0, 255);
+    }
+    led->turnOn();
+}
+
+static void printStatusLine() {
+    uint16_t mv = 0;
+    uint8_t pct = 0;
+    if (battery) {
+        battery->measure();
+        mv = battery->getVoltage();
+        pct = battery->getPercentage();
+    }
+
+    printf("#STATUS:%d,%d,%d,%d,%u,%u,%lu,%lu,%lu\n",
+           (int)mode,
+           recording ? 1 : 0,
+           sdOK ? 1 : 0,
+           imuOK ? 1 : 0,
+           mv,
+           pct,
+           (unsigned long)rawDrops.load(std::memory_order_relaxed),
+           (unsigned long)envDrops.load(std::memory_order_relaxed),
+           (unsigned long)imuDrops.load(std::memory_order_relaxed));
+}
+
+/** Per-ADC/channel conversion counts for the recording that just ended —
+ *  lets the host verify channel-rate symmetry (fast channels should match
+ *  within ±1 per ADC, envelope likewise). */
+static void printSampleCounts() {
+    for (int a = 0; a < 4; a++) {
+        printf("#CNT:%d,%lu,%lu,%lu,%lu\n", a + 1,
+               (unsigned long)adc[a]->getSampleCount(0),
+               (unsigned long)adc[a]->getSampleCount(1),
+               (unsigned long)adc[a]->getSampleCount(2),
+               (unsigned long)adc[a]->getSampleCount(3));
+    }
+}
+
 /* ── ADC conversion callback (called from each ADC's FreeRTOS task) ──────── */
 
-static void onSample(uint8_t ch, int16_t val, void* arg) {
+static void onSample(uint8_t ch, int16_t val, uint32_t tsUs, void* arg) {
     uint8_t id = (uint8_t)(uintptr_t)arg;
     bool fast  = (ch == kEMG0 || ch == kEMG1);
 
@@ -175,15 +310,24 @@ static void onSample(uint8_t ch, int16_t val, void* arg) {
     if (mode == Mode::Env &&  fast) return;
 
     Sample s;
-    s.ts  = (uint32_t)(esp_timer_get_time() - recStart);
+    // tsUs was captured in the DRDY ISR — unsigned 32-bit subtraction gives
+    // the correct offset even across the µs-counter wrap (~71 min)
+    s.ts  = tsUs - (uint32_t)recStart.load(std::memory_order_relaxed);
     s.adc = id;
     s.ch  = ch;
     s.val = val;
 
-    if (fast)
-        xQueueSend(rawQ, &s, 0);
-    else
-        xQueueSend(envQ, &s, 0);
+    if (fast) {
+        if (xQueueSend(rawQ, &s, 0) != pdTRUE)
+            rawDrops.fetch_add(1, std::memory_order_relaxed);
+    } else {
+        if (xQueueSend(envQ, &s, 0) != pdTRUE)
+            envDrops.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    if (netStreamActive()) {
+        fast ? netEnqueueRaw(s) : netEnqueueEnv(s);
+    }
 }
 
 /* ── SD writer task — multi-file via raw FatFs, pinned to core 1, prio 5 ── */
@@ -200,17 +344,34 @@ static void onSample(uint8_t ch, int16_t val, void* arg) {
 
 static FIL filMaster, filRaw, filEnv, filImu;
 static bool filesOpen = false;
+static uint16_t recIndex = 0;   // per-recording file set index within the session
 
-static void sdOpenFiles(const std::string& base) {
-    std::string mPath = base + "/M.bin";
-    std::string rPath = base + "/R.bin";
-    std::string ePath = base + "/E.bin";
-    std::string iPath = base + "/I.bin";
+static bool sdOpenFiles(const std::string& base) {
+    // One file set per recording start (R000.bin, R001.bin, ...) so a
+    // pause/resume or stop/start never truncates earlier data.
+    char suffix[16];
+    snprintf(suffix, sizeof(suffix), "%03u.bin", (unsigned)recIndex);
+    std::string mPath = base + "/M" + suffix;
+    std::string rPath = base + "/R" + suffix;
+    std::string ePath = base + "/E" + suffix;
+    std::string iPath = base + "/I" + suffix;
 
-    f_open(&filMaster, mPath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
-    f_open(&filRaw,    rPath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
-    f_open(&filEnv,    ePath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
-    f_open(&filImu,    iPath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
+    FRESULT fr[4];
+    fr[0] = f_open(&filMaster, mPath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
+    fr[1] = f_open(&filRaw,    rPath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
+    fr[2] = f_open(&filEnv,    ePath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
+    fr[3] = f_open(&filImu,    iPath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
+    if (fr[0] != FR_OK || fr[1] != FR_OK || fr[2] != FR_OK || fr[3] != FR_OK) {
+        printf("#ERR:SD_OPEN:%d,%d,%d,%d\n", fr[0], fr[1], fr[2], fr[3]);
+        if (fr[0] == FR_OK) f_close(&filMaster);
+        if (fr[1] == FR_OK) f_close(&filRaw);
+        if (fr[2] == FR_OK) f_close(&filEnv);
+        if (fr[3] == FR_OK) f_close(&filImu);
+        sdOK = false;
+        updateStatusLed();
+        return false;
+    }
+    recIndex++;
 
     // Write master header (32 bytes, v4)
     // [0-3] "EMG8"  [4] ver=4  [5] nADC  [6] nCh  [7] div
@@ -244,6 +405,7 @@ static void sdOpenFiles(const std::string& base) {
     f_sync(&filMaster);
 
     filesOpen = true;
+    return true;
 }
 
 static void sdCloseFiles() {
@@ -270,16 +432,18 @@ static void sdWriteTask(void*) {
     uint32_t syncTick = 0;
 
     while (true) {
-        /* ---- idle when not recording ---- */
-        if (!recording) {
-            if (filesOpen) sdCloseFiles();
+        /* ---- idle when not recording and nothing left to flush ---- */
+        if (!recording && !filesOpen) {
             vTaskDelay(pdMS_TO_TICKS(100));
             continue;
         }
 
         /* ---- open files on first iteration of a new recording ---- */
         if (!filesOpen) {
-            sdOpenFiles(sessionDir);
+            if (!sdOK || !sdOpenFiles(sessionDir)) {
+                vTaskDelay(pdMS_TO_TICKS(500));
+                continue;
+            }
         }
 
         /* ---- drain raw EMG queue → R.bin ---- */
@@ -305,6 +469,12 @@ static void sdWriteTask(void*) {
         while (nL < LBL_BATCH && xQueueReceive(labelQ, &lblBuf[nL], 0) == pdTRUE) nL++;
         if (nL > 0)
             f_write(&filMaster, lblBuf, nL * sizeof(LabelEvent), &bw);
+
+        /* ---- recording stopped: keep draining until empty, then close ---- */
+        if (!recording) {
+            if (nR == 0 && nE == 0 && nI == 0 && nL == 0) sdCloseFiles();
+            continue;
+        }
 
         /* ---- periodic sync (every ~500 ms) ---- */
         if (nR || nE || nI || nL) {
@@ -377,7 +547,7 @@ static void uartTask(void*) {
         int  p = 0;
 
         // Timestamp (µs since recStart)
-        uint32_t ts = (uint32_t)(esp_timer_get_time() - recStart);
+        uint32_t ts = recordingTimestampUs();
         p += snprintf(line + p, sizeof(line) - p, "D,%u", (unsigned)ts);
 
         for (int a = 0; a < 4; a++)
@@ -407,30 +577,24 @@ static void uartTask(void*) {
     }
 }
 
-/* ── Single ADC polling task — handles all 4 ADCs from one task ────────────── */
+/* ── Per-bus ADC service tasks — event-driven via DRDY queues ──────────────── */
 /*
- * Replaces the 4 internal per-ADC tasks. Each ADC's ISR sets a binary semaphore
- * on DRDY; this task polls all four with non-blocking takes. When no conversion
- * is ready, it yields for 1 tick (1 ms at 1000 Hz tick rate) to avoid starving
- * IDLE1. Worst-case added latency: 1 ms, negligible at 2400 SPS.
+ * One task per I2C bus (ADC1/2 on bus 0, ADC3/4 on bus 1) so transactions on
+ * the two buses overlap instead of being serialized through one task. Each
+ * ALERT ISR posts its ADC index to the bus queue; the task blocks on the
+ * queue — no polling, no idle-sleep latency — and services exactly that ADC.
+ * While one task blocks on an I2C transfer the other bus's task runs, and
+ * when nothing converts both tasks sleep, leaving core 1 to SD/IMU/IDLE.
  */
 
-static void adcTask(void*) {
+static QueueHandle_t drdyQ[2] = {nullptr, nullptr};
+
+static void adcBusTask(void* arg) {
+    QueueHandle_t q = (QueueHandle_t)arg;
+    uint8_t idx;
     while (true) {
-        if (!recording) {
-            vTaskDelay(pdMS_TO_TICKS(100));
-            continue;
-        }
-
-        bool anyServiced = false;
-        for (int i = 0; i < 4; i++) {
-            if (adc[i]->serviceConversion()) {
-                anyServiced = true;
-            }
-        }
-
-        if (!anyServiced) {
-            vTaskDelay(1);  // yield 1 tick when no ADC has data
+        if (xQueueReceive(q, &idx, portMAX_DELAY) == pdTRUE) {
+            if (idx < 4) adc[idx]->serviceConversion();
         }
     }
 }
@@ -455,7 +619,7 @@ static void imuTask(void*) {
             float temp = imu->getTemperature();
 
             ImuSample s;
-            s.ts = (uint32_t)(esp_timer_get_time() - recStart);
+            s.ts = recordingTimestampUs();
             // Store as raw int16 scaled: accel in milli-g, gyro in deci-dps
             s.ax = (int16_t)(ac[0] * 1000.0f);
             s.ay = (int16_t)(ac[1] * 1000.0f);
@@ -464,7 +628,9 @@ static void imuTask(void*) {
             s.gy = (int16_t)(gy[1] * 10.0f);
             s.gz = (int16_t)(gy[2] * 10.0f);
             s.temp100 = (int16_t)(temp * 100.0f);
-            xQueueSend(imuQ, &s, 0);
+            if (xQueueSend(imuQ, &s, 0) != pdTRUE)
+                imuDrops.fetch_add(1, std::memory_order_relaxed);
+            if (netStreamActive()) netEnqueueImu(s);
         }
 
         vTaskDelayUntil(&wake, period);
@@ -524,6 +690,192 @@ static void stopADCs() {
         adc[i]->stopContinuous();
 }
 
+// ─────────────────────────────────────────────
+//  Starts a recording (countdown + ADCs). Used from every place that
+//  can start a test once the background tasks already exist: reed
+//  switch, serial command 1-3, and the physical backup/OR button. The
+//  caller must set `mode` before calling it. Returns false if the
+//  countdown was aborted ('0' arrived during the wait).
+// ─────────────────────────────────────────────
+static bool startRecording() {
+    printf("#MODE:%d\n", (int)mode);
+    if (!countdown(3)) {
+        updateStatusLed();
+        printf("#STOP\n");
+        return false;
+    }
+    // battery->enable5V();  // battery/5V management not used on this board (read on ESP32 #2 instead)
+    recStart.store(esp_timer_get_time(), std::memory_order_relaxed);
+    resetDropCounters();
+    recording = true;
+    sendStartToSlave();  // notify the measurement ESP (in case the start came from python/reed and not its own button)
+    startADCs();
+    updateStatusLed();
+    printf("#REC\n");
+    return true;
+}
+
+// ─────────────────────────────────────────────
+//  Stops acquisition (ADCs + 5V) and updates the LED, without
+//  notifying anything else. Used internally when only the mode
+//  changes mid-recording (the file stays open for the next set).
+// ─────────────────────────────────────────────
+static void stopRecordingCore() {
+    recording = false;
+    stopADCs();
+    printSampleCounts();
+    // battery->disable5V();  // battery/5V management not used on this board (read on ESP32 #2 instead)
+    updateStatusLed();
+}
+
+// ─────────────────────────────────────────────
+//  Controlled end of test: stops the recording and notifies the
+//  measurement ESP (sendTrigger) so it also closes its file. Used
+//  both for the PC's '0' command and for the physical backup/OR
+//  button (held 3s): if the PC/python crashes mid-test, the button
+//  lets you close everything in a controlled way instead of
+//  recording forever.
+// ─────────────────────────────────────────────
+static void stopTest() {
+    stopRecordingCore();
+    sendTrigger();
+    printf("#STOP\n");
+}
+
+// ─────────────────────────────────────────────
+//  Physical backup/OR button (used to live on the measurement ESP,
+//  moved to this bracelet). Interrupt-driven: a polled read can miss a
+//  fast tap if the whole press+release cycle completes between two loop
+//  iterations (confirmed happening via the earlier #BOTON_RAW/#STOPCAUSE
+//  diagnostics -- fast taps were sometimes never seen at all, and the
+//  50ms-blocking main loop occasionally caught a stale press right after
+//  the 3s countdown, cancelling the just-started recording). A GPIO
+//  interrupt on both edges guarantees every press/release is captured
+//  with an accurate timestamp, regardless of what the main loop is doing
+//  at that instant.
+//    - Short press (released before kBotonHoldMs): starts the test if
+//      not already recording -- useful for testing without the
+//      python script or with grasps not yet defined.
+//    - Held kBotonHoldMs (3s) or more while recording: stops the test
+//      in a controlled way (stopTest, same effect as the PC's '0'
+//      command) -- meant for when the PC/python crashes mid-test and
+//      recording must not continue unchecked.
+// ─────────────────────────────────────────────
+static constexpr uint32_t kBotonHoldMs = 3000;
+static int64_t botonPresionadoDesdeUs = 0;
+static bool    botonHoldDisparado     = false;
+// Guard against the following bug: startRecording() calls countdown(3),
+// which BLOCKS this whole loop for ~3 real seconds. If the user is still
+// physically holding the button down when countdown() returns (very easy
+// to do -- a "press and hold until it starts" is a natural gesture), the
+// very next check would see presionado==true with botonPresionadoDesdeUs
+// ==0 and treat it as a brand-new press, arming a fresh 3s hold-timer. If
+// held a bit longer, that timer reaches kBotonHoldMs and immediately
+// calls stopTest(), cancelling the recording that had just started. Fix:
+// once a short press starts a recording, ignore the button entirely
+// until it is physically released at least once, before re-arming the
+// hold-timer.
+static bool botonEsperandoSoltar = false;
+
+// nivel: 0 = presionado (LOW, NormallyOpen w/ pull-up), 1 = suelto (HIGH)
+struct BotonEdge { uint8_t nivel; int64_t tsUs; };
+static QueueHandle_t botonEdgeQ = nullptr;
+
+static void IRAM_ATTR botonIsr(void*) {
+    BotonEdge e;
+    e.nivel = gpio_get_level(kBOTON_INICIO);
+    e.tsUs  = esp_timer_get_time();
+    BaseType_t hpw = pdFALSE;
+    xQueueSendFromISR(botonEdgeQ, &e, &hpw);
+    if (hpw) portYIELD_FROM_ISR();
+}
+
+// Configures GPIO8 for interrupt-on-any-edge and registers botonIsr().
+// Called once from app_main(), replacing the earlier Switch-based
+// polling for this specific button (reedSw keeps using Switch/
+// isPressed() -- its gesture is a slow toggle, not at risk of a missed
+// fast edge the way the start/stop button was).
+static void botonIsrInit() {
+    botonEdgeQ = xQueueCreate(16, sizeof(BotonEdge));
+
+    gpio_config_t cfg = {};
+    cfg.pin_bit_mask   = (1ULL << kBOTON_INICIO);
+    cfg.mode           = GPIO_MODE_INPUT;
+    cfg.pull_up_en     = GPIO_PULLUP_ENABLE;
+    cfg.pull_down_en   = GPIO_PULLDOWN_DISABLE;
+    cfg.intr_type      = GPIO_INTR_ANYEDGE;
+    ESP_ERROR_CHECK(gpio_config(&cfg));
+
+    // The ADS1015 driver(s) already install the shared ISR service (see
+    // the "gpio_install_isr_service already installed" lines in the
+    // debug log) -- calling it again here is safe: ESP_ERR_INVALID_STATE
+    // just means it's already up, anything else is a real error.
+    esp_err_t err = gpio_install_isr_service(0);
+    if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {
+        ESP_ERROR_CHECK(err);
+    }
+    ESP_ERROR_CHECK(gpio_isr_handler_add(kBOTON_INICIO, botonIsr, nullptr));
+}
+
+// Core gesture state machine, parameterized by (presionado, ahora)
+// instead of reading the pin itself -- checkStartButton() below replays
+// every edge the ISR captured (with its real timestamp) through this,
+// plus one extra call with the live level/time to keep the hold-timer
+// progressing between edges.
+static void procesarEstadoBoton(bool presionado, int64_t ahora) {
+    if (!presionado) {
+        if (botonEsperandoSoltar) {
+            // Diagnostic: marks the moment a real release is seen after
+            // the short press that started the recording. Printed in
+            // the same "us since recStart" units as the D, lines.
+            printf("#BOTON_SOLTADO_REAL:%lu\n", (unsigned long)recordingTimestampUs());
+        }
+        botonEsperandoSoltar = false;
+    } else if (botonEsperandoSoltar) {
+        // Still holding from the press that just started a recording --
+        // wait for a real release before tracking this as a new gesture.
+        return;
+    }
+
+    if (presionado) {
+        if (botonPresionadoDesdeUs == 0) {
+            botonPresionadoDesdeUs = ahora;
+            botonHoldDisparado = false;
+        } else if (!botonHoldDisparado &&
+                   (ahora - botonPresionadoDesdeUs) >= (int64_t)kBotonHoldMs * 1000) {
+            botonHoldDisparado = true;
+            if (recording) {
+                printf("#STOPCAUSE:BOTON_HOLD\n");  // diagnostic: this stop came from the 3s button hold
+                stopTest();
+            }
+        }
+    } else {
+        if (botonPresionadoDesdeUs != 0 && !botonHoldDisparado && !recording) {
+            // Released before completing the hold -> short press
+            mode = Mode::All;
+            startRecording();
+            botonEsperandoSoltar = true;  // ignore until physically released once
+        }
+        botonPresionadoDesdeUs = 0;
+        botonHoldDisparado = false;
+    }
+}
+
+static void checkStartButton() {
+    // Replay every edge the ISR captured since the last call, in order,
+    // with its real timestamp -- this is what guarantees a fast tap that
+    // completed entirely between two loop iterations is never lost.
+    BotonEdge e;
+    while (xQueueReceive(botonEdgeQ, &e, 0) == pdTRUE) {
+        printf("#BOTON_RAW:%d,%lld\n", e.nivel == 0 ? 1 : 0, (long long)e.tsUs);
+        procesarEstadoBoton(e.nivel == 0, e.tsUs);
+    }
+    // Also evaluate the current live level/time, so a sustained hold
+    // keeps progressing toward the 3s stop-gesture even when there's no
+    // new edge to dequeue.
+    procesarEstadoBoton(gpio_get_level(kBOTON_INICIO) == 0, esp_timer_get_time());
+}
+
 /* ── UART line buffer for multi-byte commands ──────────────────────────────── */
 
 static char uartLineBuf[128];
@@ -543,15 +895,20 @@ static void processUartLine(const char* line, int len) {
             // Enqueue label event for SD master file
             if (recording && labelQ) {
                 LabelEvent le = {};
-                le.ts = (uint32_t)(esp_timer_get_time() - recStart);
+                le.ts = recordingTimestampUs();
                 le.grasp_id = (uint16_t)gid;
                 le.repetition = (uint16_t)rep;
                 xQueueSend(labelQ, &le, 0);
             }
+            // Note: the trigger to the measurement ESP is NO LONGER
+            // sent here on a label transition (grasp->rest). It's now
+            // at the whole-test level: sent once when the '0' command
+            // (end of test) arrives -- see below.
         }
     } else if (line[0] == 'G') {
         // File transfer: G<relative_path>
         if (!sdOK) { printf("#ERR:NO_SD\n"); return; }
+        if (recording) { printf("#ERR:BUSY\n"); return; }
         std::string fpath(line + 1, len - 1);
         // Trim trailing whitespace
         while (!fpath.empty() && (fpath.back() == '\r' || fpath.back() == ' '))
@@ -657,6 +1014,17 @@ extern "C" void app_main() {
     };
     uart_driver_install(UART_NUM_0, 1024, 0, 0, nullptr, 0);
     uart_param_config(UART_NUM_0, &uart_cfg);
+    // Pull-up on RX: this line is never explicitly pinned (uses the
+    // default UART0 pins), so when the PC/python is NOT connected (the
+    // whole point of the physical backup/OR button) it's left floating.
+    // A floating RX can pick up noise that occasionally decodes as a
+    // valid byte -- including '0', which would silently call stopTest()
+    // right after the button started a recording. The pull-up keeps the
+    // line idle-HIGH (UART idle level) with nothing attached.
+    gpio_set_pull_mode(GPIO_NUM_44, GPIO_PULLUP_ONLY);  // default ESP32-S3 U0RXD -- adjust if your board uses a different pin
+
+    // UART1: toward the measurement ESP
+    measurementUartInit();
 
     /* ---- Device MAC → hex string ----------------------------------------- */
     {
@@ -682,17 +1050,20 @@ extern "C" void app_main() {
     adc[2] = new ADS1015(i2c1, ADS1015::ADS111X_ADDR_GND);
     adc[3] = new ADS1015(i2c1, ADS1015::ADS111X_ADDR_VCC);
 
-    bool adcOK = true;
+    adcOK = true;
     for (int i = 0; i < 4; i++)
-        if (!adc[i]->checkForDevice()) {
+        if (adc[i]->checkForDevice() != ESP_OK) {
             printf("ADC%d not found\n", i + 1);
             adcOK = false;
         }
 
-    // Configure ALERT/RDY pins + register callbacks
+    // Configure ALERT/RDY pins + register callbacks + per-bus DRDY queues
+    drdyQ[0] = xQueueCreate(64, sizeof(uint8_t));
+    drdyQ[1] = xQueueCreate(64, sizeof(uint8_t));
     for (int i = 0; i < 4; i++) {
         adc[i]->configureAlertPin(kRDY[i]);
         adc[i]->onConversion(onSample, (void*)(uintptr_t)i);
+        adc[i]->setEventQueue(drdyQ[i / 2], (uint8_t)i);
     }
 
     /* ---- SD card --------------------------------------------------------- */
@@ -757,12 +1128,23 @@ extern "C" void app_main() {
     reedSw = new Switch(kREED, Switch::SwitchMode::kNormallyOpen);
     reedSw->init();
 
-    /* ---- Battery manager (Carguita 5V) ----------------------------------- */
-    battery = new BatteryManager(kBAT_ADC, kCHG, kPGOOD, k5V_EN);
+    /* ---- Battery manager (5V charging board) ------------------------------ */
+    // NOTE: battery/5V management is not used on this board -- it's read on
+    // the other ESP32 (ESP32 #2) instead. `battery` stays nullptr; every
+    // call site below is either commented out or already null-checked
+    // (printStatusLine, sdOpenFiles, the 'V' UART command).
+    /*battery = new BatteryManager(kBAT_ADC, kCHG, kPGOOD, k5V_EN);
     if (battery->init() != ESP_OK)
         printf("Battery manager init failed\n");
     else
-        battery->measure();   // initial reading
+        battery->measure();   // initial reading*/
+
+    /* ---- Physical backup/OR button (moved from the measurement ESP) ------ */
+    // Interrupt-driven (see botonIsrInit()/botonEdgeQ) instead of a
+    // Switch/isPressed() poll -- a poll could miss a fast tap entirely.
+    // Initialized AFTER the battery manager on purpose: see the note next
+    // to kBOTON_INICIO's definition (shared GPIO8, digital config must win).
+    botonIsrInit();
 
     /* ---- Sample queues --------------------------------------------------- */
     rawQ   = xQueueCreate(kRAW_QLEN,   sizeof(Sample));
@@ -772,12 +1154,10 @@ extern "C" void app_main() {
 
     /* ---- Status LED ------------------------------------------------------ */
     if (!adcOK || !sdOK) {
-        led->setColor(255, 0, 0);   // red = init error
         printf("#INIT:ADC=%s,SD=%s,IMU=%s\n", adcOK ? "OK" : "FAIL",
                sdOK ? "OK" : "FAIL", imuOK ? "OK" : "FAIL");
-    } else {
-        led->setColor(0, 255, 0);   // green = all good
     }
+    updateStatusLed();
 
     /* ==== Wait for command ================================================ */
     printf("#READY\n");
@@ -787,16 +1167,17 @@ extern "C" void app_main() {
     uint8_t rxByte;
 
     while (mode == Mode::Idle) {
-        // Check UART
-        if (uart_read_bytes(UART_NUM_0, &rxByte, 1, pdMS_TO_TICKS(50)) > 0) {
+        // Check UART. Timeout kept short (was 50ms) so this loop -- and the
+        // button/reed checks below it -- run often enough to catch a fast
+        // tap. At 50ms, a genuinely quick press-and-release could complete
+        // entirely between two polls and never be seen at all.
+        if (uart_read_bytes(UART_NUM_0, &rxByte, 1, pdMS_TO_TICKS(5)) > 0) {
             int cmd = feedUartByte(rxByte);
             if (cmd == '1') mode = Mode::All;
             else if (cmd == '2') mode = Mode::Raw;
             else if (cmd == '3') mode = Mode::Env;
             else if (cmd == '?') {
-                uint16_t mv = 0; uint8_t pct = 0;
-                if (battery) { battery->measure(); mv = battery->getVoltage(); pct = battery->getPercentage(); }
-                printf("#STATUS:0,%d,%u,%u\n", 0, mv, pct);
+                printStatusLine();
             }
             else if (cmd == 'V') {
                 // Read next byte for V0/V1
@@ -804,6 +1185,19 @@ extern "C" void app_main() {
                 if (uart_read_bytes(UART_NUM_0, &vb, 1, pdMS_TO_TICKS(100)) > 0) {
                     if (vb == '1' && battery) { battery->enable5V(); printf("#5V:1\n"); }
                     else if (vb == '0' && battery) { battery->disable5V(); printf("#5V:0\n"); }
+                }
+            }
+            else if (cmd == 'W') {
+                // WiFi SoftAP + UDP streaming on/off (W1/W0)
+                uint8_t wb;
+                if (uart_read_bytes(UART_NUM_0, &wb, 1, pdMS_TO_TICKS(100)) > 0) {
+                    if (wb == '1') {
+                        if (netStreamStart(macStr) == ESP_OK) printf("#WIFI:1\n");
+                        else printf("#ERR:WIFI\n");
+                    } else if (wb == '0') {
+                        netStreamStop();
+                        printf("#WIFI:0\n");
+                    }
                 }
             }
             else if (cmd == 'F') {
@@ -819,6 +1213,16 @@ extern "C" void app_main() {
         if (reedNow && !reedPrev)
             mode = Mode::All;
         reedPrev = reedNow;
+
+        // Physical backup/OR button (tap only, hold doesn't matter here:
+        // nothing is recording yet to stop). Drains the interrupt-
+        // captured edge queue instead of polling isPressed(), so a fast
+        // tap can't be missed even before the first recording starts.
+        // Starts in mode All.
+        BotonEdge be;
+        while (xQueueReceive(botonEdgeQ, &be, 0) == pdTRUE) {
+            if (be.nivel == 0) mode = Mode::All;   // 0 = presionado (LOW)
+        }
     }
 
     /* ==== Start recording ================================================= */
@@ -831,16 +1235,20 @@ extern "C" void app_main() {
     }
 
     if (mode != Mode::Idle) {
-        battery->enable5V();
-        recStart  = esp_timer_get_time();
+        // battery->enable5V();  // battery/5V management not used on this board (read on ESP32 #2 instead)
+        recStart.store(esp_timer_get_time(), std::memory_order_relaxed);
+        resetDropCounters();
         recording = true;
+        sendStartToSlave();  // notify the measurement ESP (in case the start came from python/reed and not its own button)
+        updateStatusLed();
         printf("#REC\n");
     }
 
     if (sdOK)
         xTaskCreatePinnedToCore(sdWriteTask, "sd",   8192, nullptr, 5, nullptr, 1);
     xTaskCreatePinnedToCore(uartTask,     "uart", 4096, nullptr, 3, nullptr, 0);
-    xTaskCreatePinnedToCore(adcTask,      "adc",  4096, nullptr, configMAX_PRIORITIES - 2, nullptr, 1);
+    xTaskCreatePinnedToCore(adcBusTask,   "adc0", 4096, drdyQ[0], configMAX_PRIORITIES - 2, nullptr, 1);
+    xTaskCreatePinnedToCore(adcBusTask,   "adc1", 4096, drdyQ[1], configMAX_PRIORITIES - 2, nullptr, 1);
     if (imuOK)
         xTaskCreatePinnedToCore(imuTask,  "imu",  4096, nullptr, 4, nullptr, 1);
 
@@ -861,59 +1269,64 @@ extern "C" void app_main() {
             if (recording) {
                 recording = false;
                 stopADCs();
-                battery->disable5V();
-                led->setColor(0, 0, 255);
+                printSampleCounts();
+                // battery->disable5V();  // battery/5V management not used on this board (read on ESP32 #2 instead)
+                updateStatusLed();
                 printf("#PAUSE\n");
             } else {
-                if (countdown(3)) {
-                    battery->enable5V();
-                    recStart  = esp_timer_get_time();
-                    recording = true;
-                    startADCs();
-                    led->setColor(0, 255, 0);
-                    printf("#REC\n");
-                }
+                startRecording();
             }
         }
         reedPrev = reedNow;
 
+        // ---- Physical backup/OR button (moved from the measurement ESP) ----
+        // Short press starts; held 3s stops in a controlled way.
+        // See checkStartButton() for the gesture details.
+        checkStartButton();
+
         // ---- UART commands ----
-        if (uart_read_bytes(UART_NUM_0, &rxByte, 1, pdMS_TO_TICKS(50)) > 0) {
+        // Timeout kept short (was 50ms, see note above the Idle-loop's
+        // read) so checkStartButton() above gets called often enough to
+        // catch a fast tap instead of missing it between polls.
+        if (uart_read_bytes(UART_NUM_0, &rxByte, 1, pdMS_TO_TICKS(5)) > 0) {
             int cmd = feedUartByte(rxByte);
             if (cmd == 0) continue;   // consumed by line accumulator
 
             if (cmd == '0') {
-                recording = false;
-                stopADCs();
-                battery->disable5V();
-                led->setColor(0, 0, 255);
-                printf("#STOP\n");
+                printf("#STOPCAUSE:UART0\n");  // diagnostic: this stop came from a '0' byte on UART0 (python, or noise if nothing is connected)
+                stopTest();   // end of test -> the measurement ESP closes its file and goes back to waiting for the next start signal
             } else if (cmd >= '1' && cmd <= '3') {
                 Mode newM = (Mode)(cmd - '0');
                 if (newM != mode || !recording) {
-                    if (recording) stopADCs();
-                    printf("#MODE:%d\n", (int)newM);
-                    if (countdown(3)) {
-                        battery->enable5V();
-                        mode      = newM;
-                        recStart  = esp_timer_get_time();
-                        recording = true;
-                        startADCs();
-                        led->setColor(0, 255, 0);
-                        printf("#REC\n");
-                    } else {
-                        printf("#STOP\n");
+                    if (recording) {
+                        // Stop cleanly first (no trigger here: this is just
+                        // a mode change, not the end of the test): the SD
+                        // writer drains and closes the current file set, and
+                        // an aborted countdown must not leave a
+                        // half-recording state behind.
+                        stopRecordingCore();
                     }
+                    mode = newM;
+                    startRecording();
                 }
             } else if (cmd == '?') {
-                uint16_t mv = 0; uint8_t pct = 0;
-                if (battery) { battery->measure(); mv = battery->getVoltage(); pct = battery->getPercentage(); }
-                printf("#STATUS:%d,%d,%u,%u\n", (int)mode, recording ? 1 : 0, mv, pct);
+                printStatusLine();
             } else if (cmd == 'V') {
                 uint8_t vb;
                 if (uart_read_bytes(UART_NUM_0, &vb, 1, pdMS_TO_TICKS(100)) > 0) {
                     if (vb == '1' && battery) { battery->enable5V(); printf("#5V:1\n"); }
                     else if (vb == '0' && battery) { battery->disable5V(); printf("#5V:0\n"); }
+                }
+            } else if (cmd == 'W') {
+                uint8_t wb;
+                if (uart_read_bytes(UART_NUM_0, &wb, 1, pdMS_TO_TICKS(100)) > 0) {
+                    if (wb == '1') {
+                        if (netStreamStart(macStr) == ESP_OK) printf("#WIFI:1\n");
+                        else printf("#ERR:WIFI\n");
+                    } else if (wb == '0') {
+                        netStreamStop();
+                        printf("#WIFI:0\n");
+                    }
                 }
             } else if (cmd == 'F') {
                 if (sdOK) {

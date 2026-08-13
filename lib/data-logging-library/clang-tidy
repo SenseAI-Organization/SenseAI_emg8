@@ -1,0 +1,111 @@
+# .clang-tidy
+# Checks based on Google Style with Sense AI customizations (v19 syntax)
+
+Checks: >
+  -* # Disable all checks by default
+  # Enable desirable checks from various groups
+  ,google-*             # Base Google checks (will fine-tune below)
+  ,modernize-*           # Checks for modern C++ practices (selectively enabled/disabled)
+  ,readability-*         # Checks for code readability (will configure naming)
+  ,performance-*         # Checks for potential performance issues
+  ,bugprone-*            # Checks for potential bugs
+  ,cppcoreguidelines-*   # Checks for C++ Core Guidelines compliance
+  ,portability-*         # Checks for portability issues
+  ,misc-*                # Miscellaneous useful checks
+  ,cert-*                # Checks related to CERT C/C++ Secure Coding Standards
+
+  # --- Specific Adjustments Based on Your Guide ---
+  # ... (Enable specific checks like before) ...
+  ,cppcoreguidelines-avoid-static-globals
+  ,cppcoreguidelines-init-variables
+  ,cppcoreguidelines-virtual-class-destructor
+  ,cppcoreguidelines-pro-type-cvirtual
+  ,google-readability-casting
+  ,cppcoreguidelines-pro-type-cstyle-cast
+  ,performance-increment-expensive
+  ,modernize-use-nullptr
+  ,google-runtime-int
+  ,misc-switch-missing-default-case
+  ,readability-identifier-naming
+
+  # --- Disable specific checks if they conflict or are too noisy ---
+  # -google-readability-member-naming
+
+# --- Check Options Section ---
+CheckOptions:
+  # --- Naming Conventions based on User's Found List ---
+
+  # Types (Class, Struct, Enum -> Guide wants PascalCase)
+  # Using 'CamelCase' from your list as it starts uppercase.
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumCase
+    value: CamelCase
+
+  # Namespace (Guide wants snake_case)
+  # Using 'lower_case' from your list.
+  - key: readability-identifier-naming.NamespaceCase
+    value: lower_case
+
+  # Functions, Methods, Variables (Guide wants camelCase)
+  # Using 'camelBack' from your list as it starts lowercase.
+  - key: readability-identifier-naming.FunctionCase
+    value: camelBack
+  - key: readability-identifier-naming.MethodCase
+    value: camelBack
+  - key: readability-identifier-naming.VariableCase # Default variable style
+    value: camelBack
+  - key: readability-identifier-naming.LocalVariableCase
+    value: camelBack
+  - key: readability-identifier-naming.GlobalVariableCase
+    value: camelBack # Prefix 's_' will modify for static globals
+
+  # Class Members (Guide wants member_ -> camelCase base + suffix)
+  # Using 'camelBack' base from your list + Suffix
+  - key: readability-identifier-naming.ClassMemberVariableCase
+    value: camelBack
+  - key: readability-identifier-naming.ClassMemberVariableSuffix
+    value: _
+
+  # Struct Members (Guide wants camelCase)
+  # Using 'camelBack' from your list.
+  - key: readability-identifier-naming.StructMemberVariableCase
+    value: camelBack
+
+  # Constants (Guide wants kConstantName -> k prefix + PascalCase/CamelCase base)
+  # Using 'CamelCase' base from your list + Prefix 'k'
+  - key: readability-identifier-naming.ConstexprVariableCase
+    value: CamelCase
+  - key: readability-identifier-naming.ConstexprVariablePrefix
+    value: k
+  - key: readability-identifier-naming.GlobalConstantCase
+    value: CamelCase
+  - key: readability-identifier-naming.GlobalConstantPrefix
+    value: k
+
+  # Static variables (Guide wants s_variable -> s_ prefix + camelCase base)
+  # Using 'camelBack' base from your list + Prefix 's_'
+  - key: readability-identifier-naming.StaticVariableCase
+    value: camelBack
+  - key: readability-identifier-naming.StaticVariablePrefix
+    value: s_
+
+  # Enum constants (Guide wants kConstantName -> k prefix + PascalCase/CamelCase base)
+  # Using 'CamelCase' base from your list + Prefix 'k'
+  - key: readability-identifier-naming.EnumConstantCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumConstantPrefix
+    value: k
+
+  # Parameters (Guide wants camelCase for input, ignore _ prefix for output)
+  # Using 'camelBack' base from your list + Ignored Prefix '_'
+  - key: readability-identifier-naming.ParameterCase
+    value: camelBack
+  - key: readability-identifier-naming.ParameterIgnoredPrefix
+    value: _
+
+# --- Other Top-Level Settings (Optional) ---
+# HeaderFilterRegex: 'project/source/.*'
+# AnalyzeTemporaryDtors: false

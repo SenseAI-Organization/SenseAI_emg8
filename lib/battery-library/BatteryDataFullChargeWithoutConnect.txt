@@ -1,0 +1,387 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x2b (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2810,len:0x490
+load:0x403c8700,len:0x4
+load:0x403c8704,len:0xa80
+load:0x403cb700,len:0x2768
+entry 0x403c8878
+Battery sensor initialized successfully (ID: 0x11)
+ADC calibration enabled
+-------------------------------
+Charge:  78% | Voltage: 3980 mV
+  Raw ADC:     2396
+  Calibrated:  1990 mV
+  Report:      ID: 0x11, Charge: 78%, Voltage: 3980 mV
+-------------------------------
+Charge:  78% | Voltage: 3982 mV
+  Raw ADC:     2397
+  Calibrated:  1991 mV
+  Report:      ID: 0x11, Charge: 78%, Voltage: 3982 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2395
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2394
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2395
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2395
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2395
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2395
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2391
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  74% | Voltage: 3948 mV
+  Raw ADC:     2377
+  Calibrated:  1974 mV
+  Report:      ID: 0x11, Charge: 74%, Voltage: 3948 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2391
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2395
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2392
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  80% | Voltage: 4008 mV
+  Raw ADC:     2413
+  Calibrated:  2004 mV
+  Report:      ID: 0x11, Charge: 80%, Voltage: 4008 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2395
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2394
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2395
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  78% | Voltage: 3980 mV
+  Raw ADC:     2396
+  Calibrated:  1990 mV
+  Report:      ID: 0x11, Charge: 78%, Voltage: 3980 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2392
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2394
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  78% | Voltage: 3982 mV
+  Raw ADC:     2397
+  Calibrated:  1991 mV
+  Report:      ID: 0x11, Charge: 78%, Voltage: 3982 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2395
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2394
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2395
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2392
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2394
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2395
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2392
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3970 mV
+  Raw ADC:     2389
+  Calibrated:  1985 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3970 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2394
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2394
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2391
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2391
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2395
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2395
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2391
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2394
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2394
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2392
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2395
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2392
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2392
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3970 mV
+  Raw ADC:     2389
+  Calibrated:  1985 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3970 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2392
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2392
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2393
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2391
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3970 mV
+  Raw ADC:     2390
+  Calibrated:  1985 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3970 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2392
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  79% | Voltage: 3992 mV
+  Raw ADC:     2402
+  Calibrated:  1996 mV
+  Report:      ID: 0x11, Charge: 79%, Voltage: 3992 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2391
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV
+-------------------------------
+Charge:  77% | Voltage: 3978 mV
+  Raw ADC:     2395
+  Calibrated:  1989 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3978 mV
+-------------------------------
+Charge:  77% | Voltage: 3974 mV
+  Raw ADC:     2391
+  Calibrated:  1987 mV
+  Report:      ID: 0x11, Charge: 77%, Voltage: 3974 mV

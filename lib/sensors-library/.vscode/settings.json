@@ -1,0 +1,26 @@
+{
+    // --- CMake ---
+    "cmake.configureOnOpen": false,
+    "cmake.automaticReconfigure": false,
+    "editor.detectIndentation": false,
+    // --- Formatting (clang-format) ---
+    "[cpp]": {
+        "editor.defaultFormatter": "ms-vscode.cpptools"
+    },
+    "[c]": {
+        "editor.defaultFormatter": "ms-vscode.cpptools"
+    },
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "C_Cpp.formatting": "clangFormat",
+    "C_Cpp.clang_format_style": "file",
+    "C_Cpp.clang_format_fallbackStyle": "Google",
+    // --- Linting (clang-tidy) ---
+    "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+    "C_Cpp.codeAnalysis.clangTidy.useBuildPath": true,
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true,
+    "files.associations": {
+        "cmath": "cpp"
+    }
+}
