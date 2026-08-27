@@ -1,10 +1,10 @@
 /*******************************************************************************
  * main4ADC.cpp — EMG8 Bracelet Firmware  (v4 — multi-file SD + label protocol)
  *
- * 4× ADS1015 mixed-rate continuous sampling with ALERT/RDY interrupts
- * (rates below net of the MUX-bleed discard, ADS1015 datasheet Sec 9.3.3):
- *   ch 0, 2 = fast  (raw EMG   ≈  786 Hz per channel in All mode)
- *   ch 1, 3 = slow  (envelope  ≈   39 Hz per channel in All mode)
+ * 4× ADS1015 mixed-rate single-shot round-robin with ALERT/RDY interrupts
+ * (measured in All mode, see #CNT):
+ *   ch 0, 2 = fast  (raw EMG   ≈ 554 Hz per channel)
+ *   ch 1, 3 = slow  (envelope  ≈  28 Hz per channel)
  *
  * ICM-42605 6-axis IMU at 200 Hz via SPI
  *
@@ -128,11 +128,10 @@ static constexpr uint8_t kEMG0     = 0;   // fast — raw EMG
 static constexpr uint8_t kEMG1     = 2;   // fast — raw EMG
 static constexpr uint8_t kENV0     = 1;   // slow — envelope
 static constexpr uint8_t kENV1     = 3;   // slow — envelope
-// Effective rates account for the MUX-bleed discard (ADS1015 datasheet
-// Sec 9.3.3): every channel switch costs one discarded hardware conversion,
-// halving raw throughput vs. the nominal hardware SPS. At 3300 SPS, All mode
-// gives ~786 Hz/ch raw and ~39 Hz/ch envelope; Raw/Env-only modes (no
-// divider) give ~825 Hz/ch.
+// Single-shot triggered round-robin at 3300 SPS. Measured on hardware in All
+// mode: ~554 Hz/ch raw and ~28 Hz/ch envelope per ADC, with symmetric
+// per-channel counts and zero retriggers/I2C errors — this is the validated
+// configuration, do not change it without re-checking #CNT.
 static constexpr uint8_t kSLOW_DIV = 20;
 static constexpr auto    kADC_RATE = ADS1015::ConfigRate::Rate_3300Hz;
 
@@ -1237,9 +1236,18 @@ extern "C" void app_main() {
         char sdir[48];
         snprintf(sdir, sizeof(sdir), "s_%s_%lld", macStr,
                  (long long)(esp_timer_get_time() / 1000000));
-        sdCard->createDir(std::string(sdir));
-        sdCard->goToDir(std::string(sdir));
+        // Both results used to be discarded. When FatFs was built without
+        // long-filename support this name was invalid (not 8.3), the mkdir
+        // and chdir both failed, and every recording silently landed in the
+        // card root instead of a session directory — with nothing said about
+        // it. Report it now rather than discovering it at analysis time.
+        FRESULT mk = sdCard->createDir(std::string(sdir));
+        FRESULT cd = sdCard->goToDir(std::string(sdir));
+        if (cd != FR_OK) {
+            printf("#ERR:SD_DIR:%d,%d,%s\n", (int)mk, (int)cd, sdir);
+        }
         sessionDir = sdCard->getCurrentDir();
+        printf("#SDIR:%s\n", sessionDir.c_str());
     }
 
     /* ---- IMU (ICM-42605 over SPI3) --------------------------------------- */
