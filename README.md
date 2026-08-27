@@ -104,9 +104,27 @@ Core 0                          Core 1
 | Command | Mode | Channels | Description |
 |---------|------|----------|-------------|
 | `1` | All | 0, 1, 2, 3 | Raw EMG (fast, ch 0/2) + Envelope (slow, ch 1/3, 1/20 divider) |
-| `2` | Raw | 0, 2 | Raw EMG only at full speed (~825 Hz/ch) |
-| `3` | Env | 1, 3 | Envelope only at full speed (~825 Hz/ch) |
+| `2` | Raw | 0, 2 | Raw EMG only at full speed (~1100 Hz/ch) |
+| `3` | Env | 1, 3 | Envelope only at full speed (~1100 Hz/ch) |
+| `4` | Sensor | one | **Sensor test** — one sEMG sensor at a time (see below) |
 | `0` | Stop | — | Stop recording |
+
+### Sensor Test Mode (`4`)
+
+For bench-checking each electrode before a real session. Only the ADC hosting the selected sensor runs, on a single channel — so the MUX never switches and that one sensor is sampled at the chip's **full rate (~2400 Hz)**, roughly double what it gets in All mode.
+
+The 8 raw sEMG sensors are numbered **0–7**:
+
+| Sensor | ADC | Channel | | Sensor | ADC | Channel |
+|--------|-----|---------|-|--------|-----|---------|
+| 0 | ADC1 | 0 | | 4 | ADC3 | 0 |
+| 1 | ADC1 | 2 | | 5 | ADC3 | 2 |
+| 2 | ADC2 | 0 | | 6 | ADC4 | 0 |
+| 3 | ADC2 | 2 | | 7 | ADC4 | 2 |
+
+Select with `S<n>` (`S0`–`S7`). The device replies `#SENSOR:<n>,<adc>,<ch>`. `S<n>` may be sent **while a sensor test is already running** — the ADCs restart on the new sensor with no countdown, so you can sweep all eight electrodes in one continuous session. Sent in any other mode it just arms the selection for the next `4`.
+
+The CSV stream carries a single EMG column in this mode, named `s<n>_adc<a>_<ch>`, e.g. `H,ts_us,s3_adc2_2,ax,...,label,rep`. Samples still land in `R<nnn>.bin` tagged with their real ADC and channel indices, so recordings stay self-describing.
 
 Modes can be switched at runtime via UART without rebooting. The reed switch toggles between pause and resume (defaults to All mode on first press).
 
@@ -147,6 +165,8 @@ The firmware emits a mix of:
 | `1` | `1` | Start or switch to **All** mode |
 | `2` | `2` | Start or switch to **Raw** mode |
 | `3` | `3` | Start or switch to **Env** mode |
+| `4` | `4` | Start or switch to **Sensor test** mode (one sensor at a time) |
+| `S<n>` | `S3` | Select sEMG sensor `0`–`7` for sensor-test mode |
 | `0` | `0` | Stop / pause acquisition |
 | `?` | `?` | Query current status |
 | `V1` | `V1` | Enable 5V rail |
@@ -179,6 +199,7 @@ Command notes:
 | `#STOP` | Recording stopped |
 | `#CNT:<adc>,<c0>,<c1>,<c2>,<c3>,<i2c_err>,<retrig>` | Per-channel conversion counts for ADC `<adc>` during the recording that just stopped (4 lines, one per ADC), plus that ADC's failed-I2C-transaction count and stall recoveries. Fast channels of one ADC should match within ±1, envelope channels likewise, at the configured divider ratio. `<i2c_err>` and `<retrig>` should both be 0 or near-0 on healthy hardware — sustained nonzero values mean bus trouble. |
 | `#LABEL:<id>,<rep>` | Label accepted |
+| `#SENSOR:<n>,<adc>,<ch>` | Sensor-test selection accepted: sensor `<n>` is ADC `<adc>` channel `<ch>` |
 | `#5V:0` / `#5V:1` | 5V rail state |
 | `#WIFI:0` / `#WIFI:1` | WiFi radio + streaming state |
 | `#NET:<ip>:<port>` | UDP client subscribed at this endpoint |
@@ -203,7 +224,7 @@ Field meanings:
 
 | Field | Meaning |
 |-------|---------|
-| `mode` | `0=Idle`, `1=All`, `2=Raw`, `3=Env` |
+| `mode` | `0=Idle`, `1=All`, `2=Raw`, `3=Env`, `4=Sensor test` |
 | `recording` | `0` stopped/paused, `1` recording |
 | `sd_ok` | `1` if SD storage is available |
 | `imu_ok` | `1` if the IMU initialized correctly |
@@ -296,7 +317,7 @@ Each recording start within a session directory `s_<MAC>_<epoch>/` produces one 
 | 15 | 1 | Battery state (see `BatteryManager::State`) |
 | 16 | 2 | IMU output data rate (Hz) |
 | 18 | 6 | Device MAC address |
-| 24 | 1 | Mode (`1`=All, `2`=Raw, `3`=Env) |
+| 24 | 1 | Mode (`1`=All, `2`=Raw, `3`=Env, `4`=Sensor test) |
 | 25 | 7 | Reserved |
 
 Label event (12 bytes, repeated for each `L<id>,<rep>` command received while recording):

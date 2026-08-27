@@ -18,7 +18,7 @@
  *   I<nnn>.bin — IMU      (20-byte ImuSample records)
  *
  * UART baud 460800.  Protocol:
- *   PC→ESP: '0' stop · '1-3' mode · '?' status · 'L<id>,<rep>\n' label
+ *   PC→ESP: '0' stop · '1-4' mode · 'S<0-7>' sensor · '?' status · 'L<id>,<rep>\n' label
  *           'V0'/'V1' 5V · 'F' list files · 'G<path>\n' transfer file
  *   ESP→PC: #READY · #MODE:N · #CD:N · #REC · #STOP · #LABEL:id,rep
  *           #STATUS:mode,rec,sd,imu,mV,%,rawDrops,envDrops,imuDrops
@@ -143,7 +143,18 @@ static constexpr uint16_t kIMU_ODR_HZ = 200;      // IMU polling rate
 #include "emg8_types.hpp"   // Sample / ImuSample / LabelEvent (shared with net_stream)
 #include "net_stream.hpp"
 
-enum class Mode : uint8_t { Idle = 0, All = 1, Raw = 2, Env = 3 };
+enum class Mode : uint8_t { Idle = 0, All = 1, Raw = 2, Env = 3, Sensor = 4 };
+
+// Sensor-test mode: one sEMG sensor at a time, for bench-checking each
+// electrode before a real session. The 8 raw EMG sensors are numbered 0-7
+// across the 4 ADCs; only the ADC hosting the selected sensor runs, with a
+// single active channel, so the MUX never moves and that one sensor is
+// sampled at the full hardware rate (~2400 Hz vs ~1100 Hz in All mode).
+static constexpr uint8_t kNUM_SENSORS = 8;
+static volatile uint8_t  testSensor   = 0;   // 0-7, selected with 'S<n>'
+
+static inline uint8_t sensorAdc(uint8_t s)     { return (s % kNUM_SENSORS) / 2; }
+static inline uint8_t sensorChannel(uint8_t s) { return (s % 2 == 0) ? kEMG0 : kEMG1; }
 
 /* ── Globals ───────────────────────────────────────────────────────────────── */
 
@@ -536,13 +547,20 @@ static void uartTask(void*) {
         // Print header line once per recording start / mode change
         if (!hdrDone) {
             printf("H,ts_us");
-            for (int a = 0; a < 4; a++)
-                for (int c = 0; c < 4; c++) {
-                    bool fast = (c == kEMG0 || c == kEMG1);
-                    if (mode == Mode::Raw && !fast) continue;
-                    if (mode == Mode::Env &&  fast) continue;
-                    printf(",adc%d_%d", a + 1, c);
-                }
+            if (mode == Mode::Sensor) {
+                // Single column: the sensor under test (s<n> = adc<a>_<ch>)
+                uint8_t s = testSensor % kNUM_SENSORS;
+                printf(",s%u_adc%u_%u", (unsigned)s,
+                       (unsigned)(sensorAdc(s) + 1), (unsigned)sensorChannel(s));
+            } else {
+                for (int a = 0; a < 4; a++)
+                    for (int c = 0; c < 4; c++) {
+                        bool fast = (c == kEMG0 || c == kEMG1);
+                        if (mode == Mode::Raw && !fast) continue;
+                        if (mode == Mode::Env &&  fast) continue;
+                        printf(",adc%d_%d", a + 1, c);
+                    }
+            }
             if (imuOK)
                 printf(",ax,ay,az,gx,gy,gz");
             printf(",label,rep\n");
@@ -558,14 +576,20 @@ static void uartTask(void*) {
         uint32_t ts = recordingTimestampUs();
         p += snprintf(line + p, sizeof(line) - p, "D,%u", (unsigned)ts);
 
-        for (int a = 0; a < 4; a++)
-            for (int c = 0; c < 4; c++) {
-                bool fast = (c == kEMG0 || c == kEMG1);
-                if (mode == Mode::Raw && !fast) continue;
-                if (mode == Mode::Env &&  fast) continue;
-                p += snprintf(line + p, sizeof(line) - p, ",%d",
-                              adc[a]->getLatestReading(c));
-            }
+        if (mode == Mode::Sensor) {
+            uint8_t s = testSensor % kNUM_SENSORS;
+            p += snprintf(line + p, sizeof(line) - p, ",%d",
+                          adc[sensorAdc(s)]->getLatestReading(sensorChannel(s)));
+        } else {
+            for (int a = 0; a < 4; a++)
+                for (int c = 0; c < 4; c++) {
+                    bool fast = (c == kEMG0 || c == kEMG1);
+                    if (mode == Mode::Raw && !fast) continue;
+                    if (mode == Mode::Env &&  fast) continue;
+                    p += snprintf(line + p, sizeof(line) - p, ",%d",
+                                  adc[a]->getLatestReading(c));
+                }
+        }
         // Append IMU (latest measurement already done by imuTask)
         if (imuOK) {
             const float* ac = imu->getAccel();
@@ -683,6 +707,17 @@ static bool countdown(int seconds) {
 /* ── Start / stop helpers ──────────────────────────────────────────────────── */
 
 static void startADCs() {
+    // Sensor-test mode: only the ADC carrying the selected sensor runs, and
+    // only on that one channel. With a single-channel round-robin the MUX
+    // never switches, so this sensor gets the chip's full conversion rate.
+    if (mode == Mode::Sensor) {
+        uint8_t s = testSensor % kNUM_SENSORS;
+        ADS1015::ChannelConfig one[1] = {
+            {sensorChannel(s), 1, ADS1015::ConfigPGA::One}};
+        adc[sensorAdc(s)]->startMixedContinuousExternal(one, 1, kADC_RATE);
+        return;
+    }
+
     bool wF = (mode == Mode::All || mode == Mode::Raw);
     bool wS = (mode == Mode::All || mode == Mode::Env);
 
@@ -706,6 +741,24 @@ static void startADCs() {
 static void stopADCs() {
     for (int i = 0; i < 4; i++)
         adc[i]->stopContinuous();
+}
+
+// ─────────────────────────────────────────────
+//  'S<n>' — pick which sEMG sensor (0-7) sensor-test mode reads. Safe to
+//  send while a sensor test is already running: the ADCs are restarted on
+//  the new sensor without a countdown, so you can sweep all eight
+//  electrodes in one session. Ignored (but acknowledged) in other modes,
+//  where it just arms the selection for the next '4'.
+// ─────────────────────────────────────────────
+static void selectTestSensor(uint8_t s) {
+    testSensor = s % kNUM_SENSORS;
+    printf("#SENSOR:%u,%u,%u\n", (unsigned)testSensor,
+           (unsigned)(sensorAdc(testSensor) + 1),
+           (unsigned)sensorChannel(testSensor));
+    if (recording && mode == Mode::Sensor) {
+        stopADCs();
+        startADCs();
+    }
 }
 
 // ─────────────────────────────────────────────
@@ -1194,6 +1247,14 @@ extern "C" void app_main() {
             if (cmd == '1') mode = Mode::All;
             else if (cmd == '2') mode = Mode::Raw;
             else if (cmd == '3') mode = Mode::Env;
+            else if (cmd == '4') mode = Mode::Sensor;
+            else if (cmd == 'S') {
+                uint8_t sb;
+                if (uart_read_bytes(UART_NUM_0, &sb, 1, pdMS_TO_TICKS(100)) > 0 &&
+                    sb >= '0' && sb <= '7') {
+                    selectTestSensor((uint8_t)(sb - '0'));
+                }
+            }
             else if (cmd == '?') {
                 printStatusLine();
             }
@@ -1313,7 +1374,13 @@ extern "C" void app_main() {
             if (cmd == '0') {
                 printf("#STOPCAUSE:UART0\n");  // diagnostic: this stop came from a '0' byte on UART0 (python, or noise if nothing is connected)
                 stopTest();   // end of test -> the measurement ESP closes its file and goes back to waiting for the next start signal
-            } else if (cmd >= '1' && cmd <= '3') {
+            } else if (cmd == 'S') {
+                uint8_t sb;
+                if (uart_read_bytes(UART_NUM_0, &sb, 1, pdMS_TO_TICKS(100)) > 0 &&
+                    sb >= '0' && sb <= '7') {
+                    selectTestSensor((uint8_t)(sb - '0'));
+                }
+            } else if (cmd >= '1' && cmd <= '4') {
                 Mode newM = (Mode)(cmd - '0');
                 if (newM != mode || !recording) {
                     if (recording) {
