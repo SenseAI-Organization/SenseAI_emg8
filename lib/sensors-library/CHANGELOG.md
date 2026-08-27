@@ -5,7 +5,12 @@ All notable changes to this project will be documented in this file.
 <!-- The format is based on [Keep a Changelog](https://keepachangelog.com/), -->
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/). -->
 
-## [0.11.0] - 2026-08-27
+## [0.11.1] - 2026-08-27
+### Reverted
+- **Reverted the whole of `[0.11.0]`** (the `opMutex_` service/start-stop mutex and the ALERT/RDY threshold re-arm on start). Both were introduced to explain a stall seen while switching channels rapidly by stop/start; neither fixed it, and the mutex was suspected of destabilising the sampling path on hardware. The driver is back to its `[0.10.0]` behaviour, which is verified healthy in steady-state acquisition: 10 s in mixed-rate All mode gave symmetric per-channel counts (5541–5543 fast, 277 slow, exactly the 20:1 divider ratio) with **zero** retriggers and **zero** I2C errors on all four ADCs, and all 16 EMG channels reading correctly.
+- **Still open:** rapid reconfiguration via `stopContinuous()` + `startMixedContinuousExternal()` in a tight loop stalls — the ADC stops delivering conversions and `retriggerIfStalled()` spins. Steady-state acquisition (start once, never churn) is unaffected. Do not reconfigure mid-acquisition until this is understood.
+
+## [0.11.0] - 2026-08-27 — REVERTED, see [0.11.1]
 ### Fixed
 - **ADS1015: single-shot round-robin could stall permanently after a stop/start cycle** — triggers were written successfully (zero I2C errors) but the ALERT/RDY pin never pulsed again, so no conversion was ever delivered while `retriggerIfStalled()` spun at ~100/s indefinitely. Observed on hardware as `#CNT` reporting all-zero per-channel counts alongside 95–668 retriggers per ADC. Two causes, both fixed:
   - `stopContinuous()` leaves the chip with the comparator disabled (`COMP_QUE=None`), but the `ThreshLow`/`ThreshHigh` registers that turn ALERT/RDY into a conversion-ready strobe were only written once, in `configureAlertPin()` at init. `startMixedContinuousExternal()` now rewrites them on every start, so a start following any stop cannot inherit a state where triggers land but DRDY never returns.

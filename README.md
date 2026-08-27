@@ -64,10 +64,10 @@ Channel indices are **interleaved**, not split into "first half raw, second half
 
 | Channel | Function | Rate (All mode, approx) |
 |---------|----------|-------------------------|
-| 0 | Raw EMG | ~1100 Hz |
-| 1 | Envelope | ~55 Hz |
-| 2 | Raw EMG | ~1100 Hz |
-| 3 | Envelope | ~55 Hz |
+| 0 | Raw EMG | ~554 Hz |
+| 1 | Envelope | ~28 Hz |
+| 2 | Raw EMG | ~554 Hz |
+| 3 | Envelope | ~28 Hz |
 
 With 4 ADCs this gives **8 raw EMG channels** and **8 envelope channels**.
 
@@ -104,14 +104,16 @@ Core 0                          Core 1
 | Command | Mode | Channels | Description |
 |---------|------|----------|-------------|
 | `1` | All | 0, 1, 2, 3 | Raw EMG (fast, ch 0/2) + Envelope (slow, ch 1/3, 1/20 divider) |
-| `2` | Raw | 0, 2 | Raw EMG only at full speed (~1100 Hz/ch) |
-| `3` | Env | 1, 3 | Envelope only at full speed (~1100 Hz/ch) |
-| `4` | Sensor | one | **Sensor test** — one sEMG sensor at a time (see below) |
+| `2` | Raw | 0, 2 | Raw EMG only, no divider |
+| `3` | Env | 1, 3 | Envelope only, no divider |
+| `4` | Sensor | one | **Sensor test — currently NOT WORKING, see below** |
 | `0` | Stop | — | Stop recording |
 
 ### Sensor Test Mode (`4`)
 
-For bench-checking each electrode before a real session. Only the ADC hosting the selected sensor runs, on a single channel — so the MUX never switches and that one sensor is sampled at the chip's **full rate (~2400 Hz)**, roughly double what it gets in All mode.
+> **⚠️ KNOWN BROKEN — do not rely on this mode.** The command plumbing works (`4` enters the mode, `S<n>` is accepted and acknowledged), but **no sample data is delivered**. Verified on hardware: `#CNT` reports zero conversions on every channel while the retrigger counter climbs at ~100/s, i.e. triggers are issued and the conversion-complete interrupt never returns. The cause is specific to the stop/start cycle `S<n>` performs on the ADCs; it is *not* the mutex (reverting that changed nothing) and it does **not** affect All/Raw/Env, which are verified healthy. Use All mode and read the per-channel columns instead until this is fixed.
+
+Intended behaviour, for whoever picks this up: only the ADC hosting the selected sensor runs, on a single channel, so the MUX never switches and that one sensor is sampled at the chip's full rate.
 
 The 8 raw sEMG sensors are numbered **0–7**:
 

@@ -136,9 +136,57 @@ today. All fixed and flashed.
   the highest-value outstanding check.
 - Open items unchanged in `improvements-workplan.md`.
 
-**Sin commitear:** everything from this entry — `src/main.cpp`,
-`lib/sensors-library/{include/ADS1015.hpp,src/ADS1015.cpp,CHANGELOG.md}`,
-`README.md`, `WORKLOG.md`. Daniel is reviewing before committing.
+**Sin commitear:** nothing — Daniel committed this work as `442d143`, then the
+mutex revert as `9c501d1`.
+
+---
+
+## 2026-08-27 (end of day) — Mutex reverted, acquisition verified healthy
+
+**Hecho:**
+
+- **Reverted the ADC mutex and ALERT/RDY re-arm** (`9c501d1`, Daniel). They were
+  added to explain the sensor-test stall, fixed nothing, and were suspected of
+  destabilising sampling. The driver is back to the `2ad6518` state — the
+  firmware that was on the device when the day's testing began.
+- **Acquisition verified healthy on hardware by Daniel**: all 8 raw and all 8
+  envelope channels reading correctly in All mode. Independently corroborated
+  by a 10 s `#CNT` capture: 5541–5543 fast / 277 slow per ADC (exactly the 20:1
+  divider ratio), symmetric across all four, with **zero** retriggers and
+  **zero** I2C errors. Single-shot channel attribution — the whole point of the
+  2026-07-20 work — is confirmed correct.
+- Measured rates supersede earlier estimates: **~554 Hz/ch raw, ~28 Hz/ch
+  envelope** in All mode at 3300 SPS. README updated.
+- Kept (non-sampling, hardware-verified fixes): `countdown()` now routes bytes
+  through the real parser, so `L0,1` sent right after a mode command no longer
+  aborts the countdown — that had been killing scripted-test starts
+  deterministically; FatFs long filenames enabled; `G` resolves against the
+  same base `F` lists; SD directory/open failures reported instead of silent.
+
+**A correction worth recording:** mid-session I claimed from sensor-test stall
+data that *all* acquisition might be dead and pushed for a full revert to
+free-running continuous mode. That was wrong — All mode was healthy the whole
+time. Daniel's instinct to protect the known-good base was right. The lesson:
+a stall confined to one code path was over-generalised without testing the
+path that actually mattered; the All-mode `#CNT` check that settled it took
+30 seconds and should have come first.
+
+**Pendiente:**
+
+- **Sensor-test mode (`4` / `S<n>`) is present but NOT FUNCTIONAL.** Commands
+  ack correctly; no data is delivered. Zero conversions with retriggers
+  climbing ~100/s — triggers issue, conversion-complete interrupt never
+  returns. Specific to the stop/start cycle `S<n>` performs; not the mutex.
+  Flagged prominently in README so nobody builds against it. Either fix it or
+  remove mode 4 — leaving it advertised-but-broken is the worst of both.
+- `G` (SD download) is fixed but **untested since the fix**. Note the behaviour
+  change: session directories are now created for real, so recordings land in
+  `s_<MAC>_<epoch>/` rather than the card root.
+- WiFi/UDP streaming still not exercised end-to-end.
+- Open items unchanged in `improvements-workplan.md`.
+
+**Sin commitear:** `README.md`, `WORKLOG.md`,
+`lib/sensors-library/CHANGELOG.md` — documentation accuracy pass only, no code.
 
 **Coordinación:** a second Claude session (`ia-arm-datalogger-55`) owns
 `D:\PhD\Code\IA-Arm_datalogger`; this session is firmware-only from
