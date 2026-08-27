@@ -320,6 +320,10 @@ uint16_t ADS1015::buildSingleShotConfig(ConfigMux mux, ConfigRate rate, ConfigPG
     return config;
 }
 
+void ADS1015::ensureOpMutex() {
+    if (opMutex_ == nullptr) opMutex_ = xSemaphoreCreateMutex();
+}
+
 bool ADS1015::triggerConversion(uint8_t channel) {
     if (channel >= kMaxChannels) return false;
     esp_err_t err = writeConfig(singleShotWords_[channel]);
@@ -501,6 +505,11 @@ esp_err_t ADS1015::startContinuous(const uint8_t* channels, uint8_t numChannels,
 }
 
 esp_err_t ADS1015::stopContinuous() {
+    // Wait for any in-flight serviceConversion()/retriggerIfStalled() to
+    // finish before tearing state down, so a service task on another core
+    // can't re-trigger a conversion after we've stopped.
+    if (opMutex_) xSemaphoreTake(opMutex_, portMAX_DELAY);
+
     continuousRunning_ = false;
     singleShot_ = false;
     conversionPending_ = false;
@@ -528,7 +537,9 @@ esp_err_t ADS1015::stopContinuous() {
                       static_cast<uint16_t>(ConfigPGA::One) |
                       static_cast<uint16_t>(ConfigRate::Rate_1600Hz) |
                       static_cast<uint16_t>(ConfigComparatorQueue::None);
-    return writeConfig(config);
+    esp_err_t err = writeConfig(config);
+    if (opMutex_) xSemaphoreGive(opMutex_);
+    return err;
 }
 
 bool ADS1015::isContinuousRunning() const {
@@ -795,10 +806,21 @@ esp_err_t ADS1015::startMixedContinuousExternal(const ChannelConfig* configs,
         drdySemaphore_ = xSemaphoreCreateBinary();
     }
 
+    // Re-arm ALERT/RDY as a conversion-ready signal. stopContinuous() leaves
+    // the chip with the comparator disabled (COMP_QUE=None), and these
+    // threshold registers are what make the pin pulse on conversion-complete
+    // at all — rewriting them here means a start after any stop can't inherit
+    // a state where triggers land but DRDY never comes back.
+    writeRegister(Register::ThreshLow, 0x0000);
+    writeRegister(Register::ThreshHigh, 0x8000);
+
     // Install ISR
     gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
     esp_err_t err = gpio_isr_handler_add(alertPin_, alertISR, this);
     if (err != ESP_OK) return err;
+
+    ensureOpMutex();
+    if (opMutex_) xSemaphoreTake(opMutex_, portMAX_DELAY);
 
     continuousRunning_ = true;
     continuousTaskHandle_ = nullptr;  // No internal task
@@ -820,9 +842,15 @@ esp_err_t ADS1015::startMixedContinuousExternal(const ChannelConfig* configs,
         fastCycleCount_++;
     }
 
+    // Drop any edge left over from a previous run so the first service call
+    // can't consume a stale one against this fresh trigger.
+    if (drdySemaphore_) xSemaphoreTake(drdySemaphore_, 0);
+
     // Trigger the first conversion. No discard needed: single-shot results
     // belong to the channel named in the trigger, with no pipeline.
-    if (!triggerConversion(firstCh)) {
+    bool triggered = triggerConversion(firstCh);
+    if (opMutex_) xSemaphoreGive(opMutex_);
+    if (!triggered) {
         stopContinuous();
         return ESP_FAIL;
     }
@@ -834,12 +862,23 @@ bool ADS1015::serviceConversion() {
     if (!continuousRunning_ || drdySemaphore_ == nullptr) return false;
 
     if (xSemaphoreTake(drdySemaphore_, 0) != pdTRUE) return false;
-    if (!continuousRunning_) return false;
+
+    // Hold off any concurrent start/stop for the read + re-trigger sequence.
+    if (opMutex_ && xSemaphoreTake(opMutex_, pdMS_TO_TICKS(50)) != pdTRUE) {
+        return false;
+    }
+    if (!continuousRunning_) {
+        if (opMutex_) xSemaphoreGive(opMutex_);
+        return false;
+    }
 
     // No conversion in flight → this is a stale/spurious edge (e.g. one that
     // arrived after a stall recovery already re-armed). Ignore it rather
     // than attributing a result to a channel we never requested.
-    if (!conversionPending_) return false;
+    if (!conversionPending_) {
+        if (opMutex_) xSemaphoreGive(opMutex_);
+        return false;
+    }
 
     uint32_t tsUs = drdyTimestampUs_;
     uint8_t ch = pendingChannel_;  // exact: we explicitly requested this conversion
@@ -851,6 +890,7 @@ bool ADS1015::serviceConversion() {
         // round-robin moving so one bad read doesn't stall the channel.
         i2cErrors_++;
         triggerConversion(nextMixedChannel());
+        if (opMutex_) xSemaphoreGive(opMutex_);
         return true;
     }
 
@@ -863,18 +903,29 @@ bool ADS1015::serviceConversion() {
     }
 
     triggerConversion(nextMixedChannel());
+    if (opMutex_) xSemaphoreGive(opMutex_);
     return true;
 }
 
 bool ADS1015::retriggerIfStalled(uint32_t timeoutUs) {
     if (!continuousRunning_ || !singleShot_) return false;
 
+    if (opMutex_ && xSemaphoreTake(opMutex_, pdMS_TO_TICKS(50)) != pdTRUE) {
+        return false;
+    }
+    if (!continuousRunning_ || !singleShot_) {
+        if (opMutex_) xSemaphoreGive(opMutex_);
+        return false;
+    }
+
     uint32_t now = (uint32_t)esp_timer_get_time();
     if (conversionPending_ && (now - lastTriggerUs_) < timeoutUs) {
+        if (opMutex_) xSemaphoreGive(opMutex_);
         return false;  // still within the expected conversion window
     }
     if (!conversionPending_ && lastTriggerUs_ != 0 &&
         (now - lastTriggerUs_) < timeoutUs) {
+        if (opMutex_) xSemaphoreGive(opMutex_);
         return false;  // a trigger failed very recently; give it a moment
     }
 
@@ -888,11 +939,10 @@ bool ADS1015::retriggerIfStalled(uint32_t timeoutUs) {
     // Drop any stale edge so it can't be serviced against the new trigger.
     if (drdySemaphore_) xSemaphoreTake(drdySemaphore_, 0);
 
-    if (triggerConversion(ch)) {
-        retriggers_++;
-        return true;
-    }
-    return false;
+    bool ok = triggerConversion(ch);
+    if (ok) retriggers_++;
+    if (opMutex_) xSemaphoreGive(opMutex_);
+    return ok;
 }
 
 uint32_t ADS1015::getI2cErrorCount() const {

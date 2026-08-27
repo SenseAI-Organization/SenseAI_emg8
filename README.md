@@ -122,9 +122,16 @@ The 8 raw sEMG sensors are numbered **0–7**:
 | 2 | ADC2 | 0 | | 6 | ADC4 | 0 |
 | 3 | ADC2 | 2 | | 7 | ADC4 | 2 |
 
-Select with `S<n>` (`S0`–`S7`). The device replies `#SENSOR:<n>,<adc>,<ch>`. `S<n>` may be sent **while a sensor test is already running** — the ADCs restart on the new sensor with no countdown, so you can sweep all eight electrodes in one continuous session. Sent in any other mode it just arms the selection for the next `4`.
+Select with `S<n>` (`S0`–`S7`). Wire details:
 
-The CSV stream carries a single EMG column in this mode, named `s<n>_adc<a>_<ch>`, e.g. `H,ts_us,s3_adc2_2,ax,...,label,rep`. Samples still land in `R<nnn>.bin` tagged with their real ADC and channel indices, so recordings stay self-describing.
+- **Two raw bytes, no terminator** — `S` then the digit, like `V1`/`W1` (unlike `L`/`G`, which are newline-terminated). Send both in a single write: the digit must arrive within **100 ms** of the `S` or the command is rejected.
+- A trailing `\n`/`\r` is harmless — it matches no command and is ignored.
+- Accepted selections reply `#SENSOR:<n>,<adc>,<ch>` **once**, never repeated. `<adc>` is 1-based, `<ch>` is the raw ADS1015 channel index (0 or 2).
+- A missing or out-of-range digit replies `#ERR:SENSOR`, so a malformed selection can't leave the host believing the wrong sensor is live.
+- `#SENSOR:` is also emitted on entering the mode (right after `#MODE:4`), so the active sensor is always announced without inferring it from the header.
+- `S<n>` may be sent **while a sensor test is already running** — the ADCs restart on the new sensor with no countdown, so you can sweep all eight electrodes in one continuous session. The CSV header is reprinted on each switch (see below). Sent in any other mode it just arms the selection for the next `4`.
+
+The CSV stream carries a single EMG column in this mode, named `s<n>_adc<a>_<ch>`, e.g. `H,ts_us,s3_adc2_2,ax,...,label,rep`. Because that column name encodes the sensor, a live `S<n>` switch **reprints the `H` header** even though the mode hasn't changed — parse each `H` line rather than caching the first one. Samples still land in `R<nnn>.bin` tagged with their real ADC and channel indices, so recordings stay self-describing.
 
 Modes can be switched at runtime via UART without rebooting. The reed switch toggles between pause and resume (defaults to All mode on first press).
 
@@ -199,7 +206,7 @@ Command notes:
 | `#STOP` | Recording stopped |
 | `#CNT:<adc>,<c0>,<c1>,<c2>,<c3>,<i2c_err>,<retrig>` | Per-channel conversion counts for ADC `<adc>` during the recording that just stopped (4 lines, one per ADC), plus that ADC's failed-I2C-transaction count and stall recoveries. Fast channels of one ADC should match within ±1, envelope channels likewise, at the configured divider ratio. `<i2c_err>` and `<retrig>` should both be 0 or near-0 on healthy hardware — sustained nonzero values mean bus trouble. |
 | `#LABEL:<id>,<rep>` | Label accepted |
-| `#SENSOR:<n>,<adc>,<ch>` | Sensor-test selection accepted: sensor `<n>` is ADC `<adc>` channel `<ch>` |
+| `#SENSOR:<n>,<adc>,<ch>` | Sensor-test selection accepted (and on entering mode `4`): sensor `<n>` is ADC `<adc>` (1-based) channel `<ch>`. Emitted once per event, never repeated |
 | `#5V:0` / `#5V:1` | 5V rail state |
 | `#WIFI:0` / `#WIFI:1` | WiFi radio + streaming state |
 | `#NET:<ip>:<port>` | UDP client subscribed at this endpoint |

@@ -648,6 +648,23 @@ private:
     // explicitly asked the chip to convert, so the result that follows can
     // only belong to it. Nothing is inferred from timing.
 
+    /**
+     * @brief Serializes object state + I2C sequence between the task that
+     * services conversions and whoever calls start/stop.
+     *
+     * serviceConversion()/retriggerIfStalled() run on the caller's service
+     * task; startMixedContinuousExternal()/stopContinuous() are typically
+     * called from a different task (and on ESP32, a different core). Without
+     * this, reconfiguring mid-acquisition — e.g. switching channels by
+     * stop/start — races the service path and can leave conversionPending_
+     * and the chip's actual state disagreeing.
+     */
+    SemaphoreHandle_t opMutex_ = nullptr;
+
+    /** @brief Create opMutex_ on first use. Not thread-safe itself — call
+     * from the start path before any service task can run. */
+    void ensureOpMutex();
+
     bool singleShot_ = false;           ///< Round-robin runs in single-shot mode
     uint8_t pendingChannel_ = 0;        ///< Channel of the outstanding conversion
     bool conversionPending_ = false;    ///< A single-shot conversion is in flight

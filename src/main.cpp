@@ -533,6 +533,7 @@ static void sdWriteTask(void*) {
 static void uartTask(void*) {
     bool hdrDone = false;
     Mode lastHdrMode = Mode::Idle;
+    uint8_t lastHdrSensor = 0xFF;
 
     while (true) {
         if (!recording) {
@@ -543,6 +544,10 @@ static void uartTask(void*) {
 
         // Reprint header when mode changes mid-recording
         if (mode != lastHdrMode) hdrDone = false;
+        // ...and when the sensor under test changes, since 'S<n>' switches
+        // sensors without changing mode: the single EMG column is named
+        // after the sensor, so the old header would mislabel it.
+        if (mode == Mode::Sensor && testSensor != lastHdrSensor) hdrDone = false;
 
         // Print header line once per recording start / mode change
         if (!hdrDone) {
@@ -565,6 +570,7 @@ static void uartTask(void*) {
                 printf(",ax,ay,az,gx,gy,gz");
             printf(",label,rep\n");
             lastHdrMode = mode;
+            lastHdrSensor = testSensor;
             hdrDone = true;
         }
 
@@ -681,6 +687,10 @@ static void imuTask(void*) {
 
 /* ── Countdown (visible on serial + LED, interruptible via '0') ────────────── */
 
+static void handleSensorCommand();   // defined below; needed during countdown
+static int  feedUartByte(uint8_t b); // defined below; same parser the loops use
+static std::string sdListRoot();     // defined below; shared by 'F' and 'G'
+
 static bool countdown(int seconds) {
     for (int i = seconds; i > 0; i--) {
         printf("#CD:%d\n", i);
@@ -690,11 +700,22 @@ static bool countdown(int seconds) {
         for (int t = 0; t < 10; t++) {
             uint8_t rx;
             if (uart_read_bytes(UART_NUM_0, &rx, 1, pdMS_TO_TICKS(100)) > 0) {
-                if (rx == '0') {
+                // Route through the same parser the command loops use, rather
+                // than matching raw bytes. Matching raw bytes meant any '0'
+                // *inside* a multi-byte command aborted the countdown: "S0"
+                // aborted instead of selecting sensor 0, and "L0,1" -- which
+                // hosts routinely send right after a mode command -- aborted
+                // every time. feedUartByte() consumes 'L'/'G' lines whole, so
+                // only a genuinely standalone '0' can reach the abort test.
+                int c = feedUartByte(rx);
+                if (c == '0') {
                     led->turnOff();
                     printf("#CD:ABORT\n");
                     return false;   // aborted
                 }
+                // Sensor selection is safe to honour mid-countdown: it only
+                // arms the selection, the ADCs aren't running yet.
+                if (c == 'S') handleSensorCommand();
             }
             if (t == 5) led->turnOff();   // blink: 500ms on, 500ms off
         }
@@ -750,15 +771,37 @@ static void stopADCs() {
 //  electrodes in one session. Ignored (but acknowledged) in other modes,
 //  where it just arms the selection for the next '4'.
 // ─────────────────────────────────────────────
+static void printSensorLine() {
+    uint8_t s = testSensor % kNUM_SENSORS;
+    printf("#SENSOR:%u,%u,%u\n", (unsigned)s,
+           (unsigned)(sensorAdc(s) + 1), (unsigned)sensorChannel(s));
+}
+
 static void selectTestSensor(uint8_t s) {
     testSensor = s % kNUM_SENSORS;
-    printf("#SENSOR:%u,%u,%u\n", (unsigned)testSensor,
-           (unsigned)(sensorAdc(testSensor) + 1),
-           (unsigned)sensorChannel(testSensor));
+    printSensorLine();
     if (recording && mode == Mode::Sensor) {
         stopADCs();
         startADCs();
     }
+}
+
+// ─────────────────────────────────────────────
+//  Reads the digit that must follow 'S'. Rejects loudly (#ERR:SENSOR)
+//  rather than silently, so a malformed selection can't leave the host
+//  believing a different sensor is being sampled than actually is.
+// ─────────────────────────────────────────────
+static void handleSensorCommand() {
+    uint8_t sb;
+    if (uart_read_bytes(UART_NUM_0, &sb, 1, pdMS_TO_TICKS(100)) <= 0) {
+        printf("#ERR:SENSOR\n");   // 'S' arrived with no digit behind it
+        return;
+    }
+    if (sb < '0' || sb > '7') {
+        printf("#ERR:SENSOR\n");
+        return;
+    }
+    selectTestSensor((uint8_t)(sb - '0'));
 }
 
 // ─────────────────────────────────────────────
@@ -770,6 +813,9 @@ static void selectTestSensor(uint8_t s) {
 // ─────────────────────────────────────────────
 static bool startRecording() {
     printf("#MODE:%d\n", (int)mode);
+    // Announce which sensor is live so the host doesn't have to infer it
+    // from the CSV header (the selection persists across mode changes).
+    if (mode == Mode::Sensor) printSensorLine();
     if (!countdown(3)) {
         updateStatusLed();
         printf("#STOP\n");
@@ -977,7 +1023,7 @@ static void processUartLine(const char* line, int len) {
             // (end of test) arrives -- see below.
         }
     } else if (line[0] == 'G') {
-        // File transfer: G<relative_path>
+        // File transfer: G<path as emitted by the 'F' listing>
         if (!sdOK) { printf("#ERR:NO_SD\n"); return; }
         if (recording) { printf("#ERR:BUSY\n"); return; }
         std::string fpath(line + 1, len - 1);
@@ -985,9 +1031,25 @@ static void processUartLine(const char* line, int len) {
         while (!fpath.empty() && (fpath.back() == '\r' || fpath.back() == ' '))
             fpath.pop_back();
 
+        // Resolve against the same base the 'F' listing walked, so a name
+        // copied verbatim out of a '#F:' line round-trips. A bare name would
+        // otherwise resolve against FatFs's *default* volume, which is not
+        // necessarily the one the SD is mounted on (VOLUME_COUNT=2 here) —
+        // listing succeeded while every open failed for exactly this reason.
+        if (fpath.find(':') == std::string::npos) {
+            std::string base = sdListRoot();
+            if (!base.empty() && !fpath.empty() && fpath[0] == '/')
+                fpath = base + fpath;
+            else if (!base.empty())
+                fpath = base + "/" + fpath;
+        }
+
         FIL tf;
-        if (f_open(&tf, fpath.c_str(), FA_READ) != FR_OK) {
-            printf("#ERR:OPEN_FAIL\n");
+        FRESULT fr = f_open(&tf, fpath.c_str(), FA_READ);
+        if (fr != FR_OK) {
+            // Report the FatFs code and the path actually attempted — a bare
+            // "OPEN_FAIL" gave no way to tell a missing file from a bad path.
+            printf("#ERR:OPEN_FAIL:%d,%s\n", (int)fr, fpath.c_str());
             return;
         }
         uint32_t sz = f_size(&tf);
@@ -1032,6 +1094,14 @@ static int feedUartByte(uint8_t b) {
 }
 
 /* ── SD directory listing helper ───────────────────────────────────────────── */
+
+/** Base path the 'F' listing walks, and the base 'G' resolves names against.
+ *  Keeping both on one definition is what makes a name copied out of a '#F:'
+ *  line openable as-is. Includes the FatFs volume prefix (e.g. "0:"). */
+static std::string sdListRoot() {
+    size_t slash = sessionDir.find_last_of('/');
+    return (slash == std::string::npos) ? sessionDir : sessionDir.substr(0, slash);
+}
 
 static void listSDDir(const char* path) {
     FF_DIR dir;
@@ -1248,13 +1318,7 @@ extern "C" void app_main() {
             else if (cmd == '2') mode = Mode::Raw;
             else if (cmd == '3') mode = Mode::Env;
             else if (cmd == '4') mode = Mode::Sensor;
-            else if (cmd == 'S') {
-                uint8_t sb;
-                if (uart_read_bytes(UART_NUM_0, &sb, 1, pdMS_TO_TICKS(100)) > 0 &&
-                    sb >= '0' && sb <= '7') {
-                    selectTestSensor((uint8_t)(sb - '0'));
-                }
-            }
+            else if (cmd == 'S') handleSensorCommand();
             else if (cmd == '?') {
                 printStatusLine();
             }
@@ -1283,7 +1347,7 @@ extern "C" void app_main() {
                 if (sdOK) {
                     std::string root = sdCard->getCurrentDir();
                     // Go up to root for listing
-                    listSDDir(sessionDir.substr(0, sessionDir.find_last_of('/')).c_str());
+                    listSDDir(sdListRoot().c_str());
                 }
             }
         }
@@ -1375,11 +1439,7 @@ extern "C" void app_main() {
                 printf("#STOPCAUSE:UART0\n");  // diagnostic: this stop came from a '0' byte on UART0 (python, or noise if nothing is connected)
                 stopTest();   // end of test -> the measurement ESP closes its file and goes back to waiting for the next start signal
             } else if (cmd == 'S') {
-                uint8_t sb;
-                if (uart_read_bytes(UART_NUM_0, &sb, 1, pdMS_TO_TICKS(100)) > 0 &&
-                    sb >= '0' && sb <= '7') {
-                    selectTestSensor((uint8_t)(sb - '0'));
-                }
+                handleSensorCommand();
             } else if (cmd >= '1' && cmd <= '4') {
                 Mode newM = (Mode)(cmd - '0');
                 if (newM != mode || !recording) {
@@ -1415,7 +1475,7 @@ extern "C" void app_main() {
                 }
             } else if (cmd == 'F') {
                 if (sdOK) {
-                    listSDDir(sessionDir.substr(0, sessionDir.find_last_of('/')).c_str());
+                    listSDDir(sdListRoot().c_str());
                 }
             }
         }

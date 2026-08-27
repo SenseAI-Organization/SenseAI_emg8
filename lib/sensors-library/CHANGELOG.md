@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 <!-- The format is based on [Keep a Changelog](https://keepachangelog.com/), -->
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/). -->
 
+## [0.11.0] - 2026-08-27
+### Fixed
+- **ADS1015: single-shot round-robin could stall permanently after a stop/start cycle** — triggers were written successfully (zero I2C errors) but the ALERT/RDY pin never pulsed again, so no conversion was ever delivered while `retriggerIfStalled()` spun at ~100/s indefinitely. Observed on hardware as `#CNT` reporting all-zero per-channel counts alongside 95–668 retriggers per ADC. Two causes, both fixed:
+  - `stopContinuous()` leaves the chip with the comparator disabled (`COMP_QUE=None`), but the `ThreshLow`/`ThreshHigh` registers that turn ALERT/RDY into a conversion-ready strobe were only written once, in `configureAlertPin()` at init. `startMixedContinuousExternal()` now rewrites them on every start, so a start following any stop cannot inherit a state where triggers land but DRDY never returns.
+  - **Data race between the service path and start/stop.** `serviceConversion()` / `retriggerIfStalled()` run on the caller's service task while `startMixedContinuousExternal()` / `stopContinuous()` are typically called from another task (and on ESP32, another core), with nothing serializing them — so a service call could re-trigger into a half-torn-down instance and leave `conversionPending_` disagreeing with the chip's real state. Added a per-instance mutex (`opMutex_`) held across the read + re-trigger sequence and across start/stop. Also drops any stale DRDY edge at start so the first service call can't consume one against a fresh trigger.
+
+### Added
+- **ADS1015**: `ensureOpMutex()` (internal) — the service/start-stop mutex is created lazily on the single-shot start path. Callers using only the legacy internal-task modes are unaffected (the mutex stays null and every guard no-ops).
+
+### Notes
+- Callers that reconfigure mid-acquisition by calling `stopContinuous()` then `startMixedContinuousExternal()` again (e.g. switching channels at runtime) were the ones exposed to both bugs above. Steady-state acquisition that starts once and never churns was not affected.
+
 ## [0.10.0] - 2026-07-20
 ### Added
 - **ADS1015**: `retriggerIfStalled(timeoutUs)` — watchdog that re-arms a single-shot round-robin whose trigger write or DRDY edge was lost. Re-triggering names the channel explicitly, so stall recovery cannot corrupt channel attribution.
