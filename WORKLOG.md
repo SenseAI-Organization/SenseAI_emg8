@@ -458,3 +458,57 @@ forma estable, el anfitrion no es el cuello de botella.
   efecto practico (ese driver no registra nada en caliente), pero esta ahi.
 
 **Sin commitear:** nada.
+
+## 2026-09-02 (bis) — El mapa crudo/envolvente no es el mismo en los cuatro ADC
+
+**Hecho:** `kRawCh`/`kEnvCh` por ADC, lista de barrido armada por ADC, y
+`isRawCh(id, ch)` decidiendo rapido/lento en `onSample`. La cabecera `H` gana
+un sufijo `r`/`e` por columna.
+
+Lo que suponia este firmware —crudo en ch0/ch2, envolvente en ch1/ch3, igual en
+los cuatro— no es lo que hay en la placa:
+
+| ADC | crudo | envolvente |
+|---|---|---|
+| 1 | 0, 3 | 1, 2 |
+| 2 | 1, 3 | 0, 2 |
+| 3 | 0, 3 | 1, 2 |
+| 4 | 1, 3 | 0, 2 |
+
+`ch2`/`ch3` intercambiados en los cuatro, y `ch0`/`ch1` ademas en los ADC 2 y 4
+— los pares 1/3 y 2/4 estan en espejo.
+
+**Como se midio:** captura por UDP muestra a muestra, modo 2 y modo 3 por
+separado para que cada patilla corriera a tasa completa (el firmware quita el
+divisor cuando no hay canales rapidos). Cada canal salio >=97.9 % en un solo
+nivel y doce de dieciseis al 100 %: es estable, no una carrera de mux. La
+bateria del sensor cargada, que es lo que pone el pedestal crudo en ~605.
+
+**Por que importaba mas que una etiqueta:** con el mapa anterior, seis de los
+ocho electrodos tenian su señal cruda entrando por una patilla que se
+muestreaba con el divisor /20 a ~23 Hz, y su envolvente a ~460 Hz. Y cada
+muestra iba al fichero equivocado en la tarjeta (R.bin frente a E.bin) y al
+tipo de paquete UDP equivocado.
+
+**Verificado tras grabar:** modo 2 entrega los ocho canales crudos a ~605 y
+modo 3 los ocho de envolvente en ~0, ambos al 100 %. Antes eran 2 de 8 y 6 de
+8. Tambien desaparece el 1-2 % de mezcla que se veia en el ADC 1.
+
+**Artefactos:** `.pio/build/esp32-s3-devkitc-1/firmware.bin` (942 026 B),
+verificado que contiene el formato nuevo de cabecera antes de grabarlo. Es lo
+que corre en el equipo.
+
+**Pendiente, para quien revise el esquematico:**
+- Confirmar si el espejo de los ADC 2/4 es intencional (rutado) o un error, y
+  si `ch2`/`ch3` estan invertidos en la placa o la convencion del firmware
+  estaba equivocada desde el principio.
+- **La cabecera maestra de la SD no guarda el mapa de canales.** Son 32 bytes
+  con `[25-31]` reservados; escribir ahi los cuatro bytes de `kRawCh` haria que
+  cada grabacion se explique sola y permitiria distinguir un fichero anterior a
+  este arreglo de uno posterior. Compatible hacia atras.
+- Toda grabacion anterior a este commit tiene R.bin y E.bin cruzados en seis de
+  ocho electrodos. El mapa es determinista, asi que se pueden reinterpretar.
+- Transitorios aislados en canales crudos (`adc4_1r`: pico a pico 301 con sd
+  7.8). No los explica el cargador de la bateria: sobreviven al desenchufe.
+
+**Sin commitear:** nada.
