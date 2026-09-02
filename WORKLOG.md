@@ -318,3 +318,46 @@ del monitor.
 - Modo 4 sigue sin entregar datos.
 
 **Sin commitear:** nada.
+
+
+## 2026-09-02 (correccion) — el +74 % de tasa no se sostiene
+
+**Correccion a `72d0a26`.** Ese commit afirma que silenciar la linea CSV subio
+la tasa de ~510 a ~885 Hz/canal (+74 %). La medicion era real —la confirmo el
+`#CNT` del equipo— pero **no se reproduce**, y presentarla como resultado
+estable fue un error.
+
+Matriz controlada (50 s por condicion, medida siempre con `#CNT` dividido por
+el tiempo entre `#REC` y `#STOP`, no con contadores del anfitrion):
+
+| condicion | crudo Hz/canal | lineas D |
+|---|---|---|
+| radio apagada, D a ~48 Hz | 463.5 | 47.7 Hz |
+| radio encendida, sin suscriptor, D a 1 Hz | 467.1 - 517.4 | 1.0 Hz |
+| radio encendida + suscrito + transmitiendo | **727.9** | 1.0 Hz |
+
+Lo que se puede afirmar:
+
+- **Silenciar el UART vale ~+12 %**, no +74 %. Real, pero modesto.
+- **Dos corridas de la misma condicion difieren ~2 %**, asi que la medida es
+  repetible y las diferencias de arriba estan fuera del ruido.
+- **Con UDP transmitiendo de verdad la tasa sube mucho (+56 % sobre la misma
+  condicion sin suscriptor).** Es al reves de lo esperado: mandar mas datos
+  deberia costar CPU, no regalarla. No hay explicacion todavia.
+- **No es escalado de frecuencia de CPU**: `CONFIG_PM_ENABLE` no esta activo y
+  la CPU esta fijada a 240 MHz.
+- `i2c_err` y `retrig` en 0 en todas las condiciones.
+
+**Siguiente diagnostico, en orden de costo:**
+1. `esp_wifi_set_ps(WIFI_PS_NONE)` — una linea. El firmware no llama a
+   `esp_wifi_set_ps`, asi que corre con el ahorro de energia por defecto
+   (`WIFI_PS_MIN_MODEM`). Si las transiciones de modem-sleep estan retrasando
+   la ISR de DRDY o la tarea de I2C, esto lo aplana.
+2. Alternar w1_sub / w1_nosub varias veces para descartar deriva.
+3. Contar en `adcBusTask` los despertares por cola frente a los por timeout:
+   distingue "tarea sin CPU" de "flanco DRDY perdido".
+
+Hasta que eso se entienda, la tasa util del equipo es **~460-520 Hz/canal**, y
+los 885 Hz quedan como un dato aislado sin reproducir.
+
+**Sin commitear:** nada.
