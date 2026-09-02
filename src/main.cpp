@@ -36,6 +36,7 @@
 #include "freertos/queue.h"
 #include "esp_timer.h"
 #include "esp_log.h"
+#include "esp_system.h"
 #include "esp_attr.h"     // IRAM_ATTR (button ISR)
 #include "driver/uart.h"
 #include "driver/gpio.h"  // gpio_config, gpio_install_isr_service, gpio_isr_handler_add (button ISR)
@@ -268,6 +269,33 @@ static void resetDropCounters() {
     imuDrops.store(0, std::memory_order_relaxed);
 }
 
+static const char* resetReasonName(esp_reset_reason_t reason) {
+    switch (reason) {
+        case ESP_RST_POWERON:   return "POWERON";
+        case ESP_RST_EXT:       return "EXT";
+        case ESP_RST_SW:        return "SW";
+        case ESP_RST_PANIC:     return "PANIC";
+        case ESP_RST_INT_WDT:   return "INT_WDT";
+        case ESP_RST_TASK_WDT:  return "TASK_WDT";
+        case ESP_RST_WDT:       return "WDT";
+        case ESP_RST_DEEPSLEEP: return "DEEPSLEEP";
+        case ESP_RST_BROWNOUT:  return "BROWNOUT";
+        case ESP_RST_SDIO:      return "SDIO";
+        default:                return "UNKNOWN";
+    }
+}
+
+/* Keep this line stable and machine-readable. It is the first application
+ * line after a reset and is the quickest way to separate a firmware panic or
+ * watchdog from a power interruption/brownout. */
+static void printBootDiagnostics() {
+    esp_reset_reason_t reason = esp_reset_reason();
+    printf("#BOOT:reset=%s(%d),heap=%u,minheap=%u\n",
+           resetReasonName(reason), (int)reason,
+           (unsigned)esp_get_free_heap_size(),
+           (unsigned)esp_get_minimum_free_heap_size());
+}
+
 static void updateStatusLed() {
     if (!led) return;
 
@@ -315,6 +343,21 @@ static void printSampleCounts() {
                (unsigned long)adc[a]->getI2cErrorCount(),
                (unsigned long)adc[a]->getRetriggerCount());
     }
+}
+
+/* One low-rate health line makes a long run diagnosable even when the reset
+ * itself produces no useful text on the serial link. Queue occupancy is
+ * sampled, not cleared, so this does not alter acquisition behaviour. */
+static void printHealthLine() {
+    printf("#HEALTH:%lu,%u,%u,%u,%u,%lu,%lu,%lu\n",
+           (unsigned long)(esp_timer_get_time() / 1000),
+           (unsigned)esp_get_free_heap_size(),
+           (unsigned)uxQueueMessagesWaiting(rawQ),
+           (unsigned)uxQueueMessagesWaiting(envQ),
+           (unsigned)uxQueueMessagesWaiting(imuQ),
+           (unsigned long)rawDrops.load(std::memory_order_relaxed),
+           (unsigned long)envDrops.load(std::memory_order_relaxed),
+           (unsigned long)imuDrops.load(std::memory_order_relaxed));
 }
 
 /* ── ADC conversion callback (called from each ADC's FreeRTOS task) ──────── */
@@ -1154,6 +1197,7 @@ extern "C" void app_main() {
     };
     uart_driver_install(UART_NUM_0, 1024, 0, 0, nullptr, 0);
     uart_param_config(UART_NUM_0, &uart_cfg);
+    printBootDiagnostics();
     // Pull-up on RX: this line is never explicitly pinned (uses the
     // default UART0 pins), so when the PC/python is NOT connected (the
     // whole point of the physical backup/OR button) it's left floating.
@@ -1400,8 +1444,16 @@ extern "C" void app_main() {
     xTaskCreatePinnedToCore(uartTask,     "uart", 4096, nullptr, 3, nullptr, 0);
     xTaskCreatePinnedToCore(adcBusTask,   "adc0", 4096, (void*)0, configMAX_PRIORITIES - 2, nullptr, 1);
     xTaskCreatePinnedToCore(adcBusTask,   "adc1", 4096, (void*)1, configMAX_PRIORITIES - 2, nullptr, 1);
+#ifndef EMG8_NO_IMU_TASK
     if (imuOK)
         xTaskCreatePinnedToCore(imuTask,  "imu",  4096, nullptr, 4, nullptr, 1);
+#else
+    // Compilar con -D EMG8_NO_IMU_TASK deja el IMU inicializado pero sin
+    // muestrear. Sirve para separar el trafico de SPI3 (IMU) del de SPI2 (SD)
+    // cuando se persigue un fallo en la ISR de SPI; no cambia nada del camino
+    // de adquisicion de sEMG.
+    printf("#DBG:IMU task disabled at build time\n");
+#endif
 
     if (recording)
         startADCs();
@@ -1409,9 +1461,15 @@ extern "C" void app_main() {
     /* ==== Main loop: monitor reed + UART ================================== */
     constexpr uint32_t kDebounceMs = 300;
     uint32_t lastToggle = 0;
+    uint32_t lastHealthMs = 0;
 
     while (true) {
         uint32_t nowMs = (uint32_t)(esp_timer_get_time() / 1000);
+
+        if (nowMs - lastHealthMs >= 1000) {
+            lastHealthMs = nowMs;
+            printHealthLine();
+        }
 
         // ---- Reed switch toggle (with debounce) ----
         bool reedNow = reedSw->isPressed();

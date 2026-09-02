@@ -1,6 +1,6 @@
 # EMG8 Bracelet
 
-8-channel surface EMG acquisition bracelet based on the **ESP32-S3-WROOM-1-N8**. Four ADS1015 ADCs sample raw EMG and envelope signals simultaneously using interrupt-driven mixed-rate continuous mode, with binary SD logging and real-time UART CSV output.
+8-channel surface EMG acquisition bracelet based on the **ESP32-S3-WROOM-1-N8**. Four ADS1015 ADCs sample raw EMG and envelope signals simultaneously using interrupt-driven mixed-rate single-shot mode, with binary SD logging and real-time UART CSV output.
 
 ## Hardware
 
@@ -198,6 +198,7 @@ Command notes:
 | Prefix | Meaning |
 |--------|---------|
 | `#READY` | Firmware booted and is ready for commands |
+| `#BOOT:reset=...,heap=...,minheap=...` | Reset cause and heap watermarks from the preceding boot |
 | `#MAC:<hex>` | Device MAC used in session directory names |
 | `#INIT:ADC=...,SD=...,IMU=...` | Peripheral init summary |
 | `#MODE:<n>` | Current acquisition mode |
@@ -214,6 +215,7 @@ Command notes:
 | `#NET:<ip>:<port>` | UDP client subscribed at this endpoint |
 | `#NET:TX=<n>,ERR=<n>,DROP=<n>` | Streaming stats, printed on `W0` |
 | `#STATUS:...` | Current status snapshot |
+| `#HEALTH:<uptime_ms>,<free_heap>,<raw_q>,<env_q>,<imu_q>,<raw_drops>,<env_drops>,<imu_drops>` | Periodic 1 Hz runtime health snapshot |
 | `#FLIST:<path>` | Start of SD file listing |
 | `#F:<name>,<size>` | One file or directory entry |
 | `#FEND` | End of SD file listing |
@@ -360,6 +362,20 @@ Label event (12 bytes, repeated for each `L<id>,<rep>` command received while re
 These layouts are defined in [src/emg8_types.hpp](src/emg8_types.hpp) (`Sample`, `ImuSample`, `LabelEvent`) — the same structs are used for the UDP stream records (see above).
 
 ## Building
+
+### Host-side serial capture
+
+The repository includes [serial_capture.py](serial_capture.py) for repeatable
+COM testing. It keeps DTR/RTS inactive so opening the CP210x port does not
+accidentally reset the ESP32:
+
+```bash
+python serial_capture.py --seconds 50 --command 1 --stop-after 45 --metadata-only
+```
+
+Use `--command ?` for a status query, or omit `--command` to capture without
+sending a command. The `--metadata-only` option suppresses high-rate `D` lines
+while retaining headers, status, counters, and reset diagnostics.
 
 ### Requirements
 
