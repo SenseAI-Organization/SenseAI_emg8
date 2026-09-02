@@ -361,3 +361,100 @@ Hasta que eso se entienda, la tasa util del equipo es **~460-520 Hz/canal**, y
 los 885 Hz quedan como un dato aislado sin reproducir.
 
 **Sin commitear:** nada.
+
+## 2026-09-02 — Modo UDP-solo: `U0` / `U1`, y lo que NO arregla
+
+**Hecho:** el equipo puede dejar de escribir por el UART entero mientras
+entrega por UDP, y volver por tres caminos distintos.
+
+`U0` / `U1` (dos bytes, sin salto de linea, como `V0` / `W1`), aceptados por
+UART y por UDP. Acusan `#UART:0` / `#UART:1`.
+
+Lo que calla `U0`:
+
+- los ~77 `printf` de `main.cpp`, redirigidos con una sola linea
+  (`static int hostPrintf(...)` + `#define printf hostPrintf`, tras los
+  includes). Un gancho, ningun sitio de llamada olvidado;
+- los logs del propio ESP-IDF (`esp_log_level_set("*", ESP_LOG_NONE)`), que no
+  pasan por `printf`;
+- el armado de la linea `D` en `uartTask`: se salta el bloque entero, no solo
+  la impresion.
+
+Lo que **no** toca es la recepcion del UART. Es deliberado: `U1` tiene que
+funcionar a ciegas. Tres vias de vuelta, para que el equipo no pueda quedar
+mudo y sordo a la vez:
+
+1. el anfitrion manda `U1` solo si el UDP se cae o si va a descargar de la SD
+   (`link.py`, `_restore_uart`);
+2. el equipo se destapa solo tras 20 s sin datagramas del cliente
+   (`kQuietWatchdogMs`) y avisa `#UART:1,watchdog`;
+3. siempre queda `U1` a ciegas por el UART, o un reset por RTS.
+
+Ademas `netStreamStop()` (o sea `W0`) devuelve el UART —sin radio no quedaria
+por donde hablar— y el manejador de `G` se destapa solo, porque el cuerpo del
+archivo sale por `uart_write_bytes`, que no pasa por `hostPrintf`.
+
+El canal de comandos por UDP salio casi gratis: `pollSubscribe()` ya hacia un
+`recvfrom` para aprender la direccion del cliente y tiraba el contenido. Ahora
+lo que no sea el `HI` de suscripcion va a un manejador registrado
+(`netSetCommandHandler`). Solo acepta `U0`/`U1`: son escrituras atomicas de una
+bandera, sin efectos colaterales, y corren en la tarea de red. El resto del
+juego de comandos sigue por UART, que nunca deja de escuchar.
+
+**Verificado en hardware** (8 comprobaciones, todas pasan):
+`?` contesta · `U0` acusa y luego 0 bytes en 3 s · sigue mudo ante `?` · `U1` a
+ciegas lo recupera · idem con la radio encendida · **`U1` por UDP devuelve la
+consola** · el watchdog de 20 s se dispara solo.
+
+**Lo que NO arregla: la tasa.** La hipotesis era que el UART se estaba comiendo
+las conversiones. No es eso, y ahora hay con que afirmarlo.
+
+Primero, tres pares de 60 s (`#CNT`, `w1_sub` frente a `w1_quiet`):
+
+| par | `w1_sub` | `w1_quiet` | cambio |
+|---|---|---|---|
+| 1 | 481.7 | **881.2** | +82.9 % |
+| 2 | 460.0 | 524.5 | +14.0 % |
+| 3 | 456.4 | 452.0 | −1.0 % |
+
+`D 0.0 Hz` en las tres filas calladas: el silencio es real. Pero la dispersion
+*dentro* de la condicion callada se come la diferencia.
+
+Lo que lo cierra: **ocho corridas identicas seguidas**, misma condicion, sin
+tocar nada entre una y otra:
+
+```
+808.4 · 463.8 · 461.0 · 462.2 · 455.9 · 459.8 · 460.1 · 459.3   Hz/canal
+```
+
+La tasa es **bimodal**: o ~460 Hz/canal o ~800-880 Hz/canal, un factor de casi
+dos. Dentro del modo lento es repetible al ±1 % (455.9 a 463.8 en siete
+corridas). Por eso cada comparacion pareada parecia concluyente: ganaba el lado
+que hubiera caido en el modo rapido. El UART nunca fue la variable.
+
+Cronologicamente, las 18 medidas de hoy —lento, RAPIDO, lento, 524, lento, lento /
+RAPIDO ×4 / RAPIDO, lento ×7— no dan un patron limpio con ninguna de las
+condiciones probadas. Las cuatro rapidas seguidas fueron la corrida en la que
+el portatil habia perdido la asociacion y no llegaba ni un datagrama, asi que
+tampoco es "mandar por UDP lo acelera".
+
+**Un resultado util que si sale de esto:** en el modo rapido el anfitrion
+recibe lo que el equipo convierte. 808.4 Hz/canal convertidos, **807.5
+Hz/canal recibidos** por UDP (99.4 a 99.8 % en las dos modalidades). La ruta
+UDP aguanta 800 Hz/canal de punta a punta; si el firmware llega a esa tasa de
+forma estable, el anfitrion no es el cuello de botella.
+
+**Artefactos:**
+- `.pio/build/esp32-s3-devkitc-1/firmware.bin` (942 176 B), verificado con
+  `grep -aoF` que contiene `#UART:0`, `#UART:1` y `#UART:1,watchdog` antes de
+  grabarlo. Es lo que corre en el equipo ahora.
+
+**Pendiente:**
+- La variacion de tasa sigue sin explicacion. El siguiente diagnostico mas
+  barato sigue siendo `esp_wifi_set_ps(WIFI_PS_NONE)`: el firmware nunca llama
+  a `esp_wifi_set_ps`, asi que corre con `WIFI_PS_MIN_MODEM`.
+- Detalle menor: `U1` deja el nivel de log global en `ESP_LOG_INFO`, asi que
+  pisa el `esp_log_level_set("ICM42605", ESP_LOG_DEBUG)` de arranque. Sin
+  efecto practico (ese driver no registra nada en caliente), pero esta ahi.
+
+**Sin commitear:** nada.
