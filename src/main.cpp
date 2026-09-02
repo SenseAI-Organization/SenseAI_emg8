@@ -573,6 +573,11 @@ static void sdWriteTask(void*) {
  */
 
 static void uartTask(void*) {
+    // Divisor de la linea CSV cuando el UDP esta entregando: 50 iteraciones de
+    // 20 ms = 1 Hz.
+    constexpr int kCsvDividerOnNet = 50;
+    int netQuietTick = 0;
+
     bool hdrDone = false;
     Mode lastHdrMode = Mode::Idle;
     uint8_t lastHdrSensor = 0xFF;
@@ -615,6 +620,17 @@ static void uartTask(void*) {
             lastHdrSensor = testSensor;
             hdrDone = true;
         }
+
+        // While UDP is delivering the full-rate stream, the ~50 Hz CSV snapshot
+        // is redundant: the host ignores its samples anyway (same channels, a
+        // different clock — overlaying them is garbage). Drop to 1 Hz so the
+        // link still shows liveness, labels and mode without spending UART
+        // bandwidth or CPU on string formatting 50 times a second.
+        if (netStreamActive() && ++netQuietTick < kCsvDividerOnNet) {
+            vTaskDelay(pdMS_TO_TICKS(20));
+            continue;
+        }
+        netQuietTick = 0;
 
         // One CSV line of latest readings
         char line[512];
