@@ -260,3 +260,61 @@ el arbol). Herramientas del lado del anfitrion en
 **Coordinacion:** este trabajo lo hizo la sesion que tiene `IA-Arm_Monitor`,
 cruzando a este repo con autorizacion explicita de Daniel y solo sobre la rama
 `wireless-testing`. Sin `git add -A`: los dos commits listan sus rutas.
+
+
+## 2026-09-02 (mas tarde) — UDP validado contra hardware por primera vez, y el UART fuera del camino de datos
+
+**Hecho:** Con el panico de SPI ya corregido, se ejercito el flujo completo
+serial -> UDP contra el equipo. Nunca se habia hecho.
+
+El anfitrion hace la secuencia solo (`--source auto`): abre el puerto, `?`,
+`W1`, espera `#WIFI:1`, suscribe UDP contra 192.168.4.1:3333 y promueve el
+enlace a `streaming` en cuanto llega el primer paquete. Si el PC todavia no se
+unio a la red del brazalete lo dice con esas palabras y reintenta cada 20 s.
+
+**Resultado, modo 1, medido en hardware:**
+
+|  | UART (lineas D) | UDP |
+|---|---|---|
+| registros crudos / 40 s | 12 632 | 128 786 |
+| tasa medida | 47.6 Hz | 511 Hz agregada |
+| perdida | — | 6 de 2020 paquetes (0.3 %) |
+
+**Despues** de bajar la linea CSV a 1 Hz mientras el UDP entrega (`72d0a26`):
+
+    trafico UART      5700 B/s  ->  138 B/s      (41x menos)
+    crudo por canal    ~510 Hz  ->  ~885 Hz      (+74 %)
+    envolvente          ~25 Hz  ->   ~44 Hz
+    perdida de paquetes   0.3 % ->   0.05 %
+
+El aumento de tasa no era el objetivo y es lo mas interesante: `uartTask`
+estaba dejando sin CPU a las tareas de servicio de los ADC. Confirmado con los
+contadores del propio equipo tras un stop limpio, sin depender del anfitrion:
+
+    #CNT:1,63769,3188,63769,3188,0,0    razon rapido/lento exactamente 20.0
+    #CNT:2,61463,3073,61463,3073,0,0    i2c_err = 0, retrig = 0 en los cuatro
+    #CNT:3,61461,3073,61460,3073,0,0
+    #CNT:4,63280,3164,63280,3163,0,0
+
+499 946 conversiones en el equipo, 495 751 recibidas por el anfitrion
+(99.16 %), cero desbordamientos de anillo.
+
+**Hallazgo del protocolo:** `#NET:<ip>:<port>` NO anuncia el extremo del
+brazalete, sino el del cliente que acaba de suscribirse
+(`net_stream.cpp:123` imprime la direccion de origen del datagrama).
+Verificado: suscribiendose desde 192.168.4.2 el equipo respondio
+`#NET:192.168.4.2:54400`. Sigue sin haber forma de preguntarle al equipo cual
+es su propia IP; queda como pedido P0 en `FIRMWARE-CONTRACT.md` del proyecto
+del monitor.
+
+**Pendiente:**
+- El estimador de tasa del IMU reporta ~3.8 kHz con 35 % de huecos: los
+  `ts_us` del IMU no se comportan como los del EMG. Revisar si
+  `recordingTimestampUs()` se muestrea bien en `imuTask`. El camino de sEMG no
+  se ve afectado.
+- Modo estacion sigue siendo el pedido grande: el SoftAP obliga al PC a dejar
+  su red, y eso impide que el enlace sea del todo automatico.
+- Corrida larga (>10 min) con UDP para confirmar estabilidad.
+- Modo 4 sigue sin entregar datos.
+
+**Sin commitear:** nada.
