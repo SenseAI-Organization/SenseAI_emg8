@@ -123,12 +123,35 @@ static constexpr gpio_num_t kPGOOD    = GPIO_NUM_4;   // Power-good (active LOW)
 
 static const char* TAG = "MASTER";
 
-/* ── Channel layout (identical on every ADC) ───────────────────────────────── */
+/* ── Channel layout (NOT identical on every ADC) ───────────────────────────── */
 
-static constexpr uint8_t kEMG0     = 0;   // fast — raw EMG
-static constexpr uint8_t kEMG1     = 2;   // fast — raw EMG
-static constexpr uint8_t kENV0     = 1;   // slow — envelope
-static constexpr uint8_t kENV1     = 3;   // slow — envelope
+/*
+ * Medido en hardware el 2026-09-02, con el brazalete sobre la mesa y bateria
+ * del sensor cargada: los ocho canales crudos entregan su pedestal de continua
+ * (~605 cuentas) y los ocho de envolvente estan cerca de cero. Capturado por
+ * UDP muestra a muestra, en modo 2 y modo 3 por separado para que cada patilla
+ * corra a tasa completa; cada canal salio >=97.9 % en un solo nivel, y doce de
+ * dieciseis al 100 %, asi que la asignacion es estable y no una carrera de mux.
+ *
+ *   ADC | crudo  | envolvente
+ *   ----+--------+-----------
+ *    1  | 0, 3   | 1, 2
+ *    2  | 1, 3   | 0, 2
+ *    3  | 0, 3   | 1, 2
+ *    4  | 1, 3   | 0, 2
+ *
+ * Respecto a lo que suponia este firmware (crudo 0/2, envolvente 1/3): ch2 y
+ * ch3 estan intercambiados en los cuatro ADC, y ch0/ch1 ademas en los ADC 2 y
+ * 4. No es solo una etiqueta equivocada: con el mapa anterior las patillas
+ * crudas de esos electrodos se muestreaban con el divisor /20 a ~23 Hz y las
+ * de envolvente a ~460 Hz, o sea justo al reves de lo que hace falta.
+ */
+static constexpr uint8_t kRawCh[4][2] = {{0, 3}, {1, 3}, {0, 3}, {1, 3}};
+static constexpr uint8_t kEnvCh[4][2] = {{1, 2}, {0, 2}, {1, 2}, {0, 2}};
+
+static inline bool isRawCh(uint8_t adcId, uint8_t ch) {
+    return ch == kRawCh[adcId & 3][0] || ch == kRawCh[adcId & 3][1];
+}
 // Single-shot triggered round-robin at 3300 SPS. Measured on hardware in All
 // mode: ~554 Hz/ch raw and ~28 Hz/ch envelope per ADC, with symmetric
 // per-channel counts and zero retriggers/I2C errors — this is the validated
@@ -184,7 +207,11 @@ static constexpr uint8_t kNUM_SENSORS = 8;
 static volatile uint8_t  testSensor   = 0;   // 0-7, selected with 'S<n>'
 
 static inline uint8_t sensorAdc(uint8_t s)     { return (s % kNUM_SENSORS) / 2; }
-static inline uint8_t sensorChannel(uint8_t s) { return (s % 2 == 0) ? kEMG0 : kEMG1; }
+// El sensor s vive en la patilla cruda del ADC que le toca, y cual es esa
+// patilla depende del ADC (ver kRawCh).
+static inline uint8_t sensorChannel(uint8_t s) {
+    return kRawCh[sensorAdc(s) & 3][s % 2];
+}
 
 /* ── Globals ───────────────────────────────────────────────────────────────── */
 
@@ -394,7 +421,7 @@ static void printHealthLine() {
 
 static void onSample(uint8_t ch, int16_t val, uint32_t tsUs, void* arg) {
     uint8_t id = (uint8_t)(uintptr_t)arg;
-    bool fast  = (ch == kEMG0 || ch == kEMG1);
+    bool fast  = isRawCh(id, ch);
 
     // Drop channels the current mode doesn't need
     if (mode == Mode::Raw && !fast) return;
@@ -425,8 +452,8 @@ static void onSample(uint8_t ch, int16_t val, uint32_t tsUs, void* arg) {
 /*
  * Files opened once per recording session (no open/close cycling):
  *   M.bin — master header + label events
- *   R.bin — raw EMG  (8-byte Sample, ch 0-1)
- *   E.bin — envelope (8-byte Sample, ch 2-3)
+ *   R.bin — raw EMG  (8-byte Sample; la patilla depende del ADC, ver kRawCh)
+ *   E.bin — envelope (8-byte Sample; idem, ver kEnvCh)
  *   I.bin — IMU      (20-byte ImuSample)
  *
  * Uses raw f_open/f_write/f_sync to hold 4 FIL handles simultaneously
@@ -646,10 +673,12 @@ static void uartTask(void*) {
             } else {
                 for (int a = 0; a < 4; a++)
                     for (int c = 0; c < 4; c++) {
-                        bool fast = (c == kEMG0 || c == kEMG1);
+                        bool fast = isRawCh((uint8_t)a, (uint8_t)c);
                         if (mode == Mode::Raw && !fast) continue;
                         if (mode == Mode::Env &&  fast) continue;
-                        printf(",adc%d_%d", a + 1, c);
+                        // El sufijo dice que es la columna, no solo de donde
+                        // sale: leer "adc2_1" sin saber el mapa confundia.
+                        printf(",adc%d_%d%s", a + 1, c, fast ? "r" : "e");
                     }
             }
             if (imuOK)
@@ -686,7 +715,7 @@ static void uartTask(void*) {
         } else {
             for (int a = 0; a < 4; a++)
                 for (int c = 0; c < 4; c++) {
-                    bool fast = (c == kEMG0 || c == kEMG1);
+                    bool fast = isRawCh((uint8_t)a, (uint8_t)c);
                     if (mode == Mode::Raw && !fast) continue;
                     if (mode == Mode::Env &&  fast) continue;
                     p += snprintf(line + p, sizeof(line) - p, ",%d",
@@ -839,21 +868,24 @@ static void startADCs() {
     bool wF = (mode == Mode::All || mode == Mode::Raw);
     bool wS = (mode == Mode::All || mode == Mode::Env);
 
-    ADS1015::ChannelConfig cfg[4];
-    uint8_t n = 0;
-    if (wF) {
-        cfg[n++] = {kEMG0, 1, ADS1015::ConfigPGA::One};
-        cfg[n++] = {kEMG1, 1, ADS1015::ConfigPGA::One};
-    }
-    if (wS) {
-        // Use divider only when fast channels are also present;
-        // otherwise run the envelope channels at full speed.
-        uint8_t div = wF ? kSLOW_DIV : 1;
-        cfg[n++] = {kENV0, div, ADS1015::ConfigPGA::One};
-        cfg[n++] = {kENV1, div, ADS1015::ConfigPGA::One};
-    }
-    for (int i = 0; i < 4; i++)
+    // La lista de barrido se arma por ADC: las patillas crudas no son las
+    // mismas en los cuatro (ver kRawCh/kEnvCh).
+    for (int i = 0; i < 4; i++) {
+        ADS1015::ChannelConfig cfg[4];
+        uint8_t n = 0;
+        if (wF) {
+            cfg[n++] = {kRawCh[i][0], 1, ADS1015::ConfigPGA::One};
+            cfg[n++] = {kRawCh[i][1], 1, ADS1015::ConfigPGA::One};
+        }
+        if (wS) {
+            // Use divider only when fast channels are also present;
+            // otherwise run the envelope channels at full speed.
+            uint8_t div = wF ? kSLOW_DIV : 1;
+            cfg[n++] = {kEnvCh[i][0], div, ADS1015::ConfigPGA::One};
+            cfg[n++] = {kEnvCh[i][1], div, ADS1015::ConfigPGA::One};
+        }
         adc[i]->startMixedContinuousExternal(cfg, n, kADC_RATE);
+    }
 }
 
 static void stopADCs() {
