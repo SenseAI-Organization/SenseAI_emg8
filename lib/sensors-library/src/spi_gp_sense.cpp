@@ -121,7 +121,15 @@ esp_err_t SPI::write(spi_device_handle_t *deviceHandler, uint8_t *dataToWrite,
         .rx_buffer = nullptr
     };
 
-    err = spi_device_transmit(*deviceHandler, &transaction);
+    // Dentro de una seccion con el bus adquirido, ESP-IDF espera transacciones
+    // *polling*. `spi_device_transmit()` usa la ruta por interrupcion, y esa
+    // mezcla rompe la invariante que `bg_exit_core()` comprueba sobre
+    // `acquiring_dev` / `acq_dev_bg_active`: con el IMU leyendo a 100 Hz
+    // durante una grabacion, la ISR de SPI acababa entrando con el lock del
+    // bus en un estado imposible y desreferenciando un puntero nulo
+    // (Guru Meditation LoadProhibited, EXCVADDR 0x8, en spi_bus_lock.c).
+    // Polling ademas saca a este dispositivo de la ruta de ISR por completo.
+    err = spi_device_polling_transmit(*deviceHandler, &transaction);
     spi_device_release_bus(*deviceHandler);
 
     return err;
@@ -145,7 +153,15 @@ esp_err_t SPI::read(spi_device_handle_t *deviceHandler, uint8_t *dataReceiver,
         .rx_buffer = dataReceiver
     };
 
-    err = spi_device_transmit(*deviceHandler, &transaction);
+    // Dentro de una seccion con el bus adquirido, ESP-IDF espera transacciones
+    // *polling*. `spi_device_transmit()` usa la ruta por interrupcion, y esa
+    // mezcla rompe la invariante que `bg_exit_core()` comprueba sobre
+    // `acquiring_dev` / `acq_dev_bg_active`: con el IMU leyendo a 100 Hz
+    // durante una grabacion, la ISR de SPI acababa entrando con el lock del
+    // bus en un estado imposible y desreferenciando un puntero nulo
+    // (Guru Meditation LoadProhibited, EXCVADDR 0x8, en spi_bus_lock.c).
+    // Polling ademas saca a este dispositivo de la ruta de ISR por completo.
+    err = spi_device_polling_transmit(*deviceHandler, &transaction);
     spi_device_release_bus(*deviceHandler);
 
     return err;
@@ -169,7 +185,15 @@ esp_err_t SPI::transfer(spi_device_handle_t *deviceHandler, uint8_t *tx_data,
         .rx_buffer = rx_data
     };
 
-    err = spi_device_transmit(*deviceHandler, &transaction);
+    // Dentro de una seccion con el bus adquirido, ESP-IDF espera transacciones
+    // *polling*. `spi_device_transmit()` usa la ruta por interrupcion, y esa
+    // mezcla rompe la invariante que `bg_exit_core()` comprueba sobre
+    // `acquiring_dev` / `acq_dev_bg_active`: con el IMU leyendo a 100 Hz
+    // durante una grabacion, la ISR de SPI acababa entrando con el lock del
+    // bus en un estado imposible y desreferenciando un puntero nulo
+    // (Guru Meditation LoadProhibited, EXCVADDR 0x8, en spi_bus_lock.c).
+    // Polling ademas saca a este dispositivo de la ruta de ISR por completo.
+    err = spi_device_polling_transmit(*deviceHandler, &transaction);
     spi_device_release_bus(*deviceHandler);
 
     return err;
