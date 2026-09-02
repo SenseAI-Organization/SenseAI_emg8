@@ -141,7 +141,37 @@ static constexpr uint16_t kIMU_ODR_HZ = 200;      // IMU polling rate
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
 #include "emg8_types.hpp"   // Sample / ImuSample / LabelEvent (shared with net_stream)
+#include <cstdarg>
 #include "net_stream.hpp"
+
+/* --- Modo UDP-solo -------------------------------------------------------
+ * Todo lo que este firmware le dice al anfitrion sale por printf, en ~77
+ * sitios. En vez de condicionar cada uno, se redirige printf aqui: un solo
+ * punto, sin riesgo de olvidar una llamada, y los sitios siguen legibles.
+ *
+ * Los logs del driver no pasan por aqui; los apaga hostSetUartQuiet().
+ * La recepcion del UART queda intacta a proposito (ver net_stream.hpp).
+ */
+static int hostPrintf(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
+static int hostPrintf(const char* fmt, ...) {
+    if (hostUartQuiet()) return 0;
+    va_list ap;
+    va_start(ap, fmt);
+    int n = vprintf(fmt, ap);
+    va_end(ap);
+    return n;
+}
+#define printf hostPrintf
+
+/** Comandos que llegan por UDP. Solo U0/U1: son escrituras atomicas de una
+ *  bandera, sin efectos colaterales, y corren en la tarea de red. El resto
+ *  del juego de comandos sigue entrando por UART, que nunca deja de leer. */
+static void udpCommand(const char* data, int len) {
+    if (len >= 2 && data[0] == 'U') {
+        if (data[1] == '0') hostSetUartQuiet(true);
+        else if (data[1] == '1') { hostSetUartQuiet(false); printf("#UART:1\n"); }
+    }
+}
 
 enum class Mode : uint8_t { Idle = 0, All = 1, Raw = 2, Env = 3, Sensor = 4 };
 
@@ -585,6 +615,15 @@ static void uartTask(void*) {
     while (true) {
         if (!recording) {
             hdrDone = false;
+            vTaskDelay(pdMS_TO_TICKS(100));
+            continue;
+        }
+
+        /* En modo UDP-solo no basta con que printf no escriba: armar la linea
+         * cuesta 16 lecturas de ADC y una docena de snprintf 50 veces por
+         * segundo. Se salta entera. */
+        if (hostUartQuiet()) {
+            hdrDone = false;   // al volver, reimprimir la cabecera
             vTaskDelay(pdMS_TO_TICKS(100));
             continue;
         }
@@ -1082,6 +1121,10 @@ static void processUartLine(const char* line, int len) {
         }
     } else if (line[0] == 'G') {
         // File transfer: G<path as emitted by the 'F' listing>
+        // El cuerpo del archivo sale por uart_write_bytes, que no pasa por
+        // hostPrintf: callados, el anfitrion recibiria los bytes sin la
+        // cabecera #FDATA y no sabria que hacer con ellos. Se destapa solo.
+        if (hostUartQuiet()) { hostSetUartQuiet(false); printf("#UART:1,transfer\n"); }
         if (!sdOK) { printf("#ERR:NO_SD\n"); return; }
         if (recording) { printf("#ERR:BUSY\n"); return; }
         std::string fpath(line + 1, len - 1);
@@ -1369,6 +1412,9 @@ extern "C" void app_main() {
     updateStatusLed();
 
     /* ==== Wait for command ================================================ */
+    /* Antes de #READY: el bucle de espera de modo tambien tiene que poder
+     * recibir U1 por UDP, o el equipo queda mudo hasta que alguien grabe. */
+    netSetCommandHandler(udpCommand);
     printf("#READY\n");
     printf("#MAC:%s\n", macStr);
 
@@ -1396,6 +1442,15 @@ extern "C" void app_main() {
                 if (uart_read_bytes(UART_NUM_0, &vb, 1, pdMS_TO_TICKS(100)) > 0) {
                     if (vb == '1' && battery) { battery->enable5V(); printf("#5V:1\n"); }
                     else if (vb == '0' && battery) { battery->disable5V(); printf("#5V:0\n"); }
+                }
+            }
+            else if (cmd == 'U') {
+                // UART TX on/off (U0 = callar, U1 = volver). La recepcion
+                // nunca se apaga, asi que U1 siempre llega, aunque sea a ciegas.
+                uint8_t ub;
+                if (uart_read_bytes(UART_NUM_0, &ub, 1, pdMS_TO_TICKS(100)) > 0) {
+                    if (ub == '0') { printf("#UART:0\n"); hostSetUartQuiet(true); }
+                    else if (ub == '1') { hostSetUartQuiet(false); printf("#UART:1\n"); }
                 }
             }
             else if (cmd == 'W') {
@@ -1543,6 +1598,14 @@ extern "C" void app_main() {
                 if (uart_read_bytes(UART_NUM_0, &vb, 1, pdMS_TO_TICKS(100)) > 0) {
                     if (vb == '1' && battery) { battery->enable5V(); printf("#5V:1\n"); }
                     else if (vb == '0' && battery) { battery->disable5V(); printf("#5V:0\n"); }
+                }
+            } else if (cmd == 'U') {
+                // UART TX on/off (U0 = callar, U1 = volver). La recepcion
+                // nunca se apaga, asi que U1 siempre llega, aunque sea a ciegas.
+                uint8_t ub;
+                if (uart_read_bytes(UART_NUM_0, &ub, 1, pdMS_TO_TICKS(100)) > 0) {
+                    if (ub == '0') { printf("#UART:0\n"); hostSetUartQuiet(true); }
+                    else if (ub == '1') { hostSetUartQuiet(false); printf("#UART:1\n"); }
                 }
             } else if (cmd == 'W') {
                 uint8_t wb;

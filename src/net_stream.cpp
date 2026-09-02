@@ -11,6 +11,7 @@
 #include "freertos/queue.h"
 #include "freertos/task.h"
 #include "esp_event.h"
+#include "esp_log.h"
 #include "esp_netif.h"
 #include "esp_timer.h"
 #include "esp_wifi.h"
@@ -54,6 +55,16 @@ bool clientKnown = false;
 std::atomic<uint32_t> txPackets{0};
 std::atomic<uint32_t> dropCount{0};
 uint32_t txErrors = 0;
+
+/* Modo UDP-solo. Vive aqui porque este modulo es el que vuelve prescindible
+ * al UART; nadie mas tiene por que saber como se apaga. */
+std::atomic<bool> uartQuiet{false};
+void (*cmdHandler)(const char*, int) = nullptr;
+uint32_t lastClientMs = 0;
+
+/* Si el anfitrion desaparece con el UART mudo el equipo queda incomunicado,
+ * asi que el silencio caduca solo. */
+constexpr uint32_t kQuietWatchdogMs = 20000;
 
 /** Per-type packet assembly state. */
 struct Batch {
@@ -119,10 +130,15 @@ void pollSubscribe() {
                        src.sin_port != clientAddr.sin_port;
         clientAddr = src;
         clientKnown = true;
-        if (changed) {
+        lastClientMs = (uint32_t)(esp_timer_get_time() / 1000);
+        if (changed && !hostUartQuiet()) {
             printf("#NET:%s:%u\n", inet_ntoa(src.sin_addr),
                    (unsigned)ntohs(src.sin_port));
         }
+        /* Lo que no sea el "HI" de suscripcion es un comando. Esta es la via
+         * de regreso que hace seguro apagar el UART. */
+        if (n > 0 && cmdHandler && !(n == 2 && rx[0] == 'H' && rx[1] == 'I'))
+            cmdHandler((const char*)rx, n);
     }
 }
 
@@ -134,6 +150,14 @@ void netTask(void*) {
         }
 
         pollSubscribe();
+
+        /* Anfitrion callado y UART mudo: devolver la consola antes de que el
+         * equipo quede mudo y sordo a la vez. */
+        if (hostUartQuiet() && lastClientMs &&
+            (uint32_t)(esp_timer_get_time() / 1000) - lastClientMs > kQuietWatchdogMs) {
+            hostSetUartQuiet(false);
+            printf("#UART:1,watchdog\n");
+        }
 
         uint32_t nowMs = (uint32_t)(esp_timer_get_time() / 1000);
         pumpQueue(rawQ, batches[kTypeRaw], kTypeRaw, sizeof(Sample), kMaxRawRecs, nowMs);
@@ -184,6 +208,17 @@ esp_err_t wifiInitOnce(const char* macStr) {
 }
 
 }  // namespace
+
+void hostSetUartQuiet(bool quiet) {
+    uartQuiet.store(quiet, std::memory_order_relaxed);
+    /* Los logs del propio ESP-IDF no pasan por printf, hay que callarlos
+     * aparte o el UART sigue hablando. */
+    esp_log_level_set("*", quiet ? ESP_LOG_NONE : ESP_LOG_INFO);
+}
+
+bool hostUartQuiet(void) { return uartQuiet.load(std::memory_order_relaxed); }
+
+void netSetCommandHandler(void (*handler)(const char*, int)) { cmdHandler = handler; }
 
 esp_err_t netStreamStart(const char* macStr) {
     if (active.load()) return ESP_OK;
@@ -258,6 +293,8 @@ void netStreamStop() {
 
     esp_wifi_stop();
 
+    hostSetUartQuiet(false);   // sin radio no queda por donde hablar: el UART vuelve
+    lastClientMs = 0;
     printf("#NET:TX=%lu,ERR=%lu,DROP=%lu\n",
            (unsigned long)txPackets.load(),
            (unsigned long)txErrors,

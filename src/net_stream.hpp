@@ -33,6 +33,23 @@ void netStreamStop();
 /** @brief True between netStreamStart() and netStreamStop(). */
 bool netStreamActive();
 
+/**
+ * @brief UDP-only mode: silence everything the device writes to UART0.
+ *
+ * Receive stays enabled on purpose. `U1` has to work blind, so muting the
+ * transmit side must never cost us the way back in.
+ */
+void hostSetUartQuiet(bool quiet);
+bool hostUartQuiet(void);
+
+/**
+ * @brief Route datagrams arriving on the stream socket into a command parser.
+ *
+ * `pollSubscribe()` already reads and discards them to learn the client
+ * address; handing the payload over is what gives UDP a return path.
+ */
+void netSetCommandHandler(void (*handler)(const char* data, int len));
+
 /** @brief Non-blocking enqueue; silently counts drops when the net queue is full. */
 void netEnqueueRaw(const Sample& s);
 void netEnqueueEnv(const Sample& s);
