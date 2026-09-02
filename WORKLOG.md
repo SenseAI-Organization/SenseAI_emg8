@@ -195,3 +195,68 @@ path that actually mattered; the All-mode `#CNT` check that settled it took
 `sendStartToSlave`) was swept into commits `4015ea4` and `374ca06` here by a
 `git add -A` — nothing lost, but attribution is muddled. Ping before crossing
 repos.
+
+## 2026-09-02 — Panico en la ISR de SPI durante grabacion: aislado y corregido
+
+**Hecho:** Las grabaciones morian con un `Guru Meditation Error (LoadProhibited)`
+a los 5-41 s. Reproducible con la app nueva, con la vieja y con
+`serial_capture.py`, es decir independiente del anfitrion. `#BOOT:` lo confirmo
+como `reset=PANIC(4)`, no brownout ni watchdog.
+
+Backtrace decodificado contra el ELF de la build:
+
+    bg_exit_core          spi_bus_lock.c:554     <- deref nulo, EXCVADDR 0x8
+    spi_bus_lock_bg_exit  spi_bus_lock.c:778
+    spi_intr              spi_master.c:1027
+    _xt_lowint1 / tarea idle
+
+**Aislamiento**, midiendo en hardware (`capture_health.py`, 100-150 s por corrida):
+
+| modo | tarea IMU | resultado |
+|---|---|---|
+| 1 (All) | activa | panico a los 41 s |
+| 2 (Raw) | activa | sobrevivio 97 s |
+| 3 (Env) | activa | panico a los 23 s |
+| 1 (All) | **desactivada** | **sobrevivio 107 s** |
+| 1 (All) | activa, **con el fix** | **sobrevivio 147 s** |
+
+Descartados por medicion, no por intuicion: fuga de memoria (heap plano en
+~171 kB), contrapresion de colas (picos muy por debajo del fondo, cero
+descartes), volumen de escritura en SD (el modo 2 escribe mas y no falla),
+y DTR/RTS del anfitrion (falla con las lineas afirmadas y sin afirmar).
+
+**Causa:** `SPI::write/read/transfer` envolvian un `spi_device_transmit()` —la
+llamada por interrupcion— dentro de `spi_device_acquire_bus()`/`release_bus()`.
+ESP-IDF espera transacciones *polling* mientras el bus esta adquirido; mezclar
+las dos deja inconsistente la invariante `acquiring_dev` / `acq_dev_bg_active`
+que `bg_exit_core()` lee desde la ISR. Con el IMU transfiriendo a ~100 Hz
+durante toda la grabacion, tarde o temprano la ISR entraba con el lock en un
+estado imposible.
+
+**Corregido** en `cdf8608`: `spi_device_polling_transmit()`, que es el
+emparejamiento documentado y ademas saca a estos dispositivos de la ruta de ISR.
+Solo lo usan los drivers de IMU (ICM42605, LSM6DSOX); la SD va por `sdspi_host`
+y no se toca.
+
+**Artefactos:** `cdf8608` (fix), `65aafdf` (diagnosticos `#BOOT`/`#HEALTH` y el
+interruptor de compilacion `EMG8_NO_IMU_TASK`, que ya estaban sin commitear en
+el arbol). Herramientas del lado del anfitrion en
+`D:\PhD\Code\IA-Arm_Monitorackend	ools\`: `capture_health.py`,
+`crash_bisect.py`, `probe_device.py`.
+
+**Pendiente:**
+- Corrida larga (>10 min) para confirmar que no queda una cola mas lenta.
+- El modo 2 subio de 67 a 300 de pico en la cola de crudo tras el fix: el
+  camino de ADC esta rindiendo mas, sin descartes. Vale la pena volver a medir
+  `#CNT` por canal contra la tasa nominal.
+- UDP a tasa completa sigue sin ejercitarse contra hardware.
+- `gpio_install_isr_service(502): already installed` sigue apareciendo 4 veces
+  al arrancar una grabacion. Inofensivo hasta donde se ve, pero ahora que hubo
+  un fallo relacionado con ISR conviene mirarlo.
+- Modo 4 sigue sin entregar datos.
+
+**Sin commitear:** nada; el arbol quedo limpio en `wireless-testing`.
+
+**Coordinacion:** este trabajo lo hizo la sesion que tiene `IA-Arm_Monitor`,
+cruzando a este repo con autorizacion explicita de Daniel y solo sobre la rama
+`wireless-testing`. Sin `git add -A`: los dos commits listan sus rutas.
