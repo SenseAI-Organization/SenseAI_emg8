@@ -320,6 +320,7 @@ del monitor.
 **Sin commitear:** nada.
 
 
+
 ## 2026-09-02 (correccion) — el +74 % de tasa no se sostiene
 
 **Correccion a `72d0a26`.** Ese commit afirma que silenciar la linea CSV subio
@@ -512,3 +513,75 @@ que corre en el equipo.
   7.8). No los explica el cargador de la bateria: sobreviven al desenchufe.
 
 **Sin commitear:** nada.
+
+## 2026-09-05 — Sampling investigation, checkpoint 1 (in progress)
+
+Scope agreed with Daniel: target >=1000 Hz on EACH of the eight raw channels
+in All mode, retaining envelope /20, IMU, single-shot attribution and the public
+protocols. Work only on `feature/samping-speed`; do not modify IA-Arm_Monitor.
+ADCs ARE attached to the bench ESP32; analog sensor inputs are disconnected.
+The SD card is faulty: no SD-enabled tests. Mode 4 repair is out of scope.
+Work in small commits/checkpoints so usage resets do not lose progress.
+
+Read README, complete prior worklog and improvement plan; audited ADC service,
+I2C wrapper, SD queues/writer, network queues, and recording lifecycle. Confirmed
+unused SD queues still fill when sdOK=false and no writer task is created.
+The monitor's old rate_matrix.py assumes c0=raw on all ADCs, so its calculation
+must NOT be reused after the channel-map fix. Leave that repo untouched.
+
+New host tools: tools/bench_acquisition.py (per-channel serial/UDP capture),
+tools/test_bench_acquisition.py (decoder fixtures), tools/bench_matrix.py
+(resumable 8 x 4 matrix), tools/README.md. Captures and build backups are under
+ignored benchmarks/baseline-d4ca979/. Original firmware artifacts/configs saved
+with SHA256 manifest before any build/upload. Boot capture confirmed the
+running ELF hash prefix 5cfadde14 matches the preserved ELF (full hash in
+manifest). Boot app version is f815a21-dirty, compiled Sep 5 17:14:57; do not
+infer binary identity from the checkout label alone. No firmware uploaded yet.
+
+Connectivity: Ethernet connected; this bench unit's SSID is
+EMG8-24EC4A368770 (NOT the previously saved bracelet profile ending 8790).
+Added its Windows WPA2 profile using the README password. Windows netsh needs
+elevated execution here. Working shell: cmd.exe, login=false, cwd=C:\Windows;
+PowerShell tool calls from the workspace stalled. Python is
+C:\Users\escob\.platformio\penv\Scripts\python.exe (pyserial available).
+Use command-local `git -c safe.directory=D:/PhD/Code/em8/emg8_bracelet` in the
+sandbox; do not change global Git configuration.
+
+Preliminary hardware results, before any firmware modification:
+- Earlier short All runs ~460-480 Hz/raw channel; Raw ~490 Hz/channel.
+- Env-only run showed ADC1/4 accelerating while ADC2/3 stayed slow, with no
+  I2C errors or retriggers. Thus the effect need not be global across ADCs.
+- udp-01, 60 s All: raw 443-500 Hz/channel, 100% ADC delivery, zero packet
+  gaps, I2C errors, or retriggers.
+- quiet-01, 60 s All with U0: raw 812-855 Hz/channel, likewise 100% ADC
+  delivery and zero errors/gaps. This is ONE fast run, not proof U0 causes it.
+- UDP timestamps show dominant raw intervals near 2 ms and a second population
+  near 1 ms on ADC1/4. Need firmware timing instrumentation to locate the delay.
+
+After quiet-01 had stopped cleanly and returned STATUS idle/SD=0, COM9 later
+stopped responding. Matrix refused to start (saved off-01 failure). A controlled
+RTS reset restored operation; reset-capture.bin preserves ROM/app boot evidence
+and subsequent STATUS:0,0,0,1. No cause established for the silence. Do not
+mistake this for a measured sampling panic. Reset does not enable recording.
+
+Full baseline matrix is now being collected, with failed attempts retained:
+
+    python -B tools/bench_matrix.py --wifi-profile EMG8-24EC4A368770 --output benchmarks/baseline-d4ca979
+
+It skips completed captures and stops on failure. Each run asserts idle and
+SD unavailable, collects 60 s, drains trailing UDP batches, restores UART,
+stops acquisition and Wi-Fi, and saves summary + metadata + full UDP + serial.
+After interruption, inspect device status and saved results before resuming.
+
+Next: finish/analyze baseline, add opt-in low-overhead ADC timing diagnostics
+and an explicitly SD-disabled bench build, then make isolated measured changes:
+inactive SD enqueue gate; trigger next conversion before publishing last;
+per-bus lifecycle ownership; evaluate core-1 I2C/GPIO interrupt placement;
+per-ADC recovery deadlines and acknowledged network shutdown. Preserve all
+validated signal mapping/conversion/SPI fixes. No bus clock increase. Existing
+1 MHz I2C also needs datasheet qualification (TI high-speed entry requirements).
+SD writer broader fixes/physical validation deferred until a working card.
+Acceptance remains eight 60 s repeats/condition and a 15 min All-mode UDP run,
+>=1000 Hz EACH raw channel over complete 10 s acquisition windows, envelope
+ratio intact, no firmware losses/errors/retriggers/resets, measured UDP delivery
+>=99.5%. Signal quality cannot be validated with floating analog inputs.
