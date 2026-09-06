@@ -435,6 +435,11 @@ public:
     /** @brief Count of stall recoveries (see retriggerIfStalled). */
     uint32_t getRetriggerCount() const;
 
+#ifdef EMG8_ADC_TIMING
+    /** Bench-only snapshot. Call after stopping; no printing in the hot path. */
+    void printTiming(uint8_t adcId) const;
+#endif
+
     /**
      * @brief Register an event queue notified from the DRDY ISR.
      *
@@ -654,6 +659,33 @@ private:
     uint32_t lastTriggerUs_ = 0;        ///< When it was triggered (stall detection)
     uint32_t i2cErrors_ = 0;            ///< Failed I2C transactions since start
     uint32_t retriggers_ = 0;           ///< Stall recoveries since start
+
+#ifdef EMG8_ADC_TIMING
+    struct TimingMetric {
+        uint32_t count = 0;
+        uint64_t total = 0;
+        uint32_t minimum = UINT32_MAX;
+        uint32_t maximum = 0;
+        // Upper bounds: 25,50,100,200,400,800,1600 us, then overflow.
+        uint32_t bins[8] = {};
+        void add(uint32_t us) {
+            ++count;
+            total += us;
+            if (us < minimum) minimum = us;
+            if (us > maximum) maximum = us;
+            unsigned bin = 0;
+            uint32_t bound = 25;
+            while (bin < 7 && us >= bound) { ++bin; bound *= 2; }
+            ++bins[bin];
+        }
+    };
+    TimingMetric timing_[6] = {};
+    uint32_t timingTriggerBegin_ = 0;
+    uint32_t timingFirst_[4] = {};
+    uint32_t timingLast_[4] = {};
+    volatile uint32_t timingEventDrops_ = 0;
+    uint32_t timingSpurious_ = 0;
+#endif
 
     uint8_t fastChannels_[kMaxActiveChannels] = {};
     uint8_t numFastChannels_ = 0;

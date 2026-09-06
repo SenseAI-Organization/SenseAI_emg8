@@ -322,7 +322,14 @@ uint16_t ADS1015::buildSingleShotConfig(ConfigMux mux, ConfigRate rate, ConfigPG
 
 bool ADS1015::triggerConversion(uint8_t channel) {
     if (channel >= kMaxChannels) return false;
+#ifdef EMG8_ADC_TIMING
+    uint32_t triggerBegin = (uint32_t)esp_timer_get_time();
+#endif
     esp_err_t err = writeConfig(singleShotWords_[channel]);
+#ifdef EMG8_ADC_TIMING
+    timing_[0].add((uint32_t)esp_timer_get_time() - triggerBegin);
+    timingTriggerBegin_ = triggerBegin;
+#endif
     if (err != ESP_OK) {
         // Leave conversionPending_ false: nothing is in flight, and
         // retriggerIfStalled() will re-arm rather than mislabel anything.
@@ -369,7 +376,12 @@ void IRAM_ATTR ADS1015::alertISR(void* arg) {
     xSemaphoreGiveFromISR(self->drdySemaphore_, &xHigherPriorityTaskWoken);
     if (self->eventQueue_ != nullptr) {
         BaseType_t queueWoken = pdFALSE;
-        xQueueSendFromISR(self->eventQueue_, (const void*)&self->eventTag_, &queueWoken);
+        BaseType_t queued = xQueueSendFromISR(self->eventQueue_, (const void*)&self->eventTag_, &queueWoken);
+#ifdef EMG8_ADC_TIMING
+        if (queued != pdTRUE) self->timingEventDrops_ = self->timingEventDrops_ + 1;
+#else
+        (void)queued;
+#endif
         if (queueWoken) xHigherPriorityTaskWoken = pdTRUE;
     }
     if (xHigherPriorityTaskWoken) {
@@ -808,6 +820,13 @@ esp_err_t ADS1015::startMixedContinuousExternal(const ChannelConfig* configs,
     lastTriggerUs_ = 0;
     i2cErrors_ = 0;
     retriggers_ = 0;
+#ifdef EMG8_ADC_TIMING
+    for (auto& metric : timing_) metric = TimingMetric{};
+    memset(timingFirst_, 0, sizeof(timingFirst_));
+    memset(timingLast_, 0, sizeof(timingLast_));
+    timingEventDrops_ = 0;
+    timingSpurious_ = 0;
+#endif
 
     // First channel to convert
     uint8_t firstCh = fastChannels_[0];
@@ -839,14 +858,30 @@ bool ADS1015::serviceConversion() {
     // No conversion in flight → this is a stale/spurious edge (e.g. one that
     // arrived after a stall recovery already re-armed). Ignore it rather
     // than attributing a result to a channel we never requested.
-    if (!conversionPending_) return false;
+    if (!conversionPending_) {
+#ifdef EMG8_ADC_TIMING
+        ++timingSpurious_;
+#endif
+        return false;
+    }
 
     uint32_t tsUs = drdyTimestampUs_;
+#ifdef EMG8_ADC_TIMING
+    timing_[1].add((uint32_t)esp_timer_get_time() - tsUs);
+    timing_[4].add(tsUs - timingTriggerBegin_);
+#endif
     uint8_t ch = pendingChannel_;  // exact: we explicitly requested this conversion
     conversionPending_ = false;
 
     int16_t value = 0;
-    if (readConversionValue(&value) != ESP_OK) {
+#ifdef EMG8_ADC_TIMING
+    uint32_t readBegin = (uint32_t)esp_timer_get_time();
+#endif
+    esp_err_t readError = readConversionValue(&value);
+#ifdef EMG8_ADC_TIMING
+    timing_[2].add((uint32_t)esp_timer_get_time() - readBegin);
+#endif
+    if (readError != ESP_OK) {
         // Drop the sample rather than record a fake 0, then keep the
         // round-robin moving so one bad read doesn't stall the channel.
         i2cErrors_++;
@@ -857,11 +892,20 @@ bool ADS1015::serviceConversion() {
     latestReading_[ch] = value;
     adcData.channels[ch] = (uint16_t)value;
     sampleCounts_[ch] = sampleCounts_[ch] + 1;
+#ifdef EMG8_ADC_TIMING
+    if (sampleCounts_[ch] == 1) timingFirst_[ch] = tsUs;
+    timingLast_[ch] = tsUs;
+    uint32_t publishBegin = (uint32_t)esp_timer_get_time();
+#endif
 
     if (convCallback_) {
         convCallback_(ch, value, tsUs, convCallbackArg_);
     }
 
+#ifdef EMG8_ADC_TIMING
+    timing_[3].add((uint32_t)esp_timer_get_time() - publishBegin);
+    timing_[5].add((uint32_t)esp_timer_get_time() - tsUs);
+#endif
     triggerConversion(nextMixedChannel());
     return true;
 }
@@ -977,3 +1021,23 @@ float ADS1015::getEffectiveSampleRate(uint8_t channel) const {
 
     return effectiveRate;
 }
+
+#ifdef EMG8_ADC_TIMING
+void ADS1015::printTiming(uint8_t adcId) const {
+    static const char* names[] = {"trigger", "wake", "read", "publish", "ready", "turnaround"};
+    for (unsigned i = 0; i < 6; ++i) {
+        const auto& m = timing_[i];
+        printf("#TIMING:%u,%s,%lu,%llu,%lu,%lu", adcId, names[i],
+               (unsigned long)m.count, (unsigned long long)m.total,
+               (unsigned long)(m.count ? m.minimum : 0), (unsigned long)m.maximum);
+        for (auto n : m.bins) printf(",%lu", (unsigned long)n);
+        printf("\n");
+    }
+    printf("#ADC_EVENTS:%u,%lu,%lu\n", adcId, (unsigned long)timingEventDrops_,
+           (unsigned long)timingSpurious_);
+    for (unsigned ch = 0; ch < 4; ++ch)
+        printf("#ACQ:%u,%u,%lu,%lu,%lu\n", adcId, ch,
+               (unsigned long)sampleCounts_[ch], (unsigned long)timingFirst_[ch],
+               (unsigned long)timingLast_[ch]);
+}
+#endif

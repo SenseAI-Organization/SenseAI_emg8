@@ -6,3 +6,4 @@
 lib.rar
 benchmarks/
 __pycache__/
+sdkconfig.esp32-s3-bench

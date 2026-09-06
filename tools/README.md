@@ -53,3 +53,27 @@ per run, before making causal performance claims. A short or single run is only
 a preliminary baseline. Keep the original build artifacts and full configuration
 alongside the baseline, and identify the flashed build separately from the host
 checkout: the existing protocol has no firmware build-ID query.
+
+## Opt-in firmware diagnostics
+
+Build `pio run -e esp32-s3-bench` for the attached SD-free bench. This environment
+sets `EMG8_NO_SD` (skips SD initialization entirely) and `EMG8_ADC_TIMING`.
+The normal environment keeps its existing SD behavior and omits timing code.
+The bench still performs the original sample queue operations until a separately
+measured optimization changes them.
+
+After stop, #TIMING reports count, total/min/max microseconds, and eight histogram
+bins with exclusive upper bounds 25, 50, 100, 200, 400, 800, 1600, infinity.
+Metrics are config-write duration (trigger), ISR-to-service delay (wake),
+conversion-register read duration (read), sample callback duration (publish),
+config-write start to ready ISR (ready), and ready ISR to next-trigger call
+(turnaround). These include preemption; ready includes the config transaction,
+conversion, and interrupt latency. No timing text is emitted during acquisition.
+Small timing instrumentation overhead is present and must be measured.
+
+#ACQ reports each channel's count and first/last absolute 32-bit DRDY timestamps;
+the harness calculates device acquisition rate independently of UDP delivery.
+That span wraps after about 71 minutes, so keep diagnostic runs shorter than
+one wrap. #ADC_EVENTS exposes event-queue overflow and stale pending events.
+The harness stores these additions in summary.json; legacy firmware remains
+supported. Diagnostics are suppressed if UART is still quiet at stop.

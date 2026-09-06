@@ -585,3 +585,42 @@ Acceptance remains eight 60 s repeats/condition and a 15 min All-mode UDP run,
 >=1000 Hz EACH raw channel over complete 10 s acquisition windows, envelope
 ratio intact, no firmware losses/errors/retriggers/resets, measured UDP delivery
 >=99.5%. Signal quality cannot be validated with floating analog inputs.
+
+## 2026-09-05   Sampling investigation, checkpoint 2 (diagnostics prepared)
+
+Added opt-in esp32-s3-bench environment: EMG8_NO_SD skips all SD initialization
+and EMG8_ADC_TIMING accumulates ADC timing histograms in RAM. No acquisition
+ordering, bus frequency, core placement, scheduler, or queue behavior changed.
+After stop, #TIMING describes config write, ISR-to-service, conversion read,
+publication callback, trigger-to-ready, and ready-to-next-trigger delays.
+#ACQ contains per-channel first/last DRDY timestamps and counts; #ADC_EVENTS
+counts overflowing event queues and events without a pending conversion.
+See tools/README.md for precise timing definitions and limitations.
+
+Bench and normal environments both build successfully with ESP-IDF 5.4.0.
+Verified bench config: 240 MHz, performance optimization, FreeRTOS 1000 Hz,
+PM disabled, app_main core 0. Bench binary contains SD_DISABLED/TIMING/ACQ;
+normal binary contains none of these markers. Removed an unused getCurrentDir
+call in the F command (its return was never used), which the SD-free build's
+constant-null analysis correctly rejected. Existing library warnings remain.
+Seven host decoder/diagnostic fixtures pass, including 32-bit timestamp wrap.
+Normal build log: benchmarks/diagnostic-normal-build.log.
+
+Original firmware is STILL on COM9 while the eight-repeat baseline continues.
+Do not flash/open COM9 while bench_matrix.py owns it. At this checkpoint the
+first five repeat groups are in progress. Further baseline observations:
+- Wi-Fi on/no subscriber can run fast too: nosub-05 reached 893-922 Hz/raw.
+- quiet-02 through quiet-04 were slow (~444-465 Hz), so UART silence is not a
+  reproducible fix.
+- udp-05 delivered 99.2313% of acquired ADC samples, with 13 raw, 2 envelope,
+  and 3 IMU missing packets. Acquisition remained ~443.7 Hz without I2C errors.
+  This is genuine reception loss, distinct from the roughly twofold acquisition
+  variation. Earlier UDP captures delivered 100%.
+- Isolated retriggers occurred in udp-03, quiet-04 and off-05 (one each).
+  Preserve them; the existing recovery only checks when both ADCs' queue is idle.
+- Host reporting now uses null delivery fraction for conditions with no UDP
+  receiver; older captures used 0.0, which was not evidence of failed delivery.
+
+Next: finish baseline; archive/hash diagnostic build, flash ONLY bench
+environment, collect timing evidence, then measure isolated fixes. All acceptance
+criteria and exclusions from checkpoint 1 remain. No SD-enabled hardware tests.

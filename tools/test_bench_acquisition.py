@@ -1,7 +1,7 @@
 import struct
 import unittest
 
-from bench_acquisition import HEADER, SAMPLE, Records
+from bench_acquisition import HEADER, SAMPLE, Records, firmware_diagnostics
 
 
 def packet(seq, records, kind=0):
@@ -10,6 +10,21 @@ def packet(seq, records, kind=0):
 
 
 class DecoderTests(unittest.TestCase):
+    def test_firmware_timing_and_acquisition_wrap(self):
+        result = firmware_diagnostics([
+            '#TIMING:1,read,2,120,50,70,0,0,2,0,0,0,0,0',
+            '#TIMING:1,wake,0,0,0,0,0,0,0,0,0,0,0,0',
+            '#ADC_EVENTS:1,3,4',
+            '#ACQ:1,0,3,4294967040,1744',
+            '#ACQ:1,1,0,0,0',
+        ])
+        self.assertEqual(result['timing']['1:read']['mean_us'], 60)
+        self.assertEqual(sum(result['timing']['1:read']['bins']), 2)
+        self.assertIsNone(result['timing']['1:wake']['mean_us'])
+        self.assertEqual(result['device_acquisition']['0:0']['hz'], 1000)
+        self.assertIsNone(result['device_acquisition']['0:1']['hz'])
+        self.assertEqual(result['adc_events']['1'], {'queue_drops': 3, 'spurious': 4})
+
     def test_current_mapping_and_rates(self):
         r = Records()
         r.feed(packet(1, [(100, 1, 1, -12), (1100, 1, 1, 3), (2100, 1, 1, 7)]))

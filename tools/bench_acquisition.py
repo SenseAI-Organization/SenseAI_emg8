@@ -95,6 +95,28 @@ class Records:
                 'invalid_records_or_packets': self.invalid}
 
 
+
+def firmware_diagnostics(lines):
+    timing, acquired, events = {}, {}, {}
+    for line in lines:
+        if line.startswith('#TIMING:'):
+            fields = line.split(':', 1)[1].split(',')
+            adc, name = fields[:2]
+            count, total, minimum, maximum, *bins = map(int, fields[2:])
+            timing[adc + ':' + name] = dict(count=count, total_us=total,
+                mean_us=total / count if count else None, min_us=minimum,
+                max_us=maximum, bins=bins)
+        elif line.startswith('#ACQ:'):
+            adc, ch, count, first, last = map(int, line.split(':', 1)[1].split(','))
+            span = (last - first) & 0xffffffff
+            acquired[f'{adc-1}:{ch}'] = dict(count=count, first_us=first, last_us=last,
+                hz=(count - 1) * 1e6 / span if count > 1 and span else None)
+        elif line.startswith('#ADC_EVENTS:'):
+            adc, dropped, spurious = map(int, line.split(':', 1)[1].split(','))
+            events[str(adc)] = dict(queue_drops=dropped, spurious=spurious)
+    return dict(timing=timing, device_acquisition=acquired, adc_events=events)
+
+
 def run(args):
     import serial
     output = Path(args.output)
@@ -236,6 +258,7 @@ def run(args):
         serial_file.close()
         udp_file.close()
     result = records.summary()
+    result.update(firmware_diagnostics(logs))
     elapsed = stop_time - start_time if stop_time is not None and start_time is not None else None
     result.update(condition=args.condition, mode=args.mode, host_window_s=elapsed,
                   failure=failure, final_status=status, counts=counters)
@@ -246,7 +269,7 @@ def run(args):
     }
     acquired = sum(sum(v[:4]) for v in counters.values())
     received = sum(len(v) for k, v in records.timestamps.items() if k != '2:imu')
-    result['adc_delivery_fraction'] = received / acquired if acquired else None
+    result['adc_delivery_fraction'] = received / acquired if acquired and args.condition in ('udp', 'quiet') else None
     result['i2c_errors'] = sum(v[4] for v in counters.values())
     result['retriggers'] = sum(v[5] for v in counters.values())
     (output / 'summary.json').write_text(json.dumps(result, indent=2) + '\n')

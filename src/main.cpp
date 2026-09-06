@@ -219,9 +219,11 @@ static I2C i2c0(I2C_NUM_0, kSDA0, kSCL0, 1000000, false);
 static I2C i2c1(I2C_NUM_1, kSDA1, kSCL1, 1000000, false);
 
 static ADS1015* adc[4];
+#ifndef EMG8_NO_SD
 static SPI*     spiSD  = nullptr;
-static SPI*     spiIMU = nullptr;
 static SD*      sdCard = nullptr;
+#endif
+static SPI*     spiIMU = nullptr;
 static RGB*     led    = nullptr;
 static Switch*  reedSw = nullptr;
 // Physical backup/OR button: interrupt-driven (see botonIsrInit() /
@@ -399,6 +401,9 @@ static void printSampleCounts() {
                (unsigned long)adc[a]->getSampleCount(3),
                (unsigned long)adc[a]->getI2cErrorCount(),
                (unsigned long)adc[a]->getRetriggerCount());
+#ifdef EMG8_ADC_TIMING
+        if (!hostUartQuiet()) adc[a]->printTiming(a + 1);
+#endif
     }
 }
 
@@ -1342,6 +1347,7 @@ extern "C" void app_main() {
     }
 
     /* ---- SD card --------------------------------------------------------- */
+#ifndef EMG8_NO_SD
     spiSD = new SPI(SPI::SpiMode::kMaster, SPI2_HOST, kSD_MOSI, kSD_MISO, kSD_SCK);
     esp_err_t sdSpiErr = spiSD->init();
     if (sdSpiErr != ESP_OK) {
@@ -1384,6 +1390,10 @@ extern "C" void app_main() {
         sessionDir = sdCard->getCurrentDir();
         printf("#SDIR:%s\n", sessionDir.c_str());
     }
+
+#else
+    printf("#BENCH:SD_DISABLED\n");
+#endif
 
     /* ---- IMU (ICM-42605 over SPI3) --------------------------------------- */
     esp_log_level_set("ICM42605", ESP_LOG_DEBUG);
@@ -1500,7 +1510,6 @@ extern "C" void app_main() {
             }
             else if (cmd == 'F') {
                 if (sdOK) {
-                    std::string root = sdCard->getCurrentDir();
                     // Go up to root for listing
                     listSDDir(sdListRoot().c_str());
                 }
