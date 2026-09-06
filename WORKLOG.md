@@ -706,3 +706,20 @@ about 11% additional throughput. Measure inactive SD enqueue removal next;
 callback time alone suggests that cannot supply the whole improvement.
 The remaining read/trigger overhead makes core-local I2C/GPIO handling a
 useful controlled comparison after lifecycle ownership is made explicit.
+
+## 2026-09-06   Inactive SD queue gate verified
+
+Gate raw/env/IMU/label storage enqueues on SD availability; keep UDP and label
+state independent. sdOK is now atomic because the writer can clear it.
+Queue allocation and writer behavior are unchanged. Both builds pass.
+Flashed bench ELF f69970d617237d7133b7fe630ceba43dc57c98943185d7b83f49a7305caa587c;
+source diff, binaries, boot and captures: benchmarks/sd-gate/.
+
+Two 60 s All runs (off, UDP): all raw/env/IMU storage queue depths and drop
+counters remained zero. UDP delivered 100% with zero socket errors/network
+queue drops/I2C errors/retriggers. Off rates ~901.6-901.7 Hz/raw; UDP ~836.6-916.8.
+Callback ~2.4-2.5 us off, ~4.6-5.1 us UDP (previous ~3.7-4.0 / 6.3-7.3 us).
+A small reduction in callback cost, not enough for target acceptance.
+Early/stale ready timing can still occur after starts despite the corrected
+physical map. Next prioritize worker-owned start/stop and draining stale ready
+notifications before publishing/tracing more performance changes.

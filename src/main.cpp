@@ -243,7 +243,7 @@ static bool            adcOK   = false;
 static volatile Mode mode      = Mode::Idle;
 static volatile bool recording = false;
 static std::atomic<int64_t> recStart{0};     // µs epoch for timestamps
-static bool          sdOK      = false;        // SD card available
+static std::atomic<bool> sdOK{false};           // Shared with the SD writer
 
 // Separate queues for each stream → separate files
 static QueueHandle_t rawQ   = nullptr;         // raw EMG (ch 0,1)
@@ -445,12 +445,15 @@ static void onSample(uint8_t ch, int16_t val, uint32_t tsUs, void* arg) {
     s.ch  = ch;
     s.val = val;
 
-    if (fast) {
-        if (xQueueSend(rawQ, &s, 0) != pdTRUE)
-            rawDrops.fetch_add(1, std::memory_order_relaxed);
-    } else {
-        if (xQueueSend(envQ, &s, 0) != pdTRUE)
-            envDrops.fetch_add(1, std::memory_order_relaxed);
+    // Without a usable card there is no storage consumer. Keep UDP independent.
+    if (sdOK.load(std::memory_order_relaxed)) {
+        if (fast) {
+            if (xQueueSend(rawQ, &s, 0) != pdTRUE)
+                rawDrops.fetch_add(1, std::memory_order_relaxed);
+        } else {
+            if (xQueueSend(envQ, &s, 0) != pdTRUE)
+                envDrops.fetch_add(1, std::memory_order_relaxed);
+        }
     }
 
     if (netStreamActive()) {
@@ -812,7 +815,7 @@ static void imuTask(void*) {
             s.gy = (int16_t)(gy[1] * 10.0f);
             s.gz = (int16_t)(gy[2] * 10.0f);
             s.temp100 = (int16_t)(temp * 100.0f);
-            if (xQueueSend(imuQ, &s, 0) != pdTRUE)
+            if (sdOK.load(std::memory_order_relaxed) && xQueueSend(imuQ, &s, 0) != pdTRUE)
                 imuDrops.fetch_add(1, std::memory_order_relaxed);
             if (netStreamActive()) netEnqueueImu(s);
         }
@@ -1149,7 +1152,7 @@ static void processUartLine(const char* line, int len) {
             curRep   = (uint16_t)rep;
             printf("#LABEL:%d,%d\n", gid, rep);
             // Enqueue label event for SD master file
-            if (recording && labelQ) {
+            if (recording && sdOK.load(std::memory_order_relaxed) && labelQ) {
                 LabelEvent le = {};
                 le.ts = recordingTimestampUs();
                 le.grasp_id = (uint16_t)gid;
