@@ -624,3 +624,33 @@ first five repeat groups are in progress. Further baseline observations:
 Next: finish baseline; archive/hash diagnostic build, flash ONLY bench
 environment, collect timing evidence, then measure isolated fixes. All acceptance
 criteria and exclusions from checkpoint 1 remain. No SD-enabled hardware tests.
+
+## 2026-09-06   Baseline complete; diagnostic firmware uploaded
+
+All 32 baseline runs completed (8 x off/nosub/udp/quiet, 60 s each). Aggregate
+and full captures: benchmarks/baseline-d4ca979/aggregate.json. Added architecture
+review and results table in docs/acquisition-review.md. Raw channel ranges:
+off 460.3-640.6, nosub 465.5-922.1, UDP 442.4-675.2, quiet 443.2-855.3 Hz.
+Zero I2C errors; seven retriggers total. No condition met the target.
+Minimum ADC UDP delivery 97.826% (udp-08), quiet 98.541% (quiet-06).
+All firmware network queue drops were zero. Socket-send errors: quiet-06=20,
+udp-08=88; other reception-loss runs had zero socket errors. Thus the earlier
+zero-socket-error observation was true for those captures, not the full matrix.
+Host summary parser now preserves final #NET TX/ERR/DROP counters; tests pass.
+
+Diagnostic image from b3f3612 source archived before upload:
+benchmarks/diagnostic-b3f3612/firmware/manifest.json. App bin SHA256
+fb0842d944d3c1db6457a0c73b2a51a7c6ce3e2df723038dca43c6e12d032e9c.
+ELF SHA256 a6a9b76a038370ff71522025e498975bc369bab7b8fb89236b0c6ccae211557c.
+Flashed only app at 0x10000 after asserting idle/SD0; esptool verified flash hash.
+Existing compatible bootloader/partitions/NVS preserved. Boot at 115200 shows
+ELF a6a9b76a0, app version a363b15-dirty (built immediately before b3f3612 commit).
+Application uses 460800 baud. Captures prove #BENCH:SD_DISABLED and ADC/IMU OK,
+STATUS idle/SD0. Initial upload script's console printing failed on Windows
+encoding after successful upload; separate boot verification passed. Do not
+interpret this host Unicode error as a firmware failure.
+
+First four 60-second diagnostic captures are running via bench_matrix.py
+--repeat 1 --seconds 60 --output benchmarks/diagnostic-b3f3612. Still no
+acquisition optimizations applied. COM9 is owned by this process until it exits.
+Timing evidence will determine the first performance changes.

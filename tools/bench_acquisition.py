@@ -97,7 +97,7 @@ class Records:
 
 
 def firmware_diagnostics(lines):
-    timing, acquired, events = {}, {}, {}
+    timing, acquired, events, network = {}, {}, {}, {}
     for line in lines:
         if line.startswith('#TIMING:'):
             fields = line.split(':', 1)[1].split(',')
@@ -111,10 +111,13 @@ def firmware_diagnostics(lines):
             span = (last - first) & 0xffffffff
             acquired[f'{adc-1}:{ch}'] = dict(count=count, first_us=first, last_us=last,
                 hz=(count - 1) * 1e6 / span if count > 1 and span else None)
+        elif line.startswith('#NET:TX='):
+            network = {key.lower(): int(value) for key, value in
+                       (field.split('=') for field in line.split(':', 1)[1].split(','))}
         elif line.startswith('#ADC_EVENTS:'):
             adc, dropped, spurious = map(int, line.split(':', 1)[1].split(','))
             events[str(adc)] = dict(queue_drops=dropped, spurious=spurious)
-    return dict(timing=timing, device_acquisition=acquired, adc_events=events)
+    return dict(timing=timing, device_acquisition=acquired, adc_events=events, firmware_network=network)
 
 
 def run(args):

@@ -15,6 +15,8 @@ class DecoderTests(unittest.TestCase):
             '#TIMING:1,read,2,120,50,70,0,0,2,0,0,0,0,0',
             '#TIMING:1,wake,0,0,0,0,0,0,0,0,0,0,0,0',
             '#ADC_EVENTS:1,3,4',
+            '#NET:192.168.4.2:1234',
+            '#NET:TX=100,ERR=2,DROP=3',
             '#ACQ:1,0,3,4294967040,1744',
             '#ACQ:1,1,0,0,0',
         ])
@@ -24,6 +26,7 @@ class DecoderTests(unittest.TestCase):
         self.assertEqual(result['device_acquisition']['0:0']['hz'], 1000)
         self.assertIsNone(result['device_acquisition']['0:1']['hz'])
         self.assertEqual(result['adc_events']['1'], {'queue_drops': 3, 'spurious': 4})
+        self.assertEqual(result['firmware_network'], {'tx': 100, 'err': 2, 'drop': 3})
 
     def test_current_mapping_and_rates(self):
         r = Records()
