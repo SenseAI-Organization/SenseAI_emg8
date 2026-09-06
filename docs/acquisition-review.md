@@ -37,7 +37,31 @@ At the target rates, storage payload is about 71,200 bytes/s: 64,000 raw,
 3,200 envelope and 4,000 IMU, excluding headers and labels. Average bandwidth
 alone cannot establish SD reliability; latency and error handling matter too.
 
-## Findings and next steps
+## Ready-pin routing: confirmed mismatch on the attached setup
+
+An isolated boot probe triggered one ADC at a time while polling all four
+ready GPIOs, without acquisition workers or ISR handlers. Three trials per ADC
+agreed, with successful I2C operations and config readback C3C0:
+
+| ADC | Previous ready GPIO | Measured ready GPIO | Trigger-to-edge |
+|---|---:|---:|---:|
+| 1 (bus 0, 0x48) | 40 | 15 | 389-395 us |
+| 2 (bus 0, 0x49) | 41 | 42 | 391-396 us |
+| 3 (bus 1, 0x48) | 42 | 41 | 382-387 us |
+| 4 (bus 1, 0x49) | 15 | 40 | 378-388 us |
+
+The map was reversed: each worker used another ADC's ready signal. This also
+means baseline software read counts are not proof of equally many distinct,
+completed conversions. Preserve that qualification when interpreting throughput.
+The correct mapping has passed the same isolated probe and is being tested
+in acquisition. No scheduler optimization has been applied yet.
+
+Artifacts: benchmarks/rdy-probe and benchmarks/rdy-corrected. The corrected
+map is temporarily limited to EMG8_ADC_TIMING builds pending confirmation
+that the bench wiring matches the actual bracelet. Normal firmware retains
+its old map during that clarification.
+
+## Other findings and next steps
 
 | Finding | Consequence | Next step |
 |---|---|---|

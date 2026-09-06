@@ -685,3 +685,24 @@ Asked Daniel whether this setup shares the bracelet's wiring or is separate.
 Until clarified, test the measured mapping only in the diagnostic build;
 preserve the normal build's existing map. No SD queue/scheduler optimization
 has yet been applied. COM9 is idle with SD disabled after the routing probe.
+
+## 2026-09-06   First isolated ready-map correction measurement
+
+Only the diagnostic build now uses measured kRDY={15,42,41,40}; normal default
+remains {40,41,42,15} pending the wiring clarification. Boot routing probe
+confirms all four ADCs now match their assigned pin in all three trials.
+Flashed ELF a0a118b12b679053abeb13bd0c362928c14aa094867cb81752c0cac22828a414;
+artifacts/source diff/upload/boot and acquisition captures in benchmarks/rdy-corrected.
+
+First 60 s Wi-Fi-off All capture: every raw channel 898.22-898.25 Hz by device
+timestamps, envelopes ~44.91 Hz, zero I2C errors/retriggers/event queue drops or
+spurious events. Prior diagnostic off run was ~451.4 Hz. Ready timing is now
+379.6-392.3 us, consistent with the isolated probe; read 109.9-117.2 us,
+wake 19.2-24.1 us, publication 3.7-4.0 us. No scheduling/queue/bus changes.
+Other conditions are being measured; this one run is not final acceptance.
+
+The map fix removes the dominant mismatch, but the raw target still needs
+about 11% additional throughput. Measure inactive SD enqueue removal next;
+callback time alone suggests that cannot supply the whole improvement.
+The remaining read/trigger overhead makes core-local I2C/GPIO handling a
+useful controlled comparison after lifecycle ownership is made explicit.

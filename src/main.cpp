@@ -61,9 +61,14 @@ static constexpr gpio_num_t kSCL0 = GPIO_NUM_7;
 static constexpr gpio_num_t kSDA1 = GPIO_NUM_45;
 static constexpr gpio_num_t kSCL1 = GPIO_NUM_47;
 
-// ALERT / RDY per ADC
+// ALERT / RDY per ADC. Bench routing measured with isolated conversions.
 static constexpr gpio_num_t kRDY[] = {
+#ifdef EMG8_ADC_TIMING
+    GPIO_NUM_15, GPIO_NUM_42, GPIO_NUM_41, GPIO_NUM_40
+#else
+    // Preserve the bracelet default until its wiring is confirmed.
     GPIO_NUM_40, GPIO_NUM_41, GPIO_NUM_42, GPIO_NUM_15
+#endif
 };
 
 // SD Card (SPI2)
