@@ -1278,6 +1278,63 @@ static void listSDDir(const char* path) {
 
 /* ── app_main ──────────────────────────────────────────────────────────────── */
 
+
+#ifdef EMG8_ADC_TIMING
+// Bench-only routing test, before workers/ISR handlers start. Trigger one chip
+// at a time and observe ALL ready inputs without relying on kRDY's ADC mapping.
+static void probeReadyRouting() {
+    auto levels = []() {
+        uint8_t mask = 0;
+        for (int pin = 0; pin < 4; ++pin)
+            if (gpio_get_level(kRDY[pin])) mask |= 1U << pin;
+        return mask;
+    };
+    auto writeWord = [](int a, uint16_t word) {
+        uint8_t bytes[2] = {(uint8_t)(word >> 8), (uint8_t)word};
+        I2C& bus = a < 2 ? i2c0 : i2c1;
+        return bus.write(0x48 + (a & 1), 1, bytes, 2);
+    };
+    // Single-shot, AIN0, gain 1, 3300 SPS; OS=0 leaves an idle chip powered down.
+    constexpr uint16_t idle = 0x43C3;  // comparator disabled
+    constexpr uint16_t trigger = 0xC3C0;  // OS=1, conversion-ready enabled
+    for (int a = 0; a < 4; ++a) {
+        esp_err_t err = writeWord(a, idle);
+        if (err != ESP_OK) { printf("#RDYPROBE:ERROR,%d,%d\n", a + 1, (int)err); return; }
+    }
+    vTaskDelay(pdMS_TO_TICKS(3));
+    for (int a = 0; a < 4; ++a) {
+        I2C& bus = a < 2 ? i2c0 : i2c1;
+        uint8_t addr = 0x48 + (a & 1);
+        for (int rep = 0; rep < 3; ++rep) {
+            uint8_t before = levels(), previous = before;
+            uint32_t falling[4] = {};
+            uint32_t start = (uint32_t)esp_timer_get_time();
+            esp_err_t err = writeWord(a, trigger);
+            uint32_t writeUs = (uint32_t)esp_timer_get_time() - start;
+            while ((uint32_t)esp_timer_get_time() - start < 5000) {
+                uint8_t now = levels();
+                uint8_t edges = previous & ~now;
+                for (int pin = 0; pin < 4; ++pin)
+                    if ((edges & (1U << pin)) && !falling[pin])
+                        falling[pin] = (uint32_t)esp_timer_get_time() - start;
+                previous = now;
+            }
+            uint8_t cfg[2] = {}, result[2] = {};
+            esp_err_t cfgErr = bus.read(addr, 1, cfg, 2);
+            esp_err_t readErr = bus.read(addr, 0, result, 2);
+            printf("#RDYPROBE:%d,%d,%d,%d,%d,%04X,%lu,%u,%u,%u,%lu,%lu,%lu,%lu\n",
+                   a + 1, rep, (int)err, (int)cfgErr, (int)readErr,
+                   (unsigned)((cfg[0] << 8) | cfg[1]), (unsigned long)writeUs,
+                   before, previous, levels(), (unsigned long)falling[0],
+                   (unsigned long)falling[1], (unsigned long)falling[2],
+                   (unsigned long)falling[3]);
+            writeWord(a, idle);
+            vTaskDelay(pdMS_TO_TICKS(2));
+        }
+    }
+}
+#endif
+
 extern "C" void app_main() {
 
     /* ---- UART driver @ 460800 baud --------------------------------------- */
@@ -1345,6 +1402,10 @@ extern "C" void app_main() {
         adc[i]->onConversion(onSample, (void*)(uintptr_t)i);
         adc[i]->setEventQueue(drdyQ[i / 2], (uint8_t)i);
     }
+
+#ifdef EMG8_ADC_TIMING
+    probeReadyRouting();
+#endif
 
     /* ---- SD card --------------------------------------------------------- */
 #ifndef EMG8_NO_SD

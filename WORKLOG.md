@@ -654,3 +654,34 @@ First four 60-second diagnostic captures are running via bench_matrix.py
 --repeat 1 --seconds 60 --output benchmarks/diagnostic-b3f3612. Still no
 acquisition optimizations applied. COM9 is owned by this process until it exits.
 Timing evidence will determine the first performance changes.
+
+## 2026-09-06   Isolated probe identifies reversed DRDY routing
+
+The first diagnostic off capture measured trigger-to-ISR ~907-919 us,
+ISR-to-service 14-23 us, read 111-124 us, callback ~4 us. Later fast captures
+had ready timestamps preceding the recorded trigger (unsigned wrap made their
+ready means invalid). ADC1/4 and ADC2/3 also tended to have matching counts.
+This motivated testing the actual ready wiring before scheduler changes.
+
+Added a bench-only startup probe under EMG8_ADC_TIMING. Before workers or GPIO
+handlers start, disable all comparators; trigger exactly one ADC at 3300 SPS;
+poll ALL four ready pins for 5 ms; read configuration and conversion registers.
+Repeat three times per ADC. Normal build omits this probe. No modes were changed.
+
+Flashed and verified probe ELF eeff83804549127701425b97bf41e7408500c3e68adef499099d38bd2094a5af.
+Artifacts, source diff, upload log and boot captures: benchmarks/rdy-probe/.
+Every I2C operation succeeded and each config readback was C3C0 as requested.
+All 12 trials agreed:
+  I2C0 0x48 (ADC1) -> GPIO15, falling edge 389-395 us after trigger start
+  I2C0 0x49 (ADC2) -> GPIO42, falling edge 391-396 us
+  I2C1 0x48 (ADC3) -> GPIO41, falling edge 382-387 us
+  I2C1 0x49 (ADC4) -> GPIO40, falling edge 378-388 us
+Current kRDY is {40,41,42,15}: exactly reversed on the attached setup.
+Thus each worker is consuming a different chip's ready event. This explains
+why ready-event timing cannot be treated as conversion timing with that map.
+Do not claim a rate fix until measuring the corrected map.
+
+Asked Daniel whether this setup shares the bracelet's wiring or is separate.
+Until clarified, test the measured mapping only in the diagnostic build;
+preserve the normal build's existing map. No SD queue/scheduler optimization
+has yet been applied. COM9 is idle with SD disabled after the routing probe.
