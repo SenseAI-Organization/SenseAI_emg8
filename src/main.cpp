@@ -39,6 +39,7 @@
 #include "esp_system.h"
 #include "esp_attr.h"     // IRAM_ATTR (button ISR)
 #include "driver/uart.h"
+#include "driver/gpio_filter.h"
 #include "driver/gpio.h"  // gpio_config, gpio_install_isr_service, gpio_isr_handler_add (button ISR)
 #include "esp_mac.h"
 #include "ff.h"
@@ -1463,6 +1464,14 @@ extern "C" void app_main() {
     if (!drdyQ[0] || !drdyQ[1]) ESP_ERROR_CHECK(ESP_ERR_NO_MEM);
     for (int i = 0; i < 4; i++) {
         adc[i]->configureAlertPin(kRDY[i]);
+        // Suppress sub-two-clock input pulses before they become DRDY interrupts.
+        // Filters live for the lifetime of these fixed acquisition GPIOs.
+        gpio_pin_glitch_filter_config_t filterConfig = {};
+        filterConfig.clk_src = GLITCH_FILTER_CLK_SRC_DEFAULT;
+        filterConfig.gpio_num = kRDY[i];
+        gpio_glitch_filter_handle_t filter = nullptr;
+        ESP_ERROR_CHECK(gpio_new_pin_glitch_filter(&filterConfig, &filter));
+        ESP_ERROR_CHECK(gpio_glitch_filter_enable(filter));
         adc[i]->onConversion(onSample, (void*)(uintptr_t)i);
         adc[i]->setEventQueue(drdyQ[i / 2], (uint8_t)i);
     }

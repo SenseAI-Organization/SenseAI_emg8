@@ -758,3 +758,47 @@ Next isolated comparison: allocate I2C and shared GPIO interrupts on core 1,
 where the acquisition workers execute. Current trigger/read overhead remains
 about 95/110-119 us off and 103/119-123 us UDP. Normal ready mapping remains
 unchanged pending confirmation of bench-versus-bracelet wiring. No SD tests.
+
+## 2026-09-06 - Interrupt placement comparisons (not retained)
+
+Two isolated SD-free experiments built normally and as bench firmware; both
+boot identities and routing probes passed. Each ran 30 s All with Wi-Fi off
+and with UDP, zero I2C errors/retriggers, and 100% ADC UDP delivery.
+
+- All acquisition I2C/GPIO interrupts on core 1, workers still core 1:
+  off ~865.6 Hz/raw, UDP ~814.1-814.6. Trigger/read overhead increased.
+  Artifacts: benchmarks/core1; ELF
+  d00cbc7f7f3e3fe459887f198a0dc629b7b3c50f55a3434e38ca3755caa62898.
+- Split bus workers/I2C interrupts across cores, GPIO on core 1:
+  off bus0 ~908.4, bus1 ~920.1; UDP bus0 ~847.8, bus1 ~888.5 Hz/raw.
+  Artifacts: benchmarks/split-core; ELF
+  1548c6efb87766c4a5962161fa9200227d841e069796d27929ee99cc2de576aa.
+
+Neither improves the slowest streaming channels sufficiently to justify the
+core-layout change. Restored src/main.cpp from 2313bd4 after preserving patches.
+The original core arrangement is retained; no claim of a general affinity fix.
+ADC4 extra notifications persist across these placements. Next test changes
+only GPIO pin glitch filters, which reject pulses shorter than two IO-MUX
+sample clocks, using ESP-IDF's gpio_new_pin_glitch_filter API.
+
+## 2026-09-07 - Hardware DRDY filter verified
+
+Enabled the ESP32-S3 two-IO-MUX-clock GPIO pin glitch filter on all four fixed
+ready inputs. No analog filtering, clock rate or conversion schedule changed.
+This removes very short input pulses before interrupt dispatch. The diagnostic
+ready-level/timestamp guards remain enabled as a second check.
+
+Both builds passed. Verified flashed ELF
+2d4a1ef899aa3795f40f90019f798f6b1fca8fe2b9c1fc5197884f18c94b4a35.
+Artifacts: benchmarks/rdy-filter (30 s off + UDP), plus validation (3 x 60 s UDP).
+Every run had zero invalid ready events on every ADC, zero I2C errors/retriggers,
+and 100% ADC UDP delivery with no packet gaps. Accepted ready minima returned
+to 388/390/380/377 us. Previously ADC4 produced 14,857 inactive-ready events
+in a single 30 s UDP run. Evidence supports short input glitches; their physical
+source is not established. Floating analog inputs do not validate signal quality.
+
+Off remains ~900 Hz/raw; the three longer UDP runs are ~845.8-846.6 Hz/raw.
+This is a correctness checkpoint, not achievement of the 1000 Hz target.
+The original core layout is retained after the unsuccessful affinity trials.
+Next: boot-only RMT capture of actual SCL pulse durations to distinguish wire
+transfer time from firmware overhead. No SD tests and no monitor changes.
