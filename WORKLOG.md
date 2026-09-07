@@ -1078,3 +1078,55 @@ uninstrumented build. A single run per condition is preliminary validation.
 Raw-only and envelope-only UDP 60 s checks also passed, respectively
 1062.50-1062.90 and 1062.29-1062.71 Hz per active channel, with 100% delivery,
 no gaps, I2C errors or retriggers. The 15-minute All UDP soak is running.
+
+## 2026-09-07 - Fifteen-minute clean UDP soak and lifecycle checkpoint
+
+Same clean throughput ELF 5d69048811140fb62df875ae5a6697a88a8b946ff50e429e2ea1587d1c33d402
+(source implementation committed as 412facd), SD disabled throughout.
+Artifacts: benchmarks/net-retry-clean/soak-15m, including acceptance-details.json.
+
+The 900 s All-mode run passed the specified throughput and >=99.5% delivery
+thresholds. Every raw channel acquired 1009.518-1010.022 Hz by host-timed
+counters; received device-time rates were 1009.220-1009.732 Hz. All 712 complete
+10 s raw-channel windows were 1004.2-1012.1 Hz. Envelope counts preserve /20
+within the end-of-recording boundary; received IMU rate 199.974 Hz.
+
+ADC delivery was 99.9724386%, with 2104 ADC records absent from the capture.
+There were 16 packet gaps (12 raw, 1 envelope, 3 IMU), no duplicate/reordered/
+invalid packets, and no I2C errors, retriggers or reset markers. NET reported
+87739 successful sends, 2283 failed attempts, DROP=0. Successful-send count
+minus received packet count equals exactly those 16 gaps. Thus accepted local
+sends can still fail to reach the capture; the loss location after send
+acceptance is not established. Retries address local send rejection, not UDP
+end-to-end reliability. The failure errno was not instrumented in this clean
+image, so the cause of the 2283 failed attempts remains unknown.
+Raw received interval p99 was 1908-1911 us; maximum 23614 us includes reception
+loss and cannot be called acquisition jitter. Average >=1 kHz does not imply
+uniform 1 ms sampling. No ready-event counters exist in this no-timing build.
+
+Raw-only and envelope-only 60 s runs also had zero network errors/drops and
+no invalid/duplicate/reordered records. Active-channel complete 10 s windows
+were 1062.2-1063.6 Hz (Raw) and 1061.8-1062.9 Hz (Env), with 100% ADC delivery.
+
+The COM9 lifecycle probe passed: All -> Raw -> Env -> All while recording,
+same-mode command without restarting, countdown cancellation followed by a
+successful restart, and three W1/W0 cycles while acquisition stayed active.
+All four ADC counters matched each selected mode, inactive channels stayed
+zero, and errors/retriggers stayed zero. Artifacts and the exact probe script:
+benchmarks/net-retry-clean/lifecycle and lifecycle_probe.py. This exercised
+UART control, not physical button/reed presses or companion-device reception.
+Final verified status: recording stopped, SD unavailable, IMU OK, storage
+drops zero. Radio off and UART enabled; no test process retains COM9.
+
+README now reflects the source channel pairs, measured-versus-normal ready
+routing, worker ownership, UDP retries, UART rate reduction and explicit build
+environments. Historical Sensor-mode failure is identified as not revalidated,
+rather than a new test result. No monitor files changed and no push performed.
+
+Next small step: characterize intermittent real send errors with error-path
+diagnostics, then complete the remaining seven 60 s repeats per condition on
+the final selected image (one clean repeat per condition currently complete).
+Do not combine the earlier d1997986 matrix with this newer sender as if they
+were one build. The 15-minute soak and mode/lifecycle checks are now complete.
+Normal deployment remains pending actual-bracelet ready-wiring confirmation
+and the optional legacy-driver decision. Working-card SD validation is deferred.

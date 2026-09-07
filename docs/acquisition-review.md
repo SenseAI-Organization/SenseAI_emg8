@@ -191,3 +191,20 @@ One quiet capture exposed five failed send calls that discarded five packets
 targeted test recovered nine injected rejections with 100% delivery and no gaps.
 A direct socket-close marker verified W0 waits for an in-flight worker before
 cleanup. Full acceptance will use the clean build containing these fixes.
+
+## Clean sender validation checkpoint
+
+The combined SD-free throughput build with retry/acknowledged shutdown passed
+a 15-minute All UDP run: 1009.52-1010.02 acquired Hz/raw, every complete 10 s
+raw window above 1000 Hz (minimum 1004.2), envelopes /20, IMU approximately
+200 Hz. ADC delivery was 99.9724%, exceeding the 99.5% threshold but not lossless.
+No I2C errors/retriggers/resets or network queue drops occurred. There were
+2283 rejected send attempts and 16 gaps among successfully submitted packets;
+the errno and downstream loss location remain unresolved. See WORKLOG.md and
+benchmarks/net-retry-clean/soak-15m for exact counts and qualifications.
+
+Raw/Env 60 s mode checks and UART lifecycle transitions passed. One clean 60 s
+run per off/no-subscriber/UDP/quiet condition passed; seven more repeats per
+condition remain for the full matrix. Physical SD and button/reed/companion
+tests were not performed in this checkpoint. The optimized path remains a
+bench configuration pending normal deployment decisions.

@@ -1,6 +1,6 @@
 # EMG8 Bracelet
 
-8-channel surface EMG acquisition bracelet based on the **ESP32-S3-WROOM-1-N8**. Four ADS1015 ADCs sample raw EMG and envelope signals simultaneously using interrupt-driven mixed-rate single-shot mode, with binary SD logging and real-time UART CSV output.
+8-channel surface EMG acquisition bracelet based on the **ESP32-S3-WROOM-1-N8**. Four ADS1015 ADCs sample raw EMG and envelope signals simultaneously using interrupt-driven mixed-rate single-shot mode, with binary SD logging, full-rate UDP streaming and UART CSV snapshots.
 
 ## Hardware
 
@@ -24,12 +24,17 @@
 
 ### ADC ALERT/RDY Interrupts
 
-| ADC | GPIO |
-|-----|------|
-| ADC1 | GPIO40 |
-| ADC2 | GPIO41 |
-| ADC3 | GPIO42 |
-| ADC4 | GPIO15 |
+| ADC | Normal build GPIO | Attached bench GPIO |
+|-----|-------------------|---------------------|
+| ADC1 | GPIO40 | GPIO15 |
+| ADC2 | GPIO41 | GPIO42 |
+| ADC3 | GPIO42 | GPIO41 |
+| ADC4 | GPIO15 | GPIO40 |
+
+The measured bench routing differs from the original normal-build map.
+Diagnostic and throughput bench builds use the measured column. The normal
+map remains unchanged pending confirmation that this wiring matches the actual
+bracelet; see [acquisition review](docs/acquisition-review.md).
 
 ### SD Card (SPI2)
 
@@ -60,20 +65,23 @@
 
 ## Channel Layout (per ADC)
 
-Channel indices are **interleaved**, not split into "first half raw, second half envelope":
+The mapping differs between ADCs. These are the channel indices used by the
+firmware and carried in each SD/UDP record:
 
-| Channel | Function | Rate (All mode, approx) |
-|---------|----------|-------------------------|
-| 0 | Raw EMG | ~554 Hz |
-| 1 | Envelope | ~28 Hz |
-| 2 | Raw EMG | ~554 Hz |
-| 3 | Envelope | ~28 Hz |
+| ADC | Raw EMG channels | Envelope channels |
+|-----|------------------|-------------------|
+| ADC1 | 0, 3 | 1, 2 |
+| ADC2 | 1, 3 | 0, 2 |
+| ADC3 | 0, 3 | 1, 2 |
+| ADC4 | 1, 3 | 0, 2 |
 
-With 4 ADCs this gives **8 raw EMG channels** and **8 envelope channels**.
+With four ADCs this gives **eight raw channels and eight envelope channels**.
+All mode inserts each envelope channel once per 20 raw cycles. Raw-only and
+Envelope-only modes sample their respective channels at full speed.
 
 Sampling uses **single-shot triggered round-robin**, not free-running continuous mode. In continuous mode the ADS1015 only applies a new MUX setting *after* the conversion already in progress finishes, so a config write lands either before or after that internal boundary depending on I2C timing — producing one stale conversion or none, unpredictably. No fixed "discard N" rule survives that race, and every miss shifts channel attribution by one until another miss shifts it back (observed on hardware as raw and envelope values swapping columns at random). Single-shot removes the race: nothing converts until the firmware asks, so each result provably belongs to the channel named in its own trigger. TI recommends single-shot whenever channels are swapped frequently.
 
-Rates above are estimates — they are I2C-bound rather than purely conversion-bound. The authoritative figures are the per-channel counts the device reports in `#CNT` after each recording.
+Rates depend on the build, wiring and operating conditions — they are I2C-bound rather than purely conversion-bound. Use the per-channel counts in `#CNT` together with recording duration; UDP timestamps also expose sample intervals and reception rates. Counts alone do not measure Hz or prove lossless delivery.
 
 ## Firmware Architecture
 
@@ -94,24 +102,25 @@ Core 0                          Core 1
                                 └──────────────┘
 ```
 
-- **ADC service tasks** (×2, core 1, one per I2C bus): each ALERT/RDY ISR timestamps the conversion and posts its ADC index to the bus's event queue; the task blocks on the queue (no polling), reads the result over the new `i2c_master` driver, and calls `onSample()` which enqueues to a FreeRTOS queue. Running one task per bus lets transactions on the two buses overlap.
+- **ADC service tasks** (x2, core 1, one per I2C bus): each ALERT/RDY ISR timestamps a completion and posts its ADC index. The worker validates the ready event, reads the result, triggers the next single-shot conversion, then publishes the completed sample. It also owns start/stop and checks each ADC's recovery deadline even while its partner is active. Normal builds use separate `i2c_master` transfers; optional throughput builds combine read then trigger in a single legacy-driver command list.
+- **UDP sender** (core 0, priority 5): drains bounded raw/envelope/IMU queues and batches version-1 datagrams. Failed sends retain their batch for a later retry. Radio shutdown waits for the sender to finish its current iteration before closing its resources.
 - **SD writer** (core 1, priority 5): Drains the sample queues in batches (raw 500 × 8 B ≈ 4 KB). One file set (`R<nnn>.bin`, …) per recording start within the session directory.
-- **UART CSV** (core 0, priority 3): Prints latest readings at ~50 Hz with auto-adjusted column headers per mode.
+- **UART CSV** (core 0, priority 3): Prints latest readings at ~50 Hz with auto-adjusted column headers per mode, reduced to ~1 Hz while the radio is active.
 - **Main loop** (core 0): Monitors UART commands and reed switch for mode changes, start/stop, and pause/resume.
 
 ## Acquisition Modes
 
 | Command | Mode | Channels | Description |
 |---------|------|----------|-------------|
-| `1` | All | 0, 1, 2, 3 | Raw EMG (fast, ch 0/2) + Envelope (slow, ch 1/3, 1/20 divider) |
-| `2` | Raw | 0, 2 | Raw EMG only, no divider |
-| `3` | Env | 1, 3 | Envelope only, no divider |
+| `1` | All | All four per ADC | Raw EMG fast; envelope at 1/20, using the map above |
+| `2` | Raw | Per-ADC raw pair above | Raw EMG only, no divider |
+| `3` | Env | Per-ADC envelope pair above | Envelope only, no divider |
 | `4` | Sensor | one | **Sensor test — currently NOT WORKING, see below** |
 | `0` | Stop | — | Stop recording |
 
 ### Sensor Test Mode (`4`)
 
-> **⚠️ KNOWN BROKEN — do not rely on this mode.** The command plumbing works (`4` enters the mode, `S<n>` is accepted and acknowledged), but **no sample data is delivered**. Verified on hardware: `#CNT` reports zero conversions on every channel while the retrigger counter climbs at ~100/s, i.e. triggers are issued and the conversion-complete interrupt never returns. The cause is specific to the stop/start cycle `S<n>` performs on the ADCs; it is *not* the mutex (reverting that changed nothing) and it does **not** affect All/Raw/Env, which are verified healthy. Use All mode and read the per-channel columns instead until this is fixed.
+> **Sensor mode remains outside the current validation scope.** Earlier hardware tests reported no delivered samples and repeated stall recovery. The acquisition lifecycle has since changed, but Sensor mode has not been retested; use the verified All/Raw/Env modes until it is validated.
 
 Intended behaviour, for whoever picks this up: only the ADC hosting the selected sensor runs, on a single channel, so the MUX never switches and that one sensor is sampled at the chip's full rate.
 
@@ -120,20 +129,20 @@ The 8 raw sEMG sensors are numbered **0–7**:
 | Sensor | ADC | Channel | | Sensor | ADC | Channel |
 |--------|-----|---------|-|--------|-----|---------|
 | 0 | ADC1 | 0 | | 4 | ADC3 | 0 |
-| 1 | ADC1 | 2 | | 5 | ADC3 | 2 |
-| 2 | ADC2 | 0 | | 6 | ADC4 | 0 |
-| 3 | ADC2 | 2 | | 7 | ADC4 | 2 |
+| 1 | ADC1 | 3 | | 5 | ADC3 | 3 |
+| 2 | ADC2 | 1 | | 6 | ADC4 | 1 |
+| 3 | ADC2 | 3 | | 7 | ADC4 | 3 |
 
 Select with `S<n>` (`S0`–`S7`). Wire details:
 
 - **Two raw bytes, no terminator** — `S` then the digit, like `V1`/`W1` (unlike `L`/`G`, which are newline-terminated). Send both in a single write: the digit must arrive within **100 ms** of the `S` or the command is rejected.
 - A trailing `\n`/`\r` is harmless — it matches no command and is ignored.
-- Accepted selections reply `#SENSOR:<n>,<adc>,<ch>` **once**, never repeated. `<adc>` is 1-based, `<ch>` is the raw ADS1015 channel index (0 or 2).
+- Accepted selections reply `#SENSOR:<n>,<adc>,<ch>` **once**, never repeated. `<adc>` is 1-based, `<ch>` is the raw ADS1015 channel index from the raw mapping above.
 - A missing or out-of-range digit replies `#ERR:SENSOR`, so a malformed selection can't leave the host believing the wrong sensor is live.
 - `#SENSOR:` is also emitted on entering the mode (right after `#MODE:4`), so the active sensor is always announced without inferring it from the header.
 - `S<n>` may be sent **while a sensor test is already running** — the ADCs restart on the new sensor with no countdown, so you can sweep all eight electrodes in one continuous session. The CSV header is reprinted on each switch (see below). Sent in any other mode it just arms the selection for the next `4`.
 
-The CSV stream carries a single EMG column in this mode, named `s<n>_adc<a>_<ch>`, e.g. `H,ts_us,s3_adc2_2,ax,...,label,rep`. Because that column name encodes the sensor, a live `S<n>` switch **reprints the `H` header** even though the mode hasn't changed — parse each `H` line rather than caching the first one. Samples still land in `R<nnn>.bin` tagged with their real ADC and channel indices, so recordings stay self-describing.
+The CSV stream carries a single EMG column in this mode, named `s<n>_adc<a>_<ch>`, e.g. `H,ts_us,s3_adc2_3,ax,...,label,rep`. Because that column name encodes the sensor, a live `S<n>` switch **reprints the `H` header** even though the mode hasn't changed — parse each `H` line rather than caching the first one. Samples still land in `R<nnn>.bin` tagged with their real ADC and channel indices, so recordings stay self-describing.
 
 Modes can be switched at runtime via UART without rebooting. The reed switch toggles between pause and resume (defaults to All mode on first press).
 
@@ -182,6 +191,7 @@ The firmware emits a mix of:
 | `V0` | `V0` | Disable 5V rail |
 | `W1` | `W1` | Enable WiFi SoftAP + UDP streaming |
 | `W0` | `W0` | Disable WiFi (prints `#NET` stats) |
+| `U0` / `U1` | `U0` | Silence / restore UART output; command reception stays active |
 | `L<id>,<rep>` | `L7,3` | Set current grasp label and repetition |
 | `F` | `F` | List files on the SD card |
 | `G<path>` | `Gs_AABBCCDDEEFF_1713012345/R000.bin` | Transfer one file as raw binary |
@@ -250,7 +260,7 @@ Field meanings:
 When recording is active, the bracelet prints:
 
 - One `H,...` header line at start of recording and again whenever the mode changes.
-- Repeated `D,...` data lines at about 50 Hz.
+- Repeated `D,...` data lines at about 50 Hz, reduced to about 1 Hz while the radio is active.
 
 Example header in **All** mode:
 
@@ -277,7 +287,7 @@ Off by default (radio adds 120–250 mA draw). Send `W1` over UART to enable, `W
 
 - The bracelet hosts a WPA2 SoftAP: SSID `EMG8-<MAC>`, password `emg8sense`, bracelet IP `192.168.4.1`.
 - Subscribe by sending **any** UDP datagram to `192.168.4.1:3333`; the firmware streams to the sender's address/port from then on. Re-send periodically if your viewer's port may change.
-- The stream carries **everything at full rate** (raw + envelope + IMU, ~85 KB/s in All mode). The SD card remains the ground-truth record.
+- The stream carries **everything at full rate** (raw + envelope + IMU; ~71 KB/s of record payload at 1000 Hz/raw in All mode). SD recording reliability requires separate validation with a working card.
 
 **Packet format** (little-endian, ≤1404 bytes):
 
@@ -291,7 +301,7 @@ Off by default (radio adds 120–250 mA draw). Send `W1` over UART to enable, `W
 | 10 | 2 | Reserved |
 | 12 | … | Records (8-byte `Sample` or 20-byte `ImuSample`, same layouts as SD) |
 
-Partial batches flush after 30 ms, so envelope/IMU packets arrive promptly even though raw packets fill first (~53 packets/s in All mode).
+Partial batches normally flush after 30 ms. A rejected local send retains its batch and sequence for a later attempt; prolonged congestion can still overflow the bounded queues. `#NET` ERR counts failed send attempts and DROP counts queue overflow. Use reception counts and sequence gaps to assess delivered data. W0 intentionally discards pending data after the sender stops.
 
 Minimal Python receiver:
 
@@ -385,12 +395,36 @@ while retaining headers, status, counters, and reset diagnostics.
 ### Compile & Flash
 
 ```bash
-pio run                    # build
-pio run -t upload          # flash
+pio run -e esp32-s3-devkitc-1                    # normal build
+pio run -e esp32-s3-devkitc-1 -t upload          # normal flash
 pio device monitor -b 460800   # serial monitor (app UART runs at 460800, not the 115200 boot-log rate)
 ```
 
-Flashing rewrites the partition table (a custom [partitions.csv](partitions.csv): 3 MB app partition on the 8 MB flash, needed for WiFi/lwIP), which erases NVS — nothing in this firmware currently depends on data stored there.
+The custom [partitions.csv](partitions.csv) provides a 3 MB app partition on
+the 8 MB flash. Keep build environments explicit: the normal image initializes
+SD and retains the original ready-pin map.
+
+### SD-free sampling benchmarks
+
+| Environment | I2C path | Ready map | Detailed timing | SD |
+|-------------|----------|-----------|-----------------|----|
+| `esp32-s3-devkitc-1` | Separate, modern driver | Original | Off | Normal |
+| `esp32-s3-bench` | Separate, modern driver | Measured bench | On | Disabled |
+| `esp32-s3-legacy-bench` | Combined read then trigger | Measured bench | On | Disabled |
+| `esp32-s3-throughput-bench` | Combined read then trigger | Measured bench | Off | Disabled |
+
+The combined path uses the optional legacy I2C driver, which is deprecated
+upstream. It is a bench comparison, pending normal-deployment decisions.
+Build it with `pio run -e esp32-s3-throughput-bench`; wait for the whole build
+to finish and verify the flashed image before measuring.
+
+A 15-minute SD-free All-mode UDP run exceeded 1000 Hz per raw channel
+(~1010 Hz), with envelopes at /20, IMU ~200 Hz and 99.9724% ADC delivery. This is average throughput:
+mixed-rate scheduling produces nonuniform intervals. It does not establish
+SD recording performance or analog signal quality with the floating inputs.
+See [tools/README.md](tools/README.md) for captures and acceptance checks,
+[WORKLOG.md](WORKLOG.md) for exact builds/results, and the
+[acquisition review](docs/acquisition-review.md) for remaining work.
 
 ### Library Dependencies
 
@@ -398,7 +432,7 @@ The libraries below are **vendored directly into [lib/](lib/)** as plain files (
 
 | Library | Path | Provides |
 |---------|------|----------|
-| sensors-library | [lib/sensors-library](lib/sensors-library) | ADS1015 driver (mixed-rate continuous mode), ICM-42605 IMU, I2C/SPI wrappers, misc sensors |
+| sensors-library | [lib/sensors-library](lib/sensors-library) | ADS1015 driver (mixed-rate single-shot mode), ICM-42605 IMU, I2C/SPI wrappers, misc sensors |
 | data-logging-library | [lib/data-logging-library](lib/data-logging-library) | SD card (FATFS) and flash storage |
 | actuators-library | [lib/actuators-library](lib/actuators-library) | RGB LED (WS2812), reed switch |
 | battery-library | [lib/battery-library](lib/battery-library) | Battery voltage/percentage/charge-state monitoring, 5V rail control |
