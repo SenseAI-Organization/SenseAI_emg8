@@ -108,3 +108,8 @@ includes its read phase); turnaround ends at that entry. Do not compare these
 last two directly with separate-transfer trigger boundaries. Wire speed,
 channel order and gains are unchanged. Any exchange error suppresses publication
 and waits a full recovery interval before re-arming the named next channel.
+
+UDP sender ERR counts failed send attempts. With batch retries enabled, ERR
+can increase while every acquired sample is eventually delivered. Use delivery
+fraction, sequence gaps and queue DROP together; ERR alone is not lost data.
+W0 intentionally discards pending data after the sender acknowledges shutdown.

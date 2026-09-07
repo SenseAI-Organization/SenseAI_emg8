@@ -74,7 +74,7 @@ its old map during that clarification.
 | Main previously started/stopped ADCs while workers could service them | Configuration could overlap in-flight service | Worker-owned lifecycle with acknowledgment in 2313bd4 |
 | Recovery only runs when the whole bus queue times out | A stalled ADC may never recover while its partner runs | Fixed: periodic per-chip checks; recover an existing valid completion before re-arming |
 | DRDY queue-send failures were ignored | Lost wakeups were invisible | Diagnostic build counts queue overflow |
-| Wi-Fi stop delays 20 ms before resetting shared resources | Time elapsed does not prove the worker stopped using them | Add explicit worker acknowledgment |
+| Wi-Fi stop delays 20 ms before resetting shared resources | Time elapsed does not prove the worker stopped using them | Implemented and verified with a paused in-flight iteration; cleanup waits for acknowledgment |
 | SD write sizes/results and sync errors are ignored | A recording may appear successful after a write failure | Reviewed; writer repair and physical validation deferred |
 | SD sync counts 25 productive iterations | Claimed 500 ms interval varies with traffic | Use elapsed time in the SD follow-up |
 | SD closes asynchronously after acquisition stops | Rapid restart can overlap the preceding recording's drain | Validate recording-boundary handshakes with a working card |
@@ -184,3 +184,10 @@ channel 1010.27-1010.83 Hz, all 120 complete 10 s raw windows 1010.0-1011.2 Hz,
 100% ADC delivery, zero gaps/I2C errors/retriggers. Envelopes remain /20 and
 IMU ~200 Hz. These throughput rates do not imply uniformly spaced samples.
 Full matrix/soak acceptance and SD validation remain pending.
+
+Three repeats of all four conditions kept raw rates/windows above 1000 Hz.
+One quiet capture exposed five failed send calls that discarded five packets
+(364 ADC samples). The sender now retains rejected batches for retry; a
+targeted test recovered nine injected rejections with 100% delivery and no gaps.
+A direct socket-close marker verified W0 waits for an in-flight worker before
+cleanup. Full acceptance will use the clean build containing these fixes.

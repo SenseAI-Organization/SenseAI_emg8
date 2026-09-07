@@ -16,18 +16,26 @@
  *   offset 10 uint16   reserved
  *   offset 12 records  count × (8 B Sample or 20 B ImuSample)
  *
- * A partial batch is flushed after 30 ms so viewer latency stays low at
- * envelope/IMU rates. Radio is off until netStreamStart() (UART 'W1').
+ * A partial batch is normally flushed after 30 ms. Failed sends retain
+ * the batch for a later pump; queue capacity still bounds the backlog.
+ * Radio is off until netStreamStart() (UART 'W1').
  ******************************************************************************/
 #pragma once
 
 #include "emg8_types.hpp"
 #include "esp_err.h"
 
-/** @brief Bring up SoftAP + UDP socket + sender task. Idempotent. */
+/**
+ * @brief Bring up SoftAP + UDP socket + sender task. Idempotent.
+ * Start/stop calls are serialized by the host control task.
+ */
 esp_err_t netStreamStart(const char* macStr);
 
-/** @brief Stop streaming and turn the radio off. Prints #NET stats. */
+/**
+ * @brief Stop streaming and turn the radio off. Prints #NET stats.
+ * Waits for the sender to leave its current iteration before resource cleanup.
+ * Do not call from the network command callback (it runs in that sender).
+ */
 void netStreamStop();
 
 /** @brief True between netStreamStart() and netStreamStop(). */

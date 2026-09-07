@@ -1011,3 +1011,70 @@ All four builds and nine host tests passed; temporary injection is absent.
 Next checkpoint: full eight-repeat off/nosub/UDP/quiet matrix and 15-minute All
 UDP soak, plus mode/lifecycle checks. SD validation remains excluded and normal
 ready mapping remains pending the bench-versus-bracelet wiring confirmation.
+
+## 2026-09-07 - Three repeats per condition; UDP send failure found
+
+Completed three 60 s runs each of off, nosub, UDP and quiet on clean combined
+throughput ELF d1997986. All raw means and all available complete 10 s UDP
+windows remain above 1000 Hz; no I2C errors/retriggers in any capture.
+Results are consolidated in benchmarks/combined-throughput-v2/three-repeat-results.json.
+The first quiet run delivered 99.9287% of ADC samples; later quiet runs and
+all ordinary UDP runs delivered 100%. Firmware reported exactly five failed
+send calls, zero queue drops, matching five packet gaps (two raw, one envelope,
+two IMU). This was local send rejection, not unexplained reception loss.
+
+The network sender currently clears a batch even when sendto fails. Retain
+that bounded batch and its sequence for a later pump instead; the existing
+queues absorb the backlog, and retries yield between attempts. Also replace
+the fixed 20 ms shutdown delay with an explicit network-worker acknowledgment
+before closing/resetting resources. Current public commands/datagrams remain.
+Temporary SD-free tests will reject three sends of each packet type and pause
+an in-flight network iteration for 100 ms during a requested shutdown.
+
+## 2026-09-07 - UDP retry and shutdown fault tests
+
+The sender now retains a failed batch and sequence for the next 5 ms pump.
+A full pending batch is retried before dequeuing more samples. Memory remains
+bounded by existing queues/batches; persistent congestion can still overflow
+those queues and is counted. ERR counts failed send attempts, not necessarily
+lost packets once retries are enabled.
+
+A binary acknowledgment now proves the network worker left its poll/pump
+iteration before W0 closes the socket or resets batches. Start/stop use task
+notifications to wake the idle worker. Resource publication uses acquire/release;
+start/stop remain serialized by the host control task, never the UDP callback.
+
+Temporary no-SD tests rejected three sends of each packet type. First build
+c4f0b71687fca53f1e077ec035581306c91d4db7818242ab03b8f668a4ef5456
+(net-retry-fault) delivered 100% with no packet gaps, queue drops, ADC errors
+or retriggers in 30 s quiet mode (~1012 Hz/raw). It reported 726 failed attempts:
+nine forced and 717 additional attempts whose error codes were not captured.
+Do not describe that run as having only nine errors.
+The diagnostic repeat bed63bf494d774955c2a2fd981847ee6953715277049f917521c7d92d0602997
+(net-retry-errors) separately counted exactly 3 forced/0 other failures per
+type; all nine retries recovered, 100% delivery, no gaps/drop/ADC errors/
+retriggers, ~1010 Hz/raw. The extra failures did not recur; their cause is unknown.
+
+Shutdown test fd0a4b21d88b47d513257406c213a5dcb42cb3ed58102623568f0e5a2fe6dd64
+(net-shutdown-marker) paused an in-flight network iteration for 100 ms.
+The host sent W0 during that pause. A marker immediately before socket close
+followed the worker's pause-end marker, 103.39 ms after W0, proving cleanup
+waited for quiescence. The earlier net-retry-fault test only observed the later
+NET statistics report and is not by itself direct proof of close ordering.
+All temporary network fault/pause/error-detail hooks have been removed.
+Clean validation: all four environments built successfully
+(benchmarks/net-retry-clean-build.log); all nine host tests pass.
+Verified clean throughput ELF
+5d69048811140fb62df875ae5a6697a88a8b946ff50e429e2ea1587d1c33d402
+has SD disabled and no timing/network/ADC fault hooks. Four 60 s All-mode runs
+(net-retry-clean/{off,nosub,udp,quiet}-01) passed with zero I2C errors/retriggers.
+Raw host rates: off 1021.07-1021.19 Hz; no subscriber 1024.65-1024.72;
+UDP 1010.14-1010.64; quiet 1010.55-1011.10. All available complete 10 s
+raw UDP windows were 1009.6-1012.0 Hz. Both UDP runs delivered 100% of ADC
+records with no packet gaps, send errors or queue drops; IMU ~200 Hz.
+Off/no-subscriber windows and ready-event counters are not observable in this
+uninstrumented build. A single run per condition is preliminary validation.
+
+Raw-only and envelope-only UDP 60 s checks also passed, respectively
+1062.50-1062.90 and 1062.29-1062.71 Hz per active channel, with 100% delivery,
+no gaps, I2C errors or retriggers. The 15-minute All UDP soak is running.

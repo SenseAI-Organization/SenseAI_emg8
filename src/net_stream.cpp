@@ -9,6 +9,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "esp_event.h"
 #include "esp_log.h"
@@ -43,6 +44,9 @@ constexpr int kImuQLen = 200;
 std::atomic<bool> active{false};
 bool wifiInited   = false;   // one-time esp_netif/event/wifi init done
 bool taskCreated  = false;
+TaskHandle_t netTaskHandle = nullptr;
+SemaphoreHandle_t stopped = nullptr;
+std::atomic<bool> stopRequested{false};
 
 QueueHandle_t rawQ = nullptr;
 QueueHandle_t envQ = nullptr;
@@ -86,13 +90,16 @@ void writeHeader(Batch& b, uint8_t type) {
     b.buf[11] = 0;
 }
 
-void sendBatch(Batch& b, uint8_t type, size_t recSize) {
+bool sendBatch(Batch& b, uint8_t type, size_t recSize) {
     writeHeader(b, type);
     if (clientKnown) {
         int n = sendto(sock, b.buf, kHdrSize + b.count * recSize, 0,
                        (sockaddr*)&clientAddr, sizeof(clientAddr));
-        if (n < 0) {
+        if (n != kHdrSize + b.count * recSize) {
             txErrors++;
+            // Keep this batch and sequence for the next pump. Queue capacity
+            // bounds the backlog; failed sends must not silently lose samples.
+            return false;
         } else {
             txPackets.fetch_add(1, std::memory_order_relaxed);
         }
@@ -101,18 +108,20 @@ void sendBatch(Batch& b, uint8_t type, size_t recSize) {
     // an honest gap history rather than a fake zero-loss stream
     b.seq++;
     b.count = 0;
+    return true;
 }
 
 /** Drain queue into the batch; send when full or older than kFlushMs. */
 void pumpQueue(QueueHandle_t q, Batch& b, uint8_t type, size_t recSize,
                int maxRecs, uint32_t nowMs) {
+    // A full batch may be waiting after a failed send. Retry it before
+    // removing any more records from the bounded queue.
+    if (b.count == maxRecs && !sendBatch(b, type, recSize)) return;
     while (b.count < maxRecs &&
            xQueueReceive(q, b.buf + kHdrSize + b.count * recSize, 0) == pdTRUE) {
         if (b.count == 0) b.firstMs = nowMs;
         b.count++;
-        if (b.count == maxRecs) {
-            sendBatch(b, type, recSize);
-        }
+        if (b.count == maxRecs && !sendBatch(b, type, recSize)) return;
     }
     if (b.count > 0 && (nowMs - b.firstMs) >= kFlushMs) {
         sendBatch(b, type, recSize);
@@ -144,8 +153,12 @@ void pollSubscribe() {
 
 void netTask(void*) {
     while (true) {
-        if (!active.load(std::memory_order_relaxed) || sock < 0) {
-            vTaskDelay(pdMS_TO_TICKS(100));
+        if (!active.load(std::memory_order_acquire) || sock < 0) {
+            // Only acknowledge after the previous poll/pump iteration ended.
+            // The control task may then close/reset the socket and batches.
+            if (stopRequested.exchange(false, std::memory_order_acq_rel))
+                xSemaphoreGive(stopped);
+            ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(100));
             continue;
         }
 
@@ -232,7 +245,8 @@ esp_err_t netStreamStart(const char* macStr) {
     if (rawQ == nullptr) rawQ = xQueueCreate(kRawQLen, sizeof(Sample));
     if (envQ == nullptr) envQ = xQueueCreate(kEnvQLen, sizeof(Sample));
     if (imuQ == nullptr) imuQ = xQueueCreate(kImuQLen, sizeof(ImuSample));
-    if (rawQ == nullptr || envQ == nullptr || imuQ == nullptr) {
+    if (stopped == nullptr) stopped = xSemaphoreCreateBinary();
+    if (rawQ == nullptr || envQ == nullptr || imuQ == nullptr || stopped == nullptr) {
         esp_wifi_stop();
         return ESP_ERR_NO_MEM;
     }
@@ -259,7 +273,7 @@ esp_err_t netStreamStart(const char* macStr) {
     clientKnown = false;
 
     if (!taskCreated) {
-        if (xTaskCreatePinnedToCore(netTask, "net", 4096, nullptr, 5, nullptr, 0) !=
+        if (xTaskCreatePinnedToCore(netTask, "net", 4096, nullptr, 5, &netTaskHandle, 0) !=
             pdPASS) {
             close(sock);
             sock = -1;
@@ -269,14 +283,18 @@ esp_err_t netStreamStart(const char* macStr) {
         taskCreated = true;
     }
 
-    active.store(true);
+    active.store(true, std::memory_order_release);
+    xTaskNotifyGive(netTaskHandle);
     return ESP_OK;
 }
 
 void netStreamStop() {
     if (!active.load()) return;
-    active.store(false);
-    vTaskDelay(pdMS_TO_TICKS(20));  // let netTask leave its send loop
+    xSemaphoreTake(stopped, 0);  // discard any obsolete acknowledgment
+    stopRequested.store(true, std::memory_order_release);
+    active.store(false, std::memory_order_release);
+    xTaskNotifyGive(netTaskHandle);
+    xSemaphoreTake(stopped, portMAX_DELAY);
 
     if (sock >= 0) {
         close(sock);
@@ -302,7 +320,7 @@ void netStreamStop() {
 }
 
 bool netStreamActive() {
-    return active.load(std::memory_order_relaxed);
+    return active.load(std::memory_order_acquire);
 }
 
 void netEnqueueRaw(const Sample& s) {
