@@ -1,3 +1,4 @@
+#include <cerrno>
 /*******************************************************************************
  * @file net_stream.cpp
  * @brief WiFi SoftAP + UDP full-rate sample streaming (see net_stream.hpp).
@@ -59,6 +60,21 @@ bool clientKnown = false;
 std::atomic<uint32_t> txPackets{0};
 std::atomic<uint32_t> dropCount{0};
 uint32_t txErrors = 0;
+#ifdef EMG8_NET_DIAGNOSTICS
+struct SendErrorCount { int code = 0; uint32_t count = 0; };
+SendErrorCount sendErrors[8];
+void countSendError(int code) {
+    for (unsigned i = 0; i < 7; ++i) {
+        if (sendErrors[i].count == 0 || sendErrors[i].code == code) {
+            sendErrors[i].code = code;
+            ++sendErrors[i].count;
+            return;
+        }
+    }
+    sendErrors[7].code = -1;  // Other distinct codes, bounded storage.
+    ++sendErrors[7].count;
+}
+#endif
 
 /* Modo UDP-solo. Vive aqui porque este modulo es el que vuelve prescindible
  * al UART; nadie mas tiene por que saber como se apaga. */
@@ -96,6 +112,9 @@ bool sendBatch(Batch& b, uint8_t type, size_t recSize) {
         int n = sendto(sock, b.buf, kHdrSize + b.count * recSize, 0,
                        (sockaddr*)&clientAddr, sizeof(clientAddr));
         if (n != kHdrSize + b.count * recSize) {
+#ifdef EMG8_NET_DIAGNOSTICS
+            countSendError(n < 0 ? errno : 0);  // Capture immediately, before logging.
+#endif
             txErrors++;
             // Keep this batch and sequence for the next pump. Queue capacity
             // bounds the backlog; failed sends must not silently lose samples.
@@ -270,6 +289,9 @@ esp_err_t netStreamStart(const char* macStr) {
     txPackets.store(0);
     dropCount.store(0);
     txErrors = 0;
+#ifdef EMG8_NET_DIAGNOSTICS
+    for (auto& error : sendErrors) error = {};
+#endif
     clientKnown = false;
 
     if (!taskCreated) {
@@ -311,6 +333,12 @@ void netStreamStop() {
 
     esp_wifi_stop();
 
+#ifdef EMG8_NET_DIAGNOSTICS
+    hostSetUartQuiet(false);
+    for (const auto& error : sendErrors)
+        if (error.count)
+            printf("#NET_ERRNO:%d,%lu\n", error.code, (unsigned long)error.count);
+#endif
     hostSetUartQuiet(false);   // sin radio no queda por donde hablar: el UART vuelve
     lastClientMs = 0;
     printf("#NET:TX=%lu,ERR=%lu,DROP=%lu\n",

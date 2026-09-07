@@ -493,10 +493,10 @@ static bool sdOpenFiles(const std::string& base) {
     std::string iPath = base + "/I" + suffix;
 
     FRESULT fr[4];
-    fr[0] = f_open(&filMaster, mPath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
-    fr[1] = f_open(&filRaw,    rPath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
-    fr[2] = f_open(&filEnv,    ePath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
-    fr[3] = f_open(&filImu,    iPath.c_str(), FA_CREATE_ALWAYS | FA_WRITE);
+    fr[0] = f_open(&filMaster, mPath.c_str(), FA_CREATE_NEW | FA_WRITE);
+    fr[1] = f_open(&filRaw,    rPath.c_str(), FA_CREATE_NEW | FA_WRITE);
+    fr[2] = f_open(&filEnv,    ePath.c_str(), FA_CREATE_NEW | FA_WRITE);
+    fr[3] = f_open(&filImu,    iPath.c_str(), FA_CREATE_NEW | FA_WRITE);
     if (fr[0] != FR_OK || fr[1] != FR_OK || fr[2] != FR_OK || fr[3] != FR_OK) {
         printf("#ERR:SD_OPEN:%d,%d,%d,%d\n", fr[0], fr[1], fr[2], fr[3]);
         if (fr[0] == FR_OK) f_close(&filMaster);
@@ -1518,23 +1518,29 @@ extern "C" void app_main() {
     if (!sdOK)
         printf("SD card NOT available\n");
 
-    // Create session directory using MAC: s_<MAC>_<epoch>
+    // Uptime repeats after reboot. Never reuse an existing session directory.
     if (sdOK) {
-        char sdir[48];
-        snprintf(sdir, sizeof(sdir), "s_%s_%lld", macStr,
-                 (long long)(esp_timer_get_time() / 1000000));
-        // Both results used to be discarded. When FatFs was built without
-        // long-filename support this name was invalid (not 8.3), the mkdir
-        // and chdir both failed, and every recording silently landed in the
-        // card root instead of a session directory — with nothing said about
-        // it. Report it now rather than discovering it at analysis time.
-        FRESULT mk = sdCard->createDir(std::string(sdir));
-        FRESULT cd = sdCard->goToDir(std::string(sdir));
-        if (cd != FR_OK) {
-            printf("#ERR:SD_DIR:%d,%d,%s\n", (int)mk, (int)cd, sdir);
+        const std::string root = sdCard->getCurrentDir();
+        const long long epoch = esp_timer_get_time() / 1000000;
+        FRESULT mk = FR_EXIST;
+        std::string candidate;
+        for (unsigned attempt = 0; attempt < 1000 && mk == FR_EXIST; ++attempt) {
+            char sdir[64];
+            if (attempt == 0)
+                snprintf(sdir, sizeof(sdir), "s_%s_%lld", macStr, epoch);
+            else
+                snprintf(sdir, sizeof(sdir), "s_%s_%lld_%u", macStr, epoch, attempt);
+            candidate = root + "/" + sdir;
+            mk = f_mkdir(candidate.c_str());
         }
-        sessionDir = sdCard->getCurrentDir();
-        printf("#SDIR:%s\n", sessionDir.c_str());
+        FRESULT cd = mk == FR_OK ? sdCard->goToDir(candidate) : mk;
+        if (mk != FR_OK || cd != FR_OK) {
+            sdOK = false;  // No fallback into the root or an old recording.
+            printf("#ERR:SD_DIR:%d,%d,%s\n", (int)mk, (int)cd, candidate.c_str());
+        } else {
+            sessionDir = candidate;
+            printf("#SDIR:%s\n", sessionDir.c_str());
+        }
     }
 
 #else

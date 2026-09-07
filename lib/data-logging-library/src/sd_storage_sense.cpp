@@ -62,6 +62,17 @@ SD::~SD() {
     deinit();
 }
 
+#ifdef EMG8_NET_DIAGNOSTICS
+// Temporary initialization trace; removed after locating the startup failure.
+static esp_err_t traceSdCommand(int slot, sdmmc_command_t* cmd) {
+    esp_err_t err = sdspi_host_do_transaction(slot, cmd);
+    printf("#SD_CMD:%d,%08lx,%d,%d,%08lx\n", (int)cmd->opcode,
+           (unsigned long)cmd->arg, (int)err, (int)cmd->error,
+           (unsigned long)cmd->response[0]);
+    return err;
+}
+#endif
+
 esp_err_t SD::init(void) {
     sdspi_device_config_t sdConfig = SDSPI_DEVICE_CONFIG_DEFAULT();
     sdConfig = {
@@ -106,7 +117,12 @@ esp_err_t SD::init(void) {
         .is_slot_set_to_uhs1 = NULL,
     };
 
+#ifdef EMG8_NET_DIAGNOSTICS
+    sdHost_.do_transaction = &traceSdCommand;
+#endif
     err = sdmmc_card_init(&sdHost_, &sdCardInfo_);
+    sdHost_.do_transaction = &sdspi_host_do_transaction;
+    sdCardInfo_.host.do_transaction = &sdspi_host_do_transaction;
     return err;
 }
 

@@ -1,6 +1,7 @@
 """SD-free firmware benchmark. Uses COM9 for control and UDP for full records.
 
-Never resets the board or enables SD. Refuses to start if SD is mounted.
+Never resets the board or changes SD mounting. By default requires SD unavailable;
+--require-sd explicitly selects mounted-card acquisition.
 Outputs metadata.json, serial.jsonl, udp.bin and summary.json in a new directory.
 UDP capture framing is host monotonic_ns:u64, length:u16, then datagram bytes.
 """
@@ -227,8 +228,8 @@ def run(args):
         send('U1')
         send('?')
         wait(1)
-        if status is None or status[1] != 0 or status[2] != 0:
-            raise RuntimeError(f'Requires idle device with SD unavailable; status={status}')
+        if status is None or status[1] != 0 or status[2] != int(args.require_sd):
+            raise RuntimeError(f'Requires idle device with SD mounted={args.require_sd}; status={status}')
         # Reset networking for an actual no-subscriber condition and empty batches.
         send('W0')
         wait(1)
@@ -319,6 +320,7 @@ if __name__ == '__main__':
     ap.add_argument('--host', default='192.168.4.1')
     ap.add_argument('--condition', choices=('off', 'nosub', 'udp', 'quiet'), default='udp')
     ap.add_argument('--mode', type=int, choices=(1, 2, 3), default=1)
+    ap.add_argument('--require-sd', action='store_true', help='Explicitly test mounted SD; default still requires SD unavailable')
     ap.add_argument('--seconds', type=float, default=60)
     ap.add_argument('--connect-wait', type=float, default=12)
     ap.add_argument('--wifi-profile', help='Reconnect this existing Windows Wi-Fi profile after W1')
