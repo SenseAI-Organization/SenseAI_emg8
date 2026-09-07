@@ -98,30 +98,50 @@ class Records:
 
 def firmware_diagnostics(lines):
     timing, acquired, events, network = {}, {}, {}, {}
+    malformed = []
     for line in lines:
-        if line.startswith('#TIMING:'):
-            fields = line.split(':', 1)[1].split(',')
-            adc, name = fields[:2]
-            count, total, minimum, maximum, *bins = map(int, fields[2:])
-            timing[adc + ':' + name] = dict(count=count, total_us=total,
-                mean_us=total / count if count else None, min_us=minimum,
-                max_us=maximum, bins=bins)
-        elif line.startswith('#ACQ:'):
-            adc, ch, count, first, last = map(int, line.split(':', 1)[1].split(','))
-            span = (last - first) & 0xffffffff
-            acquired[f'{adc-1}:{ch}'] = dict(count=count, first_us=first, last_us=last,
-                hz=(count - 1) * 1e6 / span if count > 1 and span else None)
-        elif line.startswith('#NET:TX='):
-            network = {key.lower(): int(value) for key, value in
-                       (field.split('=') for field in line.split(':', 1)[1].split(','))}
-        elif line.startswith('#ADC_EVENTS:'):
-            adc, dropped, spurious, *extra = map(int, line.split(':', 1)[1].split(','))
-            events[str(adc)] = dict(queue_drops=dropped, spurious=spurious)
-            if extra:
-                events[str(adc)]['early_ready'] = extra[0]
-            if len(extra) > 1:
-                events[str(adc)]['unasserted_ready'] = extra[1]
-    return dict(timing=timing, device_acquisition=acquired, adc_events=events, firmware_network=network)
+        try:
+            if line.startswith('#TIMING:'):
+                fields = line.split(':', 1)[1].split(',')
+                if len(fields) != 14:
+                    malformed.append(line)
+                    continue
+                adc, name = fields[:2]
+                count, total, minimum, maximum, *bins = map(int, fields[2:])
+                if sum(bins) != count or minimum > maximum:
+                    malformed.append(line)
+                    continue
+                timing[adc + ':' + name] = dict(count=count, total_us=total,
+                    mean_us=total / count if count else None, min_us=minimum,
+                    max_us=maximum, bins=bins)
+            elif line.startswith('#ACQ:'):
+                adc, ch, count, first, last = map(int, line.split(':', 1)[1].split(','))
+                span = (last - first) & 0xffffffff
+                acquired[f'{adc-1}:{ch}'] = dict(count=count, first_us=first, last_us=last,
+                    hz=(count - 1) * 1e6 / span if count > 1 and span else None)
+            elif line.startswith('#NET:TX='):
+                network = {key.lower(): int(value) for key, value in
+                           (field.split('=') for field in line.split(':', 1)[1].split(','))}
+            elif line.startswith('#ADC_EVENTS:'):
+                adc, dropped, spurious, *extra = map(int, line.split(':', 1)[1].split(','))
+                events[str(adc)] = dict(queue_drops=dropped, spurious=spurious)
+                if extra:
+                    events[str(adc)]['early_ready'] = extra[0]
+                if len(extra) > 1:
+                    events[str(adc)]['unasserted_ready'] = extra[1]
+        except (ValueError, IndexError):
+            malformed.append(line)
+    expected_timing = {f'{a}:{name}' for a in range(1, 5) for name in
+                       ('trigger', 'wake', 'read', 'publish', 'ready', 'turnaround')}
+    missing = sorted(expected_timing - timing.keys())
+    missing += [f'ADC_EVENTS:{a}' for a in range(1, 5) if str(a) not in events]
+    missing += [f'ACQ:{a}:{ch}' for a in range(4) for ch in range(4)
+                if f'{a}:{ch}' not in acquired]
+    present = bool(timing or acquired or events or malformed)
+    return dict(timing=timing, device_acquisition=acquired, adc_events=events,
+                firmware_network=network, malformed_diagnostics=malformed,
+                missing_diagnostics=missing if present else [],
+                diagnostics_complete=not (missing or malformed) if present else None)
 
 
 def run(args):
@@ -266,6 +286,8 @@ def run(args):
         udp_file.close()
     result = records.summary()
     result.update(firmware_diagnostics(logs))
+    if result['diagnostics_complete'] is False:
+        failure = failure or 'Incomplete or malformed firmware diagnostics; see serial.jsonl'
     elapsed = stop_time - start_time if stop_time is not None and start_time is not None else None
     result.update(condition=args.condition, mode=args.mode, host_window_s=elapsed,
                   failure=failure, final_status=status, counts=counters)

@@ -10,6 +10,15 @@ def packet(seq, records, kind=0):
 
 
 class DecoderTests(unittest.TestCase):
+    def test_missing_or_truncated_diagnostics_are_not_zero_errors(self):
+        result = firmware_diagnostics(['#TIMING:4,ready,106623,40858021,377,0',
+                                       '#ADC_EVENTS:1,0,0,0,0'])
+        self.assertFalse(result['diagnostics_complete'])
+        self.assertNotIn('4:ready', result['timing'])
+        self.assertIn('ADC_EVENTS:4', result['missing_diagnostics'])
+        self.assertEqual(len(result['malformed_diagnostics']), 1)
+        self.assertIsNone(firmware_diagnostics([])['diagnostics_complete'])
+
     def test_firmware_timing_and_acquisition_wrap(self):
         result = firmware_diagnostics([
             '#TIMING:1,read,2,120,50,70,0,0,2,0,0,0,0,0',

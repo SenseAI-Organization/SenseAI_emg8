@@ -791,8 +791,10 @@ ready-level/timestamp guards remain enabled as a second check.
 Both builds passed. Verified flashed ELF
 2d4a1ef899aa3795f40f90019f798f6b1fca8fe2b9c1fc5197884f18c94b4a35.
 Artifacts: benchmarks/rdy-filter (30 s off + UDP), plus validation (3 x 60 s UDP).
-Every run had zero invalid ready events on every ADC, zero I2C errors/retriggers,
-and 100% ADC UDP delivery with no packet gaps. Accepted ready minima returned
+The 30 s runs and first two 60 s repeats had complete diagnostics with zero
+invalid ready events on every ADC. All runs had zero I2C errors/retriggers and
+100% ADC UDP delivery with no packet gaps. The third repeat lost part of ADC4
+serial diagnostics; its ready-event count is unknown, not zero. Accepted ready minima returned
 to 388/390/380/377 us. Previously ADC4 produced 14,857 inactive-ready events
 in a single 30 s UDP run. Evidence supports short input glitches; their physical
 source is not established. Floating analog inputs do not validate signal quality.
@@ -802,3 +804,34 @@ This is a correctness checkpoint, not achievement of the 1000 Hz target.
 The original core layout is retained after the unsuccessful affinity trials.
 Next: boot-only RMT capture of actual SCL pulse durations to distinguish wire
 transfer time from firmware overhead. No SD tests and no monitor changes.
+
+## 2026-09-07 - I2C wire timing and diagnostic completeness
+
+Added bench-only RMT RX capture at 20 MHz on each existing SCL input. It keeps
+I2C output routing/open-drain intact, restores the original disabled internal
+pull-up immediately after RMT setup, and deletes the receiver after boot probes.
+Normal builds omit the probe. Both builds passed (full rebuild after new header).
+Flashed/verified ELF
+7930344bd5ca39e3379026bcc9ce039939e29e1b8f4ec0e388afd280673c0c35.
+Artifacts and complete SCL symbols: benchmarks/scl-probe.
+
+All 12 write/read captures succeeded. Regular SCL low/high durations were each
+11 x 50 ns = 550 ns, about 909 kHz, with a longer repeated-start high in reads.
+Write capture: 36 cycles plus final low; read: 46 cycles plus final low.
+Observed clocking spans about 40-51 us; the RMT observer's own interrupt can
+lengthen its printed software-call time, so use ordinary acquisition TIMING
+for that comparison. This is digital timing, not electrical/Hs qualification.
+Post-probe off/UDP 30 s runs passed with complete diagnostics, zero invalid
+ready events/I2C errors/retriggers, and 100% UDP delivery. Rates ~898 Hz off,
+~839 Hz UDP. No persistent capture resources remain during acquisition.
+
+Corrected the prior filter entry: validation/udp-03 serial capture truncates
+ADC4's ready metric and omits turnaround/ADC_EVENTS. Its UDP counts/delivery
+are complete; ADC4's diagnostic count is UNKNOWN. Host parser now rejects
+malformed timing histograms and marks incomplete diagnostic sets as a failed
+capture, preserving raw logs. Eight parser tests pass, including that exact
+truncation pattern; absent diagnostics remain valid for original firmware.
+
+Next isolated change: start the next single-shot conversion after reading the
+completed value but before its publication callback. Preserve captured channel,
+value and ready timestamp, including when the next trigger fails.

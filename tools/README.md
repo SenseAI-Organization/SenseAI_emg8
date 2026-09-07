@@ -77,3 +77,14 @@ That span wraps after about 71 minutes, so keep diagnostic runs shorter than
 one wrap. #ADC_EVENTS exposes event-queue overflow and stale pending events.
 The harness stores these additions in summary.json; legacy firmware remains
 supported. Diagnostics are suppressed if UART is still quiet at stop.
+
+Diagnostic captures now require all four ADC event records, all 16 channel
+records and all 24 complete timing histograms. Missing/truncated diagnostics
+fail the capture and are listed in summary.json; they never imply zero events.
+Original firmware without diagnostics remains supported. #ADC_EVENTS may append
+early_ready and unasserted_ready counts after queue_drops and spurious.
+
+The bench-only #SCLPROBE boot lines capture SCL with RMT at 20 MHz. Each symbol
+is level0:duration0:level1:duration1, with durations in 50 ns ticks. RMT is
+released before acquisition. Its own ISR affects the printed call duration;
+use normal #TIMING records for software overhead.

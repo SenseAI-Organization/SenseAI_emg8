@@ -54,6 +54,10 @@
 
 /* ── Pin Map ───────────────────────────────────────────────────────────────── */
 
+#ifdef EMG8_ADC_TIMING
+#include "bench_clock_probe.hpp"
+#endif
+
 // I2C Bus 0 → ADC1 (ADDR_GND), ADC2 (ADDR_VCC)
 static constexpr gpio_num_t kSDA0 = GPIO_NUM_6;
 static constexpr gpio_num_t kSCL0 = GPIO_NUM_7;
@@ -1477,6 +1481,8 @@ extern "C" void app_main() {
     }
 
 #ifdef EMG8_ADC_TIMING
+    probeBusClock(i2c0, kSCL0, 0);
+    probeBusClock(i2c1, kSCL1, 1);
     probeReadyRouting();
 #endif
 
