@@ -12,6 +12,9 @@
 
 #include "esp_rom_sys.h"
 #include "smart_sensor_sense.hpp"
+#ifdef EMG8_LEGACY_I2C_BENCH
+#include "driver/i2c.h"
+#endif
 
 I2C::I2C(i2c_port_t port, gpio_num_t sda_pin, gpio_num_t scl_pin, uint32_t frequency,
          bool internalPullup)
@@ -29,6 +32,21 @@ I2C::~I2C() {
 esp_err_t I2C::init() {
     clearBus();
 
+#ifdef EMG8_LEGACY_I2C_BENCH
+    i2c_config_t conf = {};
+    conf.mode = I2C_MODE_MASTER;
+    conf.sda_io_num = sdaPin_;
+    conf.scl_io_num = sclPin_;
+    conf.sda_pullup_en = internalResistor_ ? GPIO_PULLUP_ENABLE : GPIO_PULLUP_DISABLE;
+    conf.scl_pullup_en = conf.sda_pullup_en;
+    conf.master.clk_speed = frequency_;
+    esp_err_t err = i2c_param_config(port_, &conf);
+    if (err != ESP_OK) return err;
+    err = i2c_driver_install(port_, I2C_MODE_MASTER, 0, 0, 0);
+    if (err != ESP_OK) return err;
+    legacyInstalled_ = true;
+    return i2c_filter_enable(port_, 7);
+#else
     i2c_master_bus_config_t conf = {};
     conf.i2c_port = port_;
     conf.sda_io_num = sdaPin_;
@@ -44,9 +62,14 @@ esp_err_t I2C::init() {
         printf("I2C master bus creation failed: %s\n", esp_err_to_name(err));
     }
     return err;
+#endif
 }
 
 void I2C::deinit() {
+#ifdef EMG8_LEGACY_I2C_BENCH
+    if (legacyInstalled_) i2c_driver_delete(port_);
+    legacyInstalled_ = false;
+#else
     for (uint8_t i = 0; i < numDevices_; i++) {
         i2c_master_bus_rm_device(devHandles_[i]);
     }
@@ -55,8 +78,10 @@ void I2C::deinit() {
         i2c_del_master_bus(busHandle_);
         busHandle_ = nullptr;
     }
+#endif
 }
 
+#ifndef EMG8_LEGACY_I2C_BENCH
 i2c_master_dev_handle_t I2C::deviceFor(uint8_t deviceAddress) {
     for (uint8_t i = 0; i < numDevices_; i++) {
         if (devAddrs_[i] == deviceAddress) return devHandles_[i];
@@ -77,11 +102,16 @@ i2c_master_dev_handle_t I2C::deviceFor(uint8_t deviceAddress) {
     numDevices_++;
     return handle;
 }
+#endif
 
 esp_err_t I2C::write(uint8_t deviceAddress, uint8_t registerAddress, uint8_t* data,
                      size_t len) {
+#ifndef EMG8_LEGACY_I2C_BENCH
     i2c_master_dev_handle_t dev = deviceFor(deviceAddress);
     if (dev == nullptr) return ESP_ERR_INVALID_STATE;
+#else
+    if (!legacyInstalled_) return ESP_ERR_INVALID_STATE;
+#endif
 
     // Register address and payload must go out in one transaction
     uint8_t buf[32];
@@ -89,20 +119,45 @@ esp_err_t I2C::write(uint8_t deviceAddress, uint8_t registerAddress, uint8_t* da
     buf[0] = registerAddress;
     memcpy(buf + 1, data, len);
 
+#ifdef EMG8_LEGACY_I2C_BENCH
+    // ESP-IDF's convenience helper uses a stack-backed command link (no heap).
+    return i2c_master_write_to_device(port_, deviceAddress, buf, len + 1,
+                                      pdMS_TO_TICKS(kTimeoutMs));
+#else
     return i2c_master_transmit(dev, buf, len + 1, kTimeoutMs);
+#endif
 }
 
 esp_err_t I2C::read(uint8_t deviceAddress, uint8_t registerAddress, uint8_t* data,
                     size_t len) {
+#ifdef EMG8_LEGACY_I2C_BENCH
+    if (!legacyInstalled_) return ESP_ERR_INVALID_STATE;
+    return i2c_master_write_read_device(port_, deviceAddress, &registerAddress, 1,
+                                        data, len, pdMS_TO_TICKS(kTimeoutMs));
+#else
     i2c_master_dev_handle_t dev = deviceFor(deviceAddress);
     if (dev == nullptr) return ESP_ERR_INVALID_STATE;
 
     return i2c_master_transmit_receive(dev, &registerAddress, 1, data, len, kTimeoutMs);
+#endif
 }
 
 esp_err_t I2C::probe(uint8_t deviceAddress) {
+#ifdef EMG8_LEGACY_I2C_BENCH
+    if (!legacyInstalled_) return ESP_ERR_INVALID_STATE;
+    uint8_t storage[I2C_LINK_RECOMMENDED_SIZE(3)] = {};
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create_static(storage, sizeof(storage));
+    if (!cmd) return ESP_ERR_NO_MEM;
+    esp_err_t err = i2c_master_start(cmd);
+    if (err == ESP_OK) err = i2c_master_write_byte(cmd, deviceAddress << 1, true);
+    if (err == ESP_OK) err = i2c_master_stop(cmd);
+    if (err == ESP_OK) err = i2c_master_cmd_begin(port_, cmd, pdMS_TO_TICKS(kTimeoutMs));
+    i2c_cmd_link_delete_static(cmd);
+    return err;
+#else
     if (busHandle_ == nullptr) return ESP_ERR_INVALID_STATE;
     return i2c_master_probe(busHandle_, deviceAddress, kTimeoutMs);
+#endif
 }
 
 void I2C::clearBus(void) {

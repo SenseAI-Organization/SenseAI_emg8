@@ -19,6 +19,19 @@ class DecoderTests(unittest.TestCase):
         self.assertEqual(len(result['malformed_diagnostics']), 1)
         self.assertIsNone(firmware_diagnostics([])['diagnostics_complete'])
 
+    def test_complete_diagnostics_and_corrupt_numeric_field(self):
+        lines = []
+        for adc in range(1, 5):
+            for name in ('trigger', 'wake', 'read', 'publish', 'ready', 'turnaround'):
+                lines.append(f'#TIMING:{adc},{name},0,0,0,0,0,0,0,0,0,0,0,0')
+            lines.append(f'#ADC_EVENTS:{adc},0,0,0,0')
+            lines.extend(f'#ACQ:{adc},{ch},0,0,0' for ch in range(4))
+        self.assertTrue(firmware_diagnostics(lines)['diagnostics_complete'])
+        lines[-1] = '#ACQ:4,3,broken,0,0'
+        result = firmware_diagnostics(lines)
+        self.assertFalse(result['diagnostics_complete'])
+        self.assertEqual(result['malformed_diagnostics'], [lines[-1]])
+
     def test_firmware_timing_and_acquisition_wrap(self):
         result = firmware_diagnostics([
             '#TIMING:1,read,2,120,50,70,0,0,2,0,0,0,0,0',

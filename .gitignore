@@ -7,3 +7,5 @@ lib.rar
 benchmarks/
 __pycache__/
 sdkconfig.esp32-s3-bench
+sdkconfig.esp32-s3-legacy-bench
+sdkconfig.esp32-s3-throughput-bench

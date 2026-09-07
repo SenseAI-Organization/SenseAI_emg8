@@ -23,8 +23,8 @@ button/reed behavior, and companion UART triggers.
 
 ADCs use single-shot conversions at nominal 3300 SPS. A DRDY interrupt captures
 a timestamp, gives that ADC's semaphore and queues its index. Two high-priority
-workers on core 1 each service one bus. Service reads the conversion, publishes
-it, then triggers the next channel. Raw channels alternate; each envelope
+workers on core 1 each service one bus. Service reads the conversion, triggers the next channel, then publishes the
+completed result while that next conversion runs. Raw channels alternate; each envelope
 channel is inserted once per 20 raw cycles. Raw-only and envelope-only modes
 sample their selected group at full speed.
 
@@ -53,8 +53,9 @@ agreed, with successful I2C operations and config readback C3C0:
 The map was reversed: each worker used another ADC's ready signal. This also
 means baseline software read counts are not proof of equally many distinct,
 completed conversions. Preserve that qualification when interpreting throughput.
-The correct mapping has passed the same isolated probe and is being tested
-in acquisition. No scheduler optimization has been applied yet.
+The corrected mapping passed the isolated probe and subsequent acquisition
+captures. Lifecycle ownership, ready validation and GPIO filtering now protect
+the measured bench path; see the later checkpoints below.
 
 Artifacts: benchmarks/rdy-probe and benchmarks/rdy-corrected. The corrected
 map is temporarily limited to EMG8_ADC_TIMING builds pending confirmation
@@ -65,10 +66,10 @@ its old map during that clarification.
 
 | Finding | Consequence | Next step |
 |---|---|---|
-| SD queues fill without a writer when SD is unavailable | Wasted work and misleading storage-drop counters | Gate inactive storage enqueues; measure separately |
-| Callback precedes the next conversion trigger | Publication extends every cycle | Measure, then test triggering before publication |
-| I2C and GPIO interrupts are allocated on core 0; workers run on core 1 | Synchronous operations require cross-core wakeups | Measure delays and compare core-1 initialization |
-| Main starts/stops ADCs while workers can service them | Configuration can overlap in-flight service | Send lifecycle commands through each owning worker |
+| SD queues fill without a writer when SD is unavailable | Wasted work and misleading storage-drop counters | Fixed and measured in 9844004 |
+| Callback preceded the next conversion trigger | Publication extended every cycle | Trigger first after read; verified in 36bf23c |
+| I2C/GPIO interrupts core 0, workers core 1 | Possible cross-core wakeup cost | Core-1 and split-core trials did not improve the slowest UDP channels; original layout retained |
+| Main previously started/stopped ADCs while workers could service them | Configuration could overlap in-flight service | Worker-owned lifecycle with acknowledgment in 2313bd4 |
 | Recovery only runs when the whole bus queue times out | A stalled ADC may never recover while its partner runs | Check individual deadlines during partner activity |
 | DRDY queue-send failures were ignored | Lost wakeups were invisible | Diagnostic build counts queue overflow |
 | Wi-Fi stop delays 20 ms before resetting shared resources | Time elapsed does not prove the worker stopped using them | Add explicit worker acknowledgment |
@@ -126,3 +127,29 @@ Acceptance: eight 60-second repeats per condition and a 15-minute All-mode UDP
 run. Check each raw channel in complete 10-second windows, envelope ratio,
 I2C errors, recovery events, resets, and UDP delivery. Keep device acquisition
 and host reception measurements distinct.
+
+## Later measured checkpoints (2026-09-07)
+
+Ready validation exposed thousands of ADC4 interrupts with its pin inactive in
+UDP runs. The ESP32-S3 two-sample-clock hardware GPIO glitch filter eliminated
+these in the complete follow-up captures, and accepted ready timing returned
+to the isolated-probe range. Physical cause is not established. A third long
+filter run lost part of its serial diagnostic output; its missing ADC4 event
+count is unknown. Benchmark parsing now rejects incomplete diagnostic captures.
+
+The boot-only RMT clock probe measured regular 550 ns low and 550 ns high SCL
+periods on both buses (~909 kHz). Clocking spans ~40-51 us per write/read. This
+shows substantial additional time in the software transfer path; it does not
+qualify electrical rise times or the TI high-speed entry protocol.
+
+Latest measured trigger-before-publication build: ~904 Hz/raw off, ~845 Hz/raw
+UDP, 30 s each, complete diagnostics, zero invalid ready events/I2C errors/
+retriggers, and 100% ADC UDP delivery. Target is still unmet. Storage availability
+gating and ADC lifecycle fixes are retained; SD writer physical validation,
+individual stall deadlines and acknowledged network shutdown remain pending.
+The optional static-buffer legacy-I2C comparison reached ~934-937 Hz/raw over
+UDP with timing diagnostics. A control without detailed timing reached
+~948-950 Hz/raw, 100% delivery, no I2C errors/retriggers in 60 s; every complete
+10 s channel window was below 1000 Hz (947.3-949.9). The clock remains unchanged.
+Core-1 placement also regressed this driver and was reverted. The alternative
+stays in explicitly named bench environments; normal firmware retains i2c_master.

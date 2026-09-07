@@ -853,3 +853,68 @@ Preparing a separate optional legacy-I2C bench environment using ESP-IDF's
 stack-backed convenience transfers, preserving the current workers and ADC
 logic. This does not restore the old heap-allocated command links or polling
 workers. The normal driver remains the current i2c_master implementation.
+
+## 2026-09-07 - Optional static-buffer I2C driver comparison
+
+Built esp32-s3-legacy-bench, an SD-disabled optional environment. Normal and
+standard bench configurations still select the existing new i2c_master driver.
+The comparison uses the IDF legacy convenience helpers, whose command lists
+are stack-backed rather than allocated/freed on the heap per transfer. It keeps
+20 ms timeouts, configured 1 MHz, pull-ups disabled and I2C filter count 7.
+ADC workers, single-shot scheduling, gains, mapping, DRDY filtering and trigger
+before publication remain unchanged. This is not a return to the old polling
+architecture. Only the optional environment has been compiled with this path.
+
+Flashed/verified ELF
+b6894b1b89f0cc4bb96f7104bcf740ab44be40decfd5b123562b7a5560c923f2.
+Artifacts: benchmarks/legacy-static. Boot clock captures retain a regular
+22 x 50 ns clock period (~909 kHz), with extra transfer-boundary low periods.
+Ready routing remains correct. All-mode off/UDP 30 s tests both passed complete
+diagnostics, zero invalid ready events/I2C errors/retriggers, 100% UDP delivery.
+Off ~951 Hz/raw; UDP ~934-937 Hz/raw, versus ~904/~845 for the new driver.
+UDP trigger/read means ~74-77/~104-105 us. Target remains unmet.
+
+An isolated core-1 interrupt placement comparison for this driver is building;
+this should be measured independently of the previous new-driver affinity
+results. The alternate driver is deprecated upstream and stays optional until
+its performance and maintenance trade-off are decided.
+
+The legacy-driver core-1 interrupt test also regressed: off ~897-898 Hz/raw,
+UDP ~880-884 Hz/raw, still complete diagnostics, no invalid ready events/I2C
+errors/retriggers and 100% delivery. ELF
+89c71bd5e4922948d797e02b89da9241b23e29138f215416ffc93ccc5ac2ce4a;
+artifacts benchmarks/legacy-core1. Restored the original core arrangement.
+The normal and optional driver paths now both use the original placement.
+
+Preparing esp32-s3-throughput-bench to measure instrumentation overhead: same
+SD-free optional driver and corrected bench ready map, without EMG8_ADC_TIMING.
+EMG8_BENCH_RDY_MAP selects only that physical map independently of diagnostics.
+Normal bracelet mapping remains unchanged pending wiring clarification.
+Nine host tests pass; diagnostic-recheck.json preserves the filter runs' exact
+completeness result without rewriting their original captures.
+
+## 2026-09-07 - Instrumentation overhead control
+
+Built/flashed esp32-s3-throughput-bench (SD off, measured ready map, optional
+static-buffer driver, original core layout, no detailed timing). ELF
+018c60cc9643beabe6fb5dfb3832ecef4ee14d4855828dc2216d31c8212a56be.
+Artifacts: benchmarks/throughput. Bin contains SD_DISABLED and no TIMING.
+Off/UDP 60 s tests: ~958 Hz/raw off, ~948-950 Hz/raw UDP. Zero I2C errors or
+retriggers and 100% ADC UDP delivery, no gaps. Five complete 10 s UDP windows
+per channel ranged 947.3-949.9 Hz; target remains unmet. This control has no
+ready-event diagnostic counters, but retains both physical validation/filtering.
+Removing instrumentation improves only ~7 Hz off / ~12-14 Hz UDP versus the
+instrumented optional driver; it does not explain the remaining shortfall.
+
+Next: per-ADC recovery deadlines even while a partner keeps the bus queue
+active, verified with a one-ADC missed-notification injection. Then evaluate
+combining read of the completed register and write of the next trigger in one
+I2C command sequence, preserving read-before-trigger ordering. Any ambiguous
+transfer failure must suppress publication and wait for a clean re-arm rather
+than attributing an uncertain register to a channel. No such combined path
+is implemented yet. SD-enabled validation and normal-board pin-map confirmation
+remain excluded/pending as documented above.
+
+Final comparison validation: normal, standard diagnostic and optional legacy
+diagnostic builds passed together; the no-timing throughput build passed
+separately before its hardware run. All nine host parser tests pass.

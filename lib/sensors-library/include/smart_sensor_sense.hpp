@@ -86,6 +86,9 @@ public:
     void clearBus(void);
 
 private:
+#ifdef EMG8_LEGACY_I2C_BENCH
+    bool legacyInstalled_ = false;
+#endif
     static constexpr uint8_t kMaxDevices = 8;   /**< Device-handle cache size */
     static constexpr int kTimeoutMs = 20;       /**< Per-transaction timeout */
 

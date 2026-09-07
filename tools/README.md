@@ -88,3 +88,15 @@ The bench-only #SCLPROBE boot lines capture SCL with RMT at 20 MHz. Each symbol
 is level0:duration0:level1:duration1, with durations in 50 ns ticks. RMT is
 released before acquisition. Its own ISR affects the printed call duration;
 use normal #TIMING records for software overhead.
+
+Optional I2C driver comparison: build esp32-s3-legacy-bench. It inherits the
+SD-disabled timing configuration and selects stack-backed legacy I2C transfers.
+Normal esp32-s3-devkitc-1 and esp32-s3-bench continue to use i2c_master. Preserve
+the exact binary and source diff for comparisons; see WORKLOG.md for measured
+interrupt-placement variants. This experimental environment is not the normal
+bracelet deployment target.
+
+The esp32-s3-throughput-bench environment uses the same optional driver and
+SD-free bench pin map but omits detailed per-conversion timing. It retains
+physical ready validation/filtering and public stop counters. Use UDP timestamp
+windows and counts for throughput; this build cannot report ADC_EVENTS/TIMING.
