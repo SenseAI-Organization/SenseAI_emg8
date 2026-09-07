@@ -322,9 +322,8 @@ uint16_t ADS1015::buildSingleShotConfig(ConfigMux mux, ConfigRate rate, ConfigPG
 
 bool ADS1015::triggerConversion(uint8_t channel) {
     if (channel >= kMaxChannels) return false;
-#ifdef EMG8_ADC_TIMING
     uint32_t triggerBegin = (uint32_t)esp_timer_get_time();
-#endif
+    lastTriggerUs_ = triggerBegin;
     esp_err_t err = writeConfig(singleShotWords_[channel]);
 #ifdef EMG8_ADC_TIMING
     timing_[0].add((uint32_t)esp_timer_get_time() - triggerBegin);
@@ -339,7 +338,6 @@ bool ADS1015::triggerConversion(uint8_t channel) {
     }
     pendingChannel_ = channel;
     conversionPending_ = true;
-    lastTriggerUs_ = (uint32_t)esp_timer_get_time();
     return true;
 }
 
@@ -807,6 +805,10 @@ esp_err_t ADS1015::startMixedContinuousExternal(const ChannelConfig* configs,
         drdySemaphore_ = xSemaphoreCreateBinary();
     }
 
+    // A previous stop may leave a binary notification set. Only this bus
+    // worker starts/services/stops the external path, so drain it before re-arm.
+    if (drdySemaphore_) xSemaphoreTake(drdySemaphore_, 0);
+
     // Install ISR
     gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
     esp_err_t err = gpio_isr_handler_add(alertPin_, alertISR, this);
@@ -826,6 +828,8 @@ esp_err_t ADS1015::startMixedContinuousExternal(const ChannelConfig* configs,
     memset(timingLast_, 0, sizeof(timingLast_));
     timingEventDrops_ = 0;
     timingSpurious_ = 0;
+    timingEarlyReady_ = 0;
+    timingUnassertedReady_ = 0;
 #endif
 
     // First channel to convert
@@ -866,6 +870,24 @@ bool ADS1015::serviceConversion() {
     }
 
     uint32_t tsUs = drdyTimestampUs_;
+    // An older edge cannot complete this single-shot conversion. Keep it in
+    // flight: its real edge can still arrive; do not read/retrigger prematurely.
+    if ((int32_t)(tsUs - lastTriggerUs_) < 0) {
+#ifdef EMG8_ADC_TIMING
+        ++timingEarlyReady_;
+#endif
+        return false;
+    }
+    // In single-shot RDY mode this level reflects completion (ADS1015 7.3.8).
+    // An interrupt alone is insufficient if the ready line is no longer active.
+    const bool activeHigh = (singleShotWords_[pendingChannel_] &
+        static_cast<uint16_t>(ConfigComparatorPolarity::ActiveHigh)) != 0;
+    if ((gpio_get_level(alertPin_) != 0) != activeHigh) {
+#ifdef EMG8_ADC_TIMING
+        ++timingUnassertedReady_;
+#endif
+        return false;
+    }
 #ifdef EMG8_ADC_TIMING
     timing_[1].add((uint32_t)esp_timer_get_time() - tsUs);
     timing_[4].add(tsUs - timingTriggerBegin_);
@@ -1033,8 +1055,9 @@ void ADS1015::printTiming(uint8_t adcId) const {
         for (auto n : m.bins) printf(",%lu", (unsigned long)n);
         printf("\n");
     }
-    printf("#ADC_EVENTS:%u,%lu,%lu\n", adcId, (unsigned long)timingEventDrops_,
-           (unsigned long)timingSpurious_);
+    printf("#ADC_EVENTS:%u,%lu,%lu,%lu,%lu\n", adcId, (unsigned long)timingEventDrops_,
+           (unsigned long)timingSpurious_, (unsigned long)timingEarlyReady_,
+           (unsigned long)timingUnassertedReady_);
     for (unsigned ch = 0; ch < 4; ++ch)
         printf("#ACQ:%u,%u,%lu,%lu,%lu\n", adcId, ch,
                (unsigned long)sampleCounts_[ch], (unsigned long)timingFirst_[ch],

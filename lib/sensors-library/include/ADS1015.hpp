@@ -685,6 +685,8 @@ private:
     uint32_t timingLast_[4] = {};
     volatile uint32_t timingEventDrops_ = 0;
     uint32_t timingSpurious_ = 0;
+    uint32_t timingEarlyReady_ = 0;
+    uint32_t timingUnassertedReady_ = 0;
 #endif
 
     uint8_t fastChannels_[kMaxActiveChannels] = {};

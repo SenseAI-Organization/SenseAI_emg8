@@ -115,8 +115,12 @@ def firmware_diagnostics(lines):
             network = {key.lower(): int(value) for key, value in
                        (field.split('=') for field in line.split(':', 1)[1].split(','))}
         elif line.startswith('#ADC_EVENTS:'):
-            adc, dropped, spurious = map(int, line.split(':', 1)[1].split(','))
+            adc, dropped, spurious, *extra = map(int, line.split(':', 1)[1].split(','))
             events[str(adc)] = dict(queue_drops=dropped, spurious=spurious)
+            if extra:
+                events[str(adc)]['early_ready'] = extra[0]
+            if len(extra) > 1:
+                events[str(adc)]['unasserted_ready'] = extra[1]
     return dict(timing=timing, device_acquisition=acquired, adc_events=events, firmware_network=network)
 
 

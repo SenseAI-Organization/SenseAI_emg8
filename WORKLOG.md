@@ -723,3 +723,38 @@ A small reduction in callback cost, not enough for target acceptance.
 Early/stale ready timing can still occur after starts despite the corrected
 physical map. Next prioritize worker-owned start/stop and draining stale ready
 notifications before publishing/tracing more performance changes.
+
+## 2026-09-06 - Worker-owned lifecycle and ready validation
+
+ADC start/stop now runs on each owning bus worker and main waits for completion.
+This serializes configuration with reads and puts stop counters after the last
+ADC callback. Stale semaphore/queue notifications are drained between runs.
+Start failures stop both workers and report an error instead of reporting REC.
+Mode/channel/divider/gain selection remains unchanged.
+
+Ready validation rejects timestamps preceding the trigger and requires the
+physical ready pin to be asserted before reading a single-shot result. Trigger
+time is captured before the write so a legitimate edge during a delayed write
+return is not rejected. New optional ADC_EVENTS fields expose rejected events.
+No minimum conversion-time heuristic or extra I2C read was introduced.
+
+Both firmware builds pass and all seven host parser tests pass. Intermediate
+lifecycle-only firmware passed six start/stop cycles across All/Raw/Env modes.
+Artifacts retain each isolated build: benchmarks/lifecycle, lifecycle-guard,
+and lifecycle-ready. Latest flashed ELF SHA256:
+f2733fab9a7570183f8d1e45c20c9b6a86eef1435f4c04654d4ceefa83481a85.
+
+Latest 30 s All captures: off ~900.6-900.7 Hz/raw, UDP ~853.4-853.6 Hz/raw.
+No I2C errors, retriggers, event queue drops; UDP delivery 100% and zero packet
+gaps. Off rejected no events. UDP ADC4 rejected 3 old timestamps and 14,857
+notifications with ready inactive. ADC1-3 rejected none. The prior timestamp-only
+build accepted very early positive events and showed ADC4 ~962 Hz versus its
+partner ~816 Hz; physical-level validation removes that count skew in this run.
+The cause of extra ADC4 notifications is unresolved. Its accepted ready minimum
+was still 68 us, so do not claim every ISR timestamp is a clean conversion edge;
+an old notification can be serviced after the real ready level arrives.
+
+Next isolated comparison: allocate I2C and shared GPIO interrupts on core 1,
+where the acquisition workers execute. Current trigger/read overhead remains
+about 95/110-119 us off and 103/119-123 us UDP. Normal ready mapping remains
+unchanged pending confirmation of bench-versus-bracelet wiring. No SD tests.

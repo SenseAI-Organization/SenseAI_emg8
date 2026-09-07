@@ -771,6 +771,28 @@ static void uartTask(void*) {
  */
 
 static QueueHandle_t drdyQ[2] = {nullptr, nullptr};
+static constexpr uint8_t kAdcStart = 4;
+static constexpr uint8_t kAdcStop = 5;
+struct AdcBusControl {
+    ADS1015::ChannelConfig configs[2][4];
+    uint8_t counts[2] = {};
+    SemaphoreHandle_t done = nullptr;
+    esp_err_t result = ESP_OK;
+};
+static AdcBusControl adcControl[2];
+
+// Only main submits commands. The completion semaphore transfers ownership of
+// each configuration/result between main and the worker, without hot-path locks.
+static esp_err_t commandAdcWorkers(uint8_t command) {
+    for (int bus = 0; bus < 2; ++bus)
+        xQueueSend(drdyQ[bus], &command, portMAX_DELAY);
+    esp_err_t result = ESP_OK;
+    for (int bus = 0; bus < 2; ++bus) {
+        xSemaphoreTake(adcControl[bus].done, portMAX_DELAY);
+        if (adcControl[bus].result != ESP_OK) result = adcControl[bus].result;
+    }
+    return result;
+}
 
 static void adcBusTask(void* arg) {
     const int bus = (int)(intptr_t)arg;
@@ -778,7 +800,30 @@ static void adcBusTask(void* arg) {
     uint8_t idx;
     while (true) {
         if (xQueueReceive(q, &idx, pdMS_TO_TICKS(10)) == pdTRUE) {
-            if (idx < 4) adc[idx]->serviceConversion();
+            if (idx == kAdcStart || idx == kAdcStop) {
+                auto& control = adcControl[bus];
+                control.result = ESP_OK;
+                for (int slot = 0; slot < 2; ++slot) {
+                    auto* device = adc[bus * 2 + slot];
+                    if (device->isContinuousRunning()) {
+                        esp_err_t err = device->stopContinuous();
+                        if (err != ESP_OK) control.result = err;
+                    }
+                }
+                // Both chips are stopped; queued edges belong to the old run.
+                xQueueReset(q);
+                if (idx == kAdcStart && control.result == ESP_OK) {
+                    for (int slot = 0; slot < 2; ++slot) {
+                        if (!control.counts[slot]) continue;
+                        esp_err_t err = adc[bus * 2 + slot]->startMixedContinuousExternal(
+                            control.configs[slot], control.counts[slot], kADC_RATE);
+                        if (err != ESP_OK) control.result = err;
+                    }
+                }
+                xSemaphoreGive(control.done);
+            } else if (idx < 4 && idx / 2 == bus) {
+                adc[idx]->serviceConversion();
+            }
         } else if (recording) {
             adc[bus * 2]->retriggerIfStalled();
             adc[bus * 2 + 1]->retriggerIfStalled();
@@ -866,44 +911,50 @@ static bool countdown(int seconds) {
 
 /* ── Start / stop helpers ──────────────────────────────────────────────────── */
 
-static void startADCs() {
-    // Sensor-test mode: only the ADC carrying the selected sensor runs, and
-    // only on that one channel. With a single-channel round-robin the MUX
-    // never switches, so this sensor gets the chip's full conversion rate.
+static bool startADCs() {
+    for (auto& control : adcControl)
+        for (auto& count : control.counts) count = 0;
+
     if (mode == Mode::Sensor) {
-        uint8_t s = testSensor % kNUM_SENSORS;
-        ADS1015::ChannelConfig one[1] = {
-            {sensorChannel(s), 1, ADS1015::ConfigPGA::One}};
-        adc[sensorAdc(s)]->startMixedContinuousExternal(one, 1, kADC_RATE);
-        return;
-    }
-
-    bool wF = (mode == Mode::All || mode == Mode::Raw);
-    bool wS = (mode == Mode::All || mode == Mode::Env);
-
-    // La lista de barrido se arma por ADC: las patillas crudas no son las
-    // mismas en los cuatro (ver kRawCh/kEnvCh).
-    for (int i = 0; i < 4; i++) {
-        ADS1015::ChannelConfig cfg[4];
-        uint8_t n = 0;
-        if (wF) {
-            cfg[n++] = {kRawCh[i][0], 1, ADS1015::ConfigPGA::One};
-            cfg[n++] = {kRawCh[i][1], 1, ADS1015::ConfigPGA::One};
+        uint8_t sensor = testSensor % kNUM_SENSORS;
+        uint8_t a = sensorAdc(sensor);
+        auto& control = adcControl[a / 2];
+        control.configs[a % 2][0] = {sensorChannel(sensor), 1, ADS1015::ConfigPGA::One};
+        control.counts[a % 2] = 1;
+    } else {
+        bool raw = mode == Mode::All || mode == Mode::Raw;
+        bool env = mode == Mode::All || mode == Mode::Env;
+        for (int a = 0; a < 4; ++a) {
+            auto& control = adcControl[a / 2];
+            auto* cfg = control.configs[a % 2];
+            uint8_t& n = control.counts[a % 2];
+            if (raw) {
+                cfg[n++] = {kRawCh[a][0], 1, ADS1015::ConfigPGA::One};
+                cfg[n++] = {kRawCh[a][1], 1, ADS1015::ConfigPGA::One};
+            }
+            if (env) {
+                uint8_t div = raw ? kSLOW_DIV : 1;
+                cfg[n++] = {kEnvCh[a][0], div, ADS1015::ConfigPGA::One};
+                cfg[n++] = {kEnvCh[a][1], div, ADS1015::ConfigPGA::One};
+            }
         }
-        if (wS) {
-            // Use divider only when fast channels are also present;
-            // otherwise run the envelope channels at full speed.
-            uint8_t div = wF ? kSLOW_DIV : 1;
-            cfg[n++] = {kEnvCh[i][0], div, ADS1015::ConfigPGA::One};
-            cfg[n++] = {kEnvCh[i][1], div, ADS1015::ConfigPGA::One};
-        }
-        adc[i]->startMixedContinuousExternal(cfg, n, kADC_RATE);
     }
+    esp_err_t err = commandAdcWorkers(kAdcStart);
+    if (err == ESP_OK) return true;
+    commandAdcWorkers(kAdcStop);
+    recording = false;
+    adcOK = false;
+    updateStatusLed();
+    printf("#ERR:ADC_START:%d\n#STOP\n", (int)err);
+    return false;
 }
 
 static void stopADCs() {
-    for (int i = 0; i < 4; i++)
-        adc[i]->stopContinuous();
+    esp_err_t err = commandAdcWorkers(kAdcStop);
+    if (err != ESP_OK) {
+        adcOK = false;
+        printf("#ERR:ADC_STOP:%d\n", (int)err);
+    }
 }
 
 // ─────────────────────────────────────────────
@@ -968,7 +1019,7 @@ static bool startRecording() {
     resetDropCounters();
     recording = true;
     sendStartToSlave();  // notify the measurement ESP (in case the start came from python/reed and not its own button)
-    startADCs();
+    if (!startADCs()) return false;
     updateStatusLed();
     printf("#REC\n");
     return true;
@@ -980,8 +1031,8 @@ static bool startRecording() {
 //  changes mid-recording (the file stays open for the next set).
 // ─────────────────────────────────────────────
 static void stopRecordingCore() {
-    recording = false;
     stopADCs();
+    recording = false;
     printSampleCounts();
     // battery->disable5V();  // battery/5V management not used on this board (read on ESP32 #2 instead)
     updateStatusLed();
@@ -1405,6 +1456,11 @@ extern "C" void app_main() {
     // Configure ALERT/RDY pins + register callbacks + per-bus DRDY queues
     drdyQ[0] = xQueueCreate(64, sizeof(uint8_t));
     drdyQ[1] = xQueueCreate(64, sizeof(uint8_t));
+    for (auto& control : adcControl) {
+        control.done = xSemaphoreCreateBinary();
+        if (!control.done) ESP_ERROR_CHECK(ESP_ERR_NO_MEM);
+    }
+    if (!drdyQ[0] || !drdyQ[1]) ESP_ERROR_CHECK(ESP_ERR_NO_MEM);
     for (int i = 0; i < 4; i++) {
         adc[i]->configureAlertPin(kRDY[i]);
         adc[i]->onConversion(onSample, (void*)(uintptr_t)i);
@@ -1623,8 +1679,10 @@ extern "C" void app_main() {
     if (sdOK)
         xTaskCreatePinnedToCore(sdWriteTask, "sd",   8192, nullptr, 5, nullptr, 1);
     xTaskCreatePinnedToCore(uartTask,     "uart", 4096, nullptr, 3, nullptr, 0);
-    xTaskCreatePinnedToCore(adcBusTask,   "adc0", 4096, (void*)0, configMAX_PRIORITIES - 2, nullptr, 1);
-    xTaskCreatePinnedToCore(adcBusTask,   "adc1", 4096, (void*)1, configMAX_PRIORITIES - 2, nullptr, 1);
+    if (xTaskCreatePinnedToCore(adcBusTask,   "adc0", 4096, (void*)0, configMAX_PRIORITIES - 2, nullptr, 1) != pdPASS)
+        ESP_ERROR_CHECK(ESP_ERR_NO_MEM);
+    if (xTaskCreatePinnedToCore(adcBusTask,   "adc1", 4096, (void*)1, configMAX_PRIORITIES - 2, nullptr, 1) != pdPASS)
+        ESP_ERROR_CHECK(ESP_ERR_NO_MEM);
 #ifndef EMG8_NO_IMU_TASK
     if (imuOK)
         xTaskCreatePinnedToCore(imuTask,  "imu",  4096, nullptr, 4, nullptr, 1);
