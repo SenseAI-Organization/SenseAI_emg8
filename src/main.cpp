@@ -802,6 +802,7 @@ static esp_err_t commandAdcWorkers(uint8_t command) {
 static void adcBusTask(void* arg) {
     const int bus = (int)(intptr_t)arg;
     QueueHandle_t q = drdyQ[bus];
+    TickType_t lastRecoveryCheck = xTaskGetTickCount();
     uint8_t idx;
     while (true) {
         if (xQueueReceive(q, &idx, pdMS_TO_TICKS(10)) == pdTRUE) {
@@ -829,7 +830,12 @@ static void adcBusTask(void* arg) {
             } else if (idx < 4 && idx / 2 == bus) {
                 adc[idx]->serviceConversion();
             }
-        } else if (recording) {
+        }
+        // A healthy partner keeps this queue active even if one ADC loses
+        // its ready event. Check each chip's deadline independently of idle.
+        const TickType_t now = xTaskGetTickCount();
+        if (recording && (TickType_t)(now - lastRecoveryCheck) >= pdMS_TO_TICKS(1)) {
+            lastRecoveryCheck = now;
             adc[bus * 2]->retriggerIfStalled();
             adc[bus * 2 + 1]->retriggerIfStalled();
         }

@@ -918,3 +918,35 @@ remain excluded/pending as documented above.
 Final comparison validation: normal, standard diagnostic and optional legacy
 diagnostic builds passed together; the no-timing throughput build passed
 separately before its hardware run. All nine host parser tests pass.
+
+## 2026-09-07 - Per-ADC recovery while the partner remains active
+
+The bus worker now checks each ADC deadline once per RTOS tick while processing
+events, in addition to queue-idle wakes. The existing ADC timeout is 5 ms.
+Previously a healthy partner could prevent the queue from timing out forever.
+The watchdog first services an already-pending valid completion, so delayed or
+lost queue delivery does not discard a result merely because it is old.
+
+Temporary SD-free tests dropped the 1000th notification on ADC1 and ADC3
+(semaphore plus queue delivery), then the 2000th queue notification only.
+Both partners continued delivering 3-5 raw samples during each recovery.
+Off/UDP 30 s runs recovered the full notification loss in 4.944-5.659 ms,
+with exactly one re-arm per affected ADC. Queue-only losses recovered in
+5.312-6.024 ms without a re-arm, preserving their completed sample.
+All four ADCs resumed; complete diagnostics, zero invalid ready events/I2C
+errors, exactly two deliberate retriggers per run. UDP delivery 100%, no gaps.
+Artifacts: benchmarks/recovery-injection-v2; ELF
+92a438a0cef87eba9aed447a43e917f37d0aef675f0f0fa6a17e8244f42b8d68.
+All temporary injection code was removed from source after these captures.
+
+The first experiment (benchmarks/recovery-injection, ELF 5b273c6c...) exposed
+one unnecessary startup re-arm before the pending-completion check was added;
+it also had one UDP packet gap (99.926% delivery). Those results are preserved,
+not counted as a clean acceptance run. Rates remain below 1000 Hz/raw.
+
+Normal and optional diagnostic builds passed without injection. Clean firmware
+ELF 96f70f717edaafff853bfc43298aad08a44826a8ebd6c8471844c3c2bc349798
+was verified on COM9 and contains no STALL_TEST marker. A further 30 s UDP
+capture (benchmarks/recovery-clean) passed complete diagnostics, zero invalid
+ready events/I2C errors/retriggers, 100% delivery and no packet gaps.
+Raw rates ~934-938 Hz with detailed timing enabled.

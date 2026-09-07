@@ -70,7 +70,7 @@ its old map during that clarification.
 | Callback preceded the next conversion trigger | Publication extended every cycle | Trigger first after read; verified in 36bf23c |
 | I2C/GPIO interrupts core 0, workers core 1 | Possible cross-core wakeup cost | Core-1 and split-core trials did not improve the slowest UDP channels; original layout retained |
 | Main previously started/stopped ADCs while workers could service them | Configuration could overlap in-flight service | Worker-owned lifecycle with acknowledgment in 2313bd4 |
-| Recovery only runs when the whole bus queue times out | A stalled ADC may never recover while its partner runs | Check individual deadlines during partner activity |
+| Recovery only runs when the whole bus queue times out | A stalled ADC may never recover while its partner runs | Fixed: periodic per-chip checks; recover an existing valid completion before re-arming |
 | DRDY queue-send failures were ignored | Lost wakeups were invisible | Diagnostic build counts queue overflow |
 | Wi-Fi stop delays 20 ms before resetting shared resources | Time elapsed does not prove the worker stopped using them | Add explicit worker acknowledgment |
 | SD write sizes/results and sync errors are ignored | A recording may appear successful after a write failure | Reviewed; writer repair and physical validation deferred |
@@ -146,7 +146,9 @@ Latest measured trigger-before-publication build: ~904 Hz/raw off, ~845 Hz/raw
 UDP, 30 s each, complete diagnostics, zero invalid ready events/I2C errors/
 retriggers, and 100% ADC UDP delivery. Target is still unmet. Storage availability
 gating and ADC lifecycle fixes are retained; SD writer physical validation,
-individual stall deadlines and acknowledged network shutdown remain pending.
+and acknowledged network shutdown remain pending. Individual stall deadlines
+are now checked during partner activity; SD-free fault injection verified both
+lost-ready re-arm and lost-queue completion recovery on both buses (about 5-6 ms).
 The optional static-buffer legacy-I2C comparison reached ~934-937 Hz/raw over
 UDP with timing diagnostics. A control without detailed timing reached
 ~948-950 Hz/raw, 100% delivery, no I2C errors/retriggers in 60 s; every complete

@@ -420,8 +420,8 @@ public:
      *
      * Single-shot sampling advances only when we trigger it, so a lost
      * trigger write (I2C error) or a missed DRDY edge would otherwise stop
-     * the channel forever. Call this periodically (e.g. whenever the DRDY
-     * event queue has been idle for a few ms). Re-triggering names the
+     * the channel forever. Call this periodically even while other ADCs keep
+     * a shared DRDY event queue busy. Re-triggering names the
      * channel explicitly, so recovery cannot corrupt attribution.
      *
      * @param timeoutUs Consider a triggered conversion lost after this long.

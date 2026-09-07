@@ -949,6 +949,11 @@ bool ADS1015::retriggerIfStalled(uint32_t timeoutUs) {
         return false;  // a trigger failed very recently; give it a moment
     }
 
+    // A delayed/lost queue notification may still have a valid semaphore
+    // and asserted ready pin. Publish that exact completed result first;
+    // a busy worker is not evidence that the hardware conversion was lost.
+    if (conversionPending_ && serviceConversion()) return false;
+
     // Either the trigger write failed (nothing in flight) or the DRDY edge
     // was lost. Re-arm the same channel if one was outstanding — its result
     // is gone either way, and naming the channel explicitly keeps
