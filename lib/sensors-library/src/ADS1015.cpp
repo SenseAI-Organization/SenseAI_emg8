@@ -917,6 +917,13 @@ bool ADS1015::serviceConversion() {
 #ifdef EMG8_ADC_TIMING
     if (sampleCounts_[ch] == 1) timingFirst_[ch] = tsUs;
     timingLast_[ch] = tsUs;
+    timing_[5].add((uint32_t)esp_timer_get_time() - tsUs);
+#endif
+    // The completed value/channel/timestamp are already local. Let the ADC
+    // convert the next channel while the callback publishes this result.
+    // A failed next trigger must not discard the successfully read sample.
+    triggerConversion(nextMixedChannel());
+#ifdef EMG8_ADC_TIMING
     uint32_t publishBegin = (uint32_t)esp_timer_get_time();
 #endif
 
@@ -926,9 +933,7 @@ bool ADS1015::serviceConversion() {
 
 #ifdef EMG8_ADC_TIMING
     timing_[3].add((uint32_t)esp_timer_get_time() - publishBegin);
-    timing_[5].add((uint32_t)esp_timer_get_time() - tsUs);
 #endif
-    triggerConversion(nextMixedChannel());
     return true;
 }
 

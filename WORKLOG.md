@@ -835,3 +835,21 @@ truncation pattern; absent diagnostics remain valid for original firmware.
 Next isolated change: start the next single-shot conversion after reading the
 completed value but before its publication callback. Preserve captured channel,
 value and ready timestamp, including when the next trigger fails.
+
+## 2026-09-07 - Trigger before publication checkpoint
+
+Service still reads the completed conversion first and keeps its channel/value/
+timestamp local. It now starts the next conversion before invoking the callback,
+so publication overlaps ADC conversion. A next-trigger failure cannot discard
+the successfully read previous sample. Turnaround timing ends at trigger entry.
+Both builds passed; flashed bench ELF
+0b3c32d5b425811af440b8f5d2f71e98c81c2d7ee5e44a88e618e5be50c88b41.
+Artifacts: benchmarks/trigger-first. Off/UDP 30 s captures both passed complete
+diagnostics, zero I2C errors/retriggers/invalid ready events, 100% UDP delivery.
+Rates ~904 Hz off and ~845 Hz UDP: small improvement against the immediately
+preceding ~898/~839 Hz runs, still well below target.
+
+Preparing a separate optional legacy-I2C bench environment using ESP-IDF's
+stack-backed convenience transfers, preserving the current workers and ADC
+logic. This does not restore the old heap-allocated command links or polling
+workers. The normal driver remains the current i2c_master implementation.
