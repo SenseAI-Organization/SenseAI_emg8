@@ -59,8 +59,8 @@ checkout: the existing protocol has no firmware build-ID query.
 Build `pio run -e esp32-s3-bench` for the attached SD-free bench. This environment
 sets `EMG8_NO_SD` (skips SD initialization entirely) and `EMG8_ADC_TIMING`.
 The normal environment keeps its existing SD behavior and omits timing code.
-The bench still performs the original sample queue operations until a separately
-measured optimization changes them.
+Unavailable SD storage is never enqueued to; the availability gate is shared
+with the normal firmware.
 
 After stop, #TIMING reports count, total/min/max microseconds, and eight histogram
 bins with exclusive upper bounds 25, 50, 100, 200, 400, 800, 1600, infinity.
@@ -100,3 +100,11 @@ The esp32-s3-throughput-bench environment uses the same optional driver and
 SD-free bench pin map but omits detailed per-conversion timing. It retains
 physical ready validation/filtering and public stop counters. Use UDP timestamp
 windows and counts for throughput; this build cannot report ADC_EVENTS/TIMING.
+The optional driver now reads the completed conversion and writes the next
+single-shot config within one command list, in that order. Its metric
+exchange replaces read and covers both transfers. Trigger counts only
+standalone initial/recovery writes. Ready starts at exchange entry (therefore
+includes its read phase); turnaround ends at that entry. Do not compare these
+last two directly with separate-transfer trigger boundaries. Wire speed,
+channel order and gains are unchanged. Any exchange error suppresses publication
+and waits a full recovery interval before re-arming the named next channel.

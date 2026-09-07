@@ -407,7 +407,7 @@ public:
      *
      * Checks the DRDY semaphore. If a conversion is ready, reads it,
      * attributes it to the channel that was explicitly requested for it,
-     * invokes the callback, and triggers the next channel's conversion.
+     * starts the next conversion, and invokes the callback with the saved result.
      * Designed to be called from an external task that handles multiple
      * ADS1015 instances.
      *
@@ -654,9 +654,9 @@ private:
     // only belong to it. Nothing is inferred from timing.
 
     bool singleShot_ = false;           ///< Round-robin runs in single-shot mode
-    uint8_t pendingChannel_ = 0;        ///< Channel of the outstanding conversion
+    uint8_t pendingChannel_ = 0;        ///< Last named channel; retained across ambiguous write failures
     bool conversionPending_ = false;    ///< A single-shot conversion is in flight
-    uint32_t lastTriggerUs_ = 0;        ///< When it was triggered (stall detection)
+    uint32_t lastTriggerUs_ = 0;        ///< Trigger/exchange entry, or error return time for recovery
     uint32_t i2cErrors_ = 0;            ///< Failed I2C transactions since start
     uint32_t retriggers_ = 0;           ///< Stall recoveries since start
 

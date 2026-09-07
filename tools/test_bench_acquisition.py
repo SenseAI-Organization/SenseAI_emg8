@@ -27,6 +27,15 @@ class DecoderTests(unittest.TestCase):
             lines.append(f'#ADC_EVENTS:{adc},0,0,0,0')
             lines.extend(f'#ACQ:{adc},{ch},0,0,0' for ch in range(4))
         self.assertTrue(firmware_diagnostics(lines)['diagnostics_complete'])
+        combined = [line.replace(',read,', ',exchange,') for line in lines]
+        result = firmware_diagnostics(combined)
+        self.assertTrue(result['diagnostics_complete'])
+        self.assertIn('1:exchange', result['timing'])
+        self.assertNotIn('1:read', result['timing'])
+        combined = [line for line in combined if not line.startswith('#TIMING:4,exchange,')]
+        result = firmware_diagnostics(combined)
+        self.assertFalse(result['diagnostics_complete'])
+        self.assertIn('4:exchange', result['missing_diagnostics'])
         lines[-1] = '#ACQ:4,3,broken,0,0'
         result = firmware_diagnostics(lines)
         self.assertFalse(result['diagnostics_complete'])

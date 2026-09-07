@@ -73,6 +73,14 @@ public:
     esp_err_t read(uint8_t deviceAddress, uint8_t registerAddress, uint8_t* data,
                    size_t len);
 
+#ifdef EMG8_LEGACY_I2C_BENCH
+    // One synchronous command list: read the old 16-bit register before
+    // writing the new one. On failure either phase may have reached the chip.
+    esp_err_t read16ThenWrite16(uint8_t deviceAddress, uint8_t readRegister,
+                               uint8_t* readBytes, uint8_t writeRegister,
+                               uint16_t writeValue);
+#endif
+
     /**
      * @brief Checks whether a device ACKs its address on the bus.
      * @param deviceAddress I2C address of the device.

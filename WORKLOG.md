@@ -950,3 +950,64 @@ was verified on COM9 and contains no STALL_TEST marker. A further 30 s UDP
 capture (benchmarks/recovery-clean) passed complete diagnostics, zero invalid
 ready events/I2C errors/retriggers, 100% delivery and no packet gaps.
 Raw rates ~934-938 Hz with detailed timing enabled.
+
+## 2026-09-07 - Combined read then trigger crosses 1000 Hz in short tests
+
+The optional legacy driver now submits one stack-backed command list:
+select conversion register, read two bytes (final NACK), repeated start,
+write the next single-shot configuration, stop. Reading precedes the next
+trigger regardless of task/ISR delays, preserving the old result's channel.
+Normal i2c_master builds retain separate transfers. No bus speed, gain, schedule
+or packet changes. The optional metric exchange replaces read and measures
+the entire operation; its ready/turnaround reference is exchange entry.
+Nine host parser tests pass, including missing combined-exchange diagnostics.
+
+Any combined error discards publication and keeps the explicitly named next
+channel for recovery. Both standalone trigger and exchange errors now wait a
+full 5 ms interval measured AFTER the error returns (not before a possible
+20 ms transaction timeout); recovery does not advance the scheduler a second
+time. An accepted-but-reported-failed trigger is treated as ambiguous until
+a fresh re-arm. Targeted simulated-error tests are next.
+
+SD-free diagnostic ELF
+750ce62ba2a5106801fc113463280faf1fc1fe4cb0384be07a44d8d26f57c8c5
+passed off/UDP 30 s tests (benchmarks/combined). Off ~1017 Hz/raw; UDP device
+rates ~1005.1-1006.1 Hz/raw, all complete 10 s raw windows 1005.0-1005.9.
+Envelopes remain /20; IMU ~200 Hz. Complete diagnostics, zero invalid ready
+events/I2C errors/retriggers, 100% ADC delivery, no packet gaps.
+This is the first short bench result above target; it is not long-run acceptance.
+
+Simulated error-path test: SD-free diagnostic ELF
+e51ef0c3097ca37dcbb2bf70aebf8969b61561e70977ca03c81f628bed54a34a,
+benchmarks/combined-fault/udp-01, 30 s UDP. On ADC1 and ADC3 the wrapper
+deliberately reported failure before submission, after a successful command,
+and after success plus a 20 ms delay. These were synthetic return errors, not
+physical bus faults. All six re-arms occurred 5.030-6.288 ms after error return.
+Exactly six I2C errors and six retriggers were counted; each affected ADC's
+published count equalled exchange count minus its three failed operations.
+Each discarded two later ready notifications from ambiguously accepted triggers,
+as expected; partners had zero spurious/invalid events. No queue drops or other
+invalid ready events. Complete diagnostics, 100% UDP delivery, no packet gaps.
+All temporary EXCHANGE_TEST code was removed. Nine host parser tests pass.
+
+All four clean configurations passed (combined-validation-build.log).
+Build/flash process note: PlatformIO processed environments in configuration
+order, so an attempted early restoration archived/flashed the old cached
+throughput image in benchmarks/combined-throughput. Its verified ELF 018c60cc
+made the mismatch visible before any acquisition test. That folder is annotated;
+the freshly completed build is archived separately in combined-throughput-v2.
+Wait for the entire build command to finish before any dependent flash.
+
+Clean no-timing firmware ELF
+d1997986587da605271df3917e789128bb31584f01e040f675fa02cff59e68a5
+was verified on COM9, with no TIMING or fault-injection markers. Three 60 s UDP
+runs (benchmarks/combined-throughput-v2) completed before the app session reset.
+All eight raw channels averaged 1010.27-1010.83 Hz; all 120 complete 10 s raw
+windows were 1010.0-1011.2 Hz. Every run delivered 100% of acquired ADC records,
+with zero packet gaps/I2C errors/retriggers and no backward timestamps.
+Envelopes remain /20 and IMU ~200 Hz. This is average throughput; the existing
+mixed-rate schedule still produces nonuniform sample intervals.
+All four builds and nine host tests passed; temporary injection is absent.
+Next checkpoint: full eight-repeat off/nosub/UDP/quiet matrix and 15-minute All
+UDP soak, plus mode/lifecycle checks. SD validation remains excluded and normal
+ready mapping remains pending the bench-versus-bracelet wiring confirmation.

@@ -324,19 +324,21 @@ bool ADS1015::triggerConversion(uint8_t channel) {
     if (channel >= kMaxChannels) return false;
     uint32_t triggerBegin = (uint32_t)esp_timer_get_time();
     lastTriggerUs_ = triggerBegin;
+    pendingChannel_ = channel;
     esp_err_t err = writeConfig(singleShotWords_[channel]);
 #ifdef EMG8_ADC_TIMING
     timing_[0].add((uint32_t)esp_timer_get_time() - triggerBegin);
     timingTriggerBegin_ = triggerBegin;
 #endif
     if (err != ESP_OK) {
-        // Leave conversionPending_ false: nothing is in flight, and
-        // retriggerIfStalled() will re-arm rather than mislabel anything.
+        // The chip may have accepted the write before the error. Wait a
+        // full recovery interval after it returns, then re-arm the same
+        // channel explicitly; never read an ambiguously triggered result.
         i2cErrors_++;
         conversionPending_ = false;
+        lastTriggerUs_ = (uint32_t)esp_timer_get_time();
         return false;
     }
-    pendingChannel_ = channel;
     conversionPending_ = true;
     return true;
 }
@@ -896,6 +898,31 @@ bool ADS1015::serviceConversion() {
     conversionPending_ = false;
 
     int16_t value = 0;
+#ifdef EMG8_LEGACY_I2C_BENCH
+    uint8_t bytes[2] = {};
+    pendingChannel_ = nextMixedChannel();
+    const uint32_t exchangeBegin = (uint32_t)esp_timer_get_time();
+    lastTriggerUs_ = exchangeBegin;
+#ifdef EMG8_ADC_TIMING
+    timingTriggerBegin_ = exchangeBegin;
+    timing_[5].add(exchangeBegin - tsUs);
+#endif
+    const esp_err_t exchangeError = i2c_.read16ThenWrite16(
+        address_, static_cast<uint8_t>(Register::Conversion), bytes,
+        static_cast<uint8_t>(Register::Config), singleShotWords_[pendingChannel_]);
+#ifdef EMG8_ADC_TIMING
+    timing_[2].add((uint32_t)esp_timer_get_time() - exchangeBegin);
+#endif
+    if (exchangeError != ESP_OK) {
+        ++i2cErrors_;
+        // Either phase may have completed. Suppress this publication and
+        // allow a possibly-started conversion to finish before clean re-arm.
+        lastTriggerUs_ = (uint32_t)esp_timer_get_time();
+        return true;
+    }
+    conversionPending_ = true;
+    value = static_cast<int16_t>((bytes[0] << 8) | bytes[1]) >> 4;
+#else
 #ifdef EMG8_ADC_TIMING
     uint32_t readBegin = (uint32_t)esp_timer_get_time();
 #endif
@@ -911,18 +938,24 @@ bool ADS1015::serviceConversion() {
         return true;
     }
 
+#endif
+
     latestReading_[ch] = value;
     adcData.channels[ch] = (uint16_t)value;
     sampleCounts_[ch] = sampleCounts_[ch] + 1;
 #ifdef EMG8_ADC_TIMING
     if (sampleCounts_[ch] == 1) timingFirst_[ch] = tsUs;
     timingLast_[ch] = tsUs;
+#ifndef EMG8_LEGACY_I2C_BENCH
     timing_[5].add((uint32_t)esp_timer_get_time() - tsUs);
 #endif
+#endif
+#ifndef EMG8_LEGACY_I2C_BENCH
     // The completed value/channel/timestamp are already local. Let the ADC
     // convert the next channel while the callback publishes this result.
     // A failed next trigger must not discard the successfully read sample.
     triggerConversion(nextMixedChannel());
+#endif
 #ifdef EMG8_ADC_TIMING
     uint32_t publishBegin = (uint32_t)esp_timer_get_time();
 #endif
@@ -954,11 +987,10 @@ bool ADS1015::retriggerIfStalled(uint32_t timeoutUs) {
     // a busy worker is not evidence that the hardware conversion was lost.
     if (conversionPending_ && serviceConversion()) return false;
 
-    // Either the trigger write failed (nothing in flight) or the DRDY edge
-    // was lost. Re-arm the same channel if one was outstanding — its result
-    // is gone either way, and naming the channel explicitly keeps
-    // attribution exact.
-    uint8_t ch = conversionPending_ ? pendingChannel_ : nextMixedChannel();
+    // A failed write may have reached the chip. After the quiet interval,
+    // re-arm the last named channel explicitly without advancing the
+    // scheduler again. A missing edge follows the same recovery path.
+    uint8_t ch = pendingChannel_;
     conversionPending_ = false;
 
     // Drop any stale edge so it can't be serviced against the new trigger.
@@ -1056,7 +1088,11 @@ float ADS1015::getEffectiveSampleRate(uint8_t channel) const {
 
 #ifdef EMG8_ADC_TIMING
 void ADS1015::printTiming(uint8_t adcId) const {
+#ifdef EMG8_LEGACY_I2C_BENCH
+    static const char* names[] = {"trigger", "wake", "exchange", "publish", "ready", "turnaround"};
+#else
     static const char* names[] = {"trigger", "wake", "read", "publish", "ready", "turnaround"};
+#endif
     for (unsigned i = 0; i < 6; ++i) {
         const auto& m = timing_[i];
         printf("#TIMING:%u,%s,%lu,%llu,%lu,%lu", adcId, names[i],

@@ -1,4 +1,4 @@
-# Acquisition review (in progress, 2026-09-05)
+# Acquisition review (in progress, updated 2026-09-07)
 
 ## Scope
 
@@ -28,7 +28,8 @@ completed result while that next conversion runs. Raw channels alternate; each e
 channel is inserted once per 20 raw cycles. Raw-only and envelope-only modes
 sample their selected group at full speed.
 
-The callback sends timestamped 8-byte samples to storage queues and, when
+The callback sends timestamped 8-byte samples to storage queues when SD is
+available and, when
 subscribed, network queues. UART displays latest values; its line rate is not
 the acquisition rate. UDP batches raw/envelope/IMU into version-1 datagrams.
 Packet sequences detect reception loss; ADC counters count results read.
@@ -58,7 +59,8 @@ captures. Lifecycle ownership, ready validation and GPIO filtering now protect
 the measured bench path; see the later checkpoints below.
 
 Artifacts: benchmarks/rdy-probe and benchmarks/rdy-corrected. The corrected
-map is temporarily limited to EMG8_ADC_TIMING builds pending confirmation
+map is temporarily limited to EMG8_ADC_TIMING / EMG8_BENCH_RDY_MAP builds
+pending confirmation
 that the bench wiring matches the actual bracelet. Normal firmware retains
 its old map during that clarification.
 
@@ -155,3 +157,30 @@ UDP with timing diagnostics. A control without detailed timing reached
 10 s channel window was below 1000 Hz (947.3-949.9). The clock remains unchanged.
 Core-1 placement also regressed this driver and was reverted. The alternative
 stays in explicitly named bench environments; normal firmware retains i2c_master.
+
+## Combined transfers and recovery checkpoint
+
+Periodic per-ADC deadlines are verified in fe1b30e, including lost semaphore
+and lost queue notifications while partners remain active. Pending valid
+completions are serviced before re-arming. The optional legacy bench path now
+reads the old result and writes the next configuration in one command list.
+All public sample fields and channel scheduling remain the same.
+
+The first 30 s comparison reached ~1017 Hz/raw off and ~1005-1006 Hz/raw UDP,
+with every complete 10 s UDP raw window above 1000 Hz. Envelopes remain /20
+and IMU 200 Hz. All diagnostics complete, zero invalid ready events/I2C errors/
+retriggers, 100% ADC delivery, no gaps. Artifacts: benchmarks/combined.
+This is preliminary evidence; full repeated and long-run acceptance is pending.
+
+Simulated return errors before/after accepted commands and after a 20 ms delay
+verified conservative suppression of uncertain samples. Recovery waits a full
+5 ms after error return and re-arms the named channel without advancing the
+schedule again. Six deliberate errors caused exactly six clean recoveries;
+counts confirm six publications were suppressed. Artifacts: benchmarks/combined-fault.
+Temporary fault hooks were removed before final builds.
+
+The clean no-timing build subsequently passed three 60 s UDP runs: every raw
+channel 1010.27-1010.83 Hz, all 120 complete 10 s raw windows 1010.0-1011.2 Hz,
+100% ADC delivery, zero gaps/I2C errors/retriggers. Envelopes remain /20 and
+IMU ~200 Hz. These throughput rates do not imply uniformly spaced samples.
+Full matrix/soak acceptance and SD validation remain pending.

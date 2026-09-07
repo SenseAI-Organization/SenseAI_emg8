@@ -133,6 +133,12 @@ def firmware_diagnostics(lines):
             malformed.append(line)
     expected_timing = {f'{a}:{name}' for a in range(1, 5) for name in
                        ('trigger', 'wake', 'read', 'publish', 'ready', 'turnaround')}
+    # Both builds emit six metrics; the optional combined transfer is
+    # explicitly named exchange instead of pretending to be just a read.
+    if any(key.endswith(':exchange') for key in timing):
+        for a in range(1, 5):
+            expected_timing.discard(f'{a}:read')
+            expected_timing.add(f'{a}:exchange')
     missing = sorted(expected_timing - timing.keys())
     missing += [f'ADC_EVENTS:{a}' for a in range(1, 5) if str(a) not in events]
     missing += [f'ACQ:{a}:{ch}' for a in range(4) for ch in range(4)

@@ -142,6 +142,34 @@ esp_err_t I2C::read(uint8_t deviceAddress, uint8_t registerAddress, uint8_t* dat
 #endif
 }
 
+#ifdef EMG8_LEGACY_I2C_BENCH
+esp_err_t I2C::read16ThenWrite16(uint8_t deviceAddress, uint8_t readRegister,
+                                 uint8_t* readBytes, uint8_t writeRegister,
+                                 uint16_t writeValue) {
+    if (!legacyInstalled_) return ESP_ERR_INVALID_STATE;
+    if (!readBytes || deviceAddress > 0x7f) return ESP_ERR_INVALID_ARG;
+    // Three addressed transfers; bound stack use if a future SDK grows links.
+    static_assert(I2C_LINK_RECOMMENDED_SIZE(3) <= 512, "Recheck ADC worker stack");
+    alignas(4) uint8_t storage[I2C_LINK_RECOMMENDED_SIZE(3)];
+    const uint8_t select[] = {uint8_t(deviceAddress << 1), readRegister};
+    const uint8_t trigger[] = {uint8_t(deviceAddress << 1), writeRegister,
+                              uint8_t(writeValue >> 8), uint8_t(writeValue)};
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create_static(storage, sizeof(storage));
+    if (!cmd) return ESP_ERR_NO_MEM;
+    esp_err_t err = i2c_master_start(cmd);
+    if (err == ESP_OK) err = i2c_master_write(cmd, select, sizeof(select), true);
+    if (err == ESP_OK) err = i2c_master_start(cmd);
+    if (err == ESP_OK) err = i2c_master_write_byte(cmd, (deviceAddress << 1) | 1, true);
+    if (err == ESP_OK) err = i2c_master_read(cmd, readBytes, 2, I2C_MASTER_LAST_NACK);
+    if (err == ESP_OK) err = i2c_master_start(cmd);
+    if (err == ESP_OK) err = i2c_master_write(cmd, trigger, sizeof(trigger), true);
+    if (err == ESP_OK) err = i2c_master_stop(cmd);
+    if (err == ESP_OK) err = i2c_master_cmd_begin(port_, cmd, pdMS_TO_TICKS(kTimeoutMs));
+    i2c_cmd_link_delete_static(cmd);
+    return err;
+}
+#endif
+
 esp_err_t I2C::probe(uint8_t deviceAddress) {
 #ifdef EMG8_LEGACY_I2C_BENCH
     if (!legacyInstalled_) return ESP_ERR_INVALID_STATE;
