@@ -1130,3 +1130,106 @@ Do not combine the earlier d1997986 matrix with this newer sender as if they
 were one build. The 15-minute soak and mode/lifecycle checks are now complete.
 Normal deployment remains pending actual-bracelet ready-wiring confirmation
 and the optional legacy-driver decision. Working-card SD validation is deferred.
+
+
+## 2026-09-07 - Mounted-card test preparation and initialization failure
+
+User supplied another card and authorized SD tests. Added explicit storage
+bench environment (measured ready map, combined driver, real SD) plus bounded
+error-path UDP errno counters. Before any recording, replaced overwrite file
+opens with FA_CREATE_NEW and made session directory creation skip existing
+uptime-based names rather than reuse them or fall back into the card root.
+These storage protections compiled; physical recording verification is pending.
+
+Added bench_sd.py: lists before/after, retrieves only newly created recording
+files, compares saved per-channel counts with CNT, validates record structure
+and monotonic timestamps, and compares UDP records with saved bytes. Mounted
+SD acquisition requires the new explicit --require-sd option; old no-SD
+benchmark behavior remains the default. Tests cover missing/partial/corrupted
+saved records, header mismatch and UDP loss/duplication.
+
+Both normal and storage builds passed (storage-baseline-build.log).
+Flashed and verified storage ELF
+ff8c53c6ad1af3384ffc399000be719f8a8630995c909efe1faf096319f39f37.
+The SD SPI host initializes, but sdmmc_init_spi_crc / CMD59 returns
+ESP_ERR_NOT_SUPPORTED (0x106), before filesystem mounting. No SD files were
+opened or changed. User reports FAT32 formatting and successful test.txt
+creation in Windows. Repeated controller reset gave the same failure.
+
+Hardware testing paused at an automatic approval usage-limit rejection, then
+resumed after the user's continuation. User saved changes in 55a9be0.
+The build cache had been cleared, so the temporary SD startup trace requires
+a rebuild. On resumption the board was running older d4ca979 firmware
+(boot ELF prefix 9bf8d94e7), with a recording active and unavailable-SD queue
+drops. Stopped it before testing. That older image has the identical CMD59
+failure, demonstrating that this initialization issue predates our changes.
+The rejected/aborted net-errors-01 capture is not a sampling result.
+Artifacts: benchmarks/storage-baseline; no monitor modifications.
+
+
+## 2026-09-07 - Card initialization compatibility and UART transfer stack fix
+
+The available card rejects CMD59 with R1=0x05 (idle + illegal command).
+A temporary probe established that it accepts CMD59 after CMD55/ACMD41
+reaches ready. Added a narrowly gated initialization-only fallback for that
+exact SD-v2 rejection: confirm CMD8, poll readiness, then retry the real
+CRC-enable command. Success is never fabricated and CRC remains enabled.
+Normal SDK initialization continues, and the direct transaction callback is
+restored afterwards. Removed temporary command traces/private SDK hooks.
+The card now mounts. Existing test.txt was read without modification; its
+8-byte SHA256 is
+1d5f671fbc083af9a0ac801f24b93569fc6f9702af3fceee0ea7ca1a0018f001.
+No formatting or deletion was performed.
+
+A subsequent file-read / Wi-Fi-start sequence crashed with a kernel debug
+exception. Disassembly confirmed processUartLine reserved 0x1290 (4752)
+bytes on the 3584-byte main task stack. Its local FIL contains the configured
+4096-byte sector cache. Made FIL and the 512-byte transfer buffer static;
+UART commands are serialized in the main task. The compiler then inlined
+the handler into feedUartByte with a 144-byte frame. No task stack increase
+or transfer protocol change was needed.
+
+Storage image b2ee2a5cda0b05d85cd08784d70998e86843be8e7f98c312df5db9547320bb23
+passes the previous file-read/Wi-Fi-start sequence. A 15-second All-mode
+SD+UDP capture acquired 1002.638-1003.971 Hz per raw channel, with zero
+I2C errors/retriggers/storage drops. SD contains 120400 raw, 6017 envelope
+and 2976 IMU records; every record matches UDP byte for byte, and every
+saved ADC count matches CNT. test.txt hash remains unchanged.
+Artifacts: benchmarks/storage-transfer-stack, including exact binary/ELF.
+Earlier SD-only 10-second capture on d666de85 also had all saved counts
+matching CNT, raw 1013.845-1014.944 Hz, no errors/drops.
+Artifacts: benchmarks/storage-crc-ready/sd-off-smoke.
+Session directory collisions after reset now create a new suffixed directory;
+the bench verifier confirms existing names and sizes remain unchanged.
+
+A 90-second quiet UDP capture on the temporary trace image identified all
+152 send failures as errno 12 (ENOMEM). No network queue drops occurred;
+ADC delivery was 99.92965%, raw 1009.653-1010.075 Hz, no ADC errors/retriggers.
+This establishes transient send-buffer pressure, not the precise allocation
+site; it does not retroactively classify every earlier uninstrumented error.
+The existing retained-batch delayed retry remains in place.
+Artifacts: benchmarks/storage-init-trace/net-errors-01.
+Host parser/verifier suites: 17 tests pass, including duplicate UDP handling.
+
+Remaining storage review: checked writes/short writes/sync/close errors,
+elapsed-time periodic sync, and explicit stop/drain/close ownership before
+download or restart. These are still pending; short successful recordings
+do not validate failure paths or power-loss durability. Physical button/reed
+tests, actual-bracelet ready mapping, and final deployment choices remain open.
+
+One-minute SD+UDP follow-up on the same b2ee2a5c image passed SD verification:
+481245 raw + 24056 envelope + 11993 IMU records, saved ADC counts exactly
+match CNT, strictly increasing channel timestamps, zero storage drops.
+All eight raw acquisition averages were 1001.943-1003.226 Hz. UDP received
+99.91154% of ADC records: 447 raw records present on SD were absent from UDP,
+with two raw packet sequence gaps and 99 network queue drops.
+NET reported TX=5563, ERR=221; all errors were ENOMEM (errno 12).
+Every received UDP record matched an SD record byte for byte.
+This is complete SD capture for this run, NOT lossless network delivery.
+Artifacts: benchmarks/storage-transfer-stack/sd-udp-60.
+Next checkpoint should investigate sender backpressure with SD enabled and
+finish the storage writer error/boundary review listed above.
+
+Normal and storage configurations both build successfully. Final test.txt
+hash is unchanged; device stopped, SD mounted, radio off, UART enabled,
+COM9 released. No monitor changes or pushes.

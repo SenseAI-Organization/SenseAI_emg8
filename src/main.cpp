@@ -1252,7 +1252,10 @@ static void processUartLine(const char* line, int len) {
                 fpath = base + "/" + fpath;
         }
 
-        FIL tf;
+        // Only the main task handles UART commands, one transfer at a time.
+        // FIL includes a 4096-byte sector cache with our FatFs configuration;
+        // keeping it on the 3584-byte main task stack corrupts adjacent memory.
+        static FIL tf;
         FRESULT fr = f_open(&tf, fpath.c_str(), FA_READ);
         if (fr != FR_OK) {
             // Report the FatFs code and the path actually attempted — a bare
@@ -1263,7 +1266,7 @@ static void processUartLine(const char* line, int len) {
         uint32_t sz = f_size(&tf);
         printf("#FDATA:%s,%u\n", fpath.c_str(), (unsigned)sz);
 
-        uint8_t xbuf[512];
+        static uint8_t xbuf[512];
         UINT br;
         while (f_read(&tf, xbuf, sizeof(xbuf), &br) == FR_OK && br > 0) {
             // Send raw binary (the Python side reads exactly sz bytes)

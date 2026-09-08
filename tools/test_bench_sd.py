@@ -62,6 +62,13 @@ class SavedRecords(unittest.TestCase):
         f.write_bytes(f.read_bytes()[:-8])
         with self.assertRaises(AssertionError): self.check()
 
+    def test_duplicate_udp_packet_is_not_a_disk_mismatch(self):
+        f = self.capture / 'udp.bin'
+        data = f.read_bytes()
+        size = struct.unpack_from('<H', data, 8)[0]
+        f.write_bytes(data + data[:10+size])
+        self.assertEqual(self.check()['udp_absent_from_sd'], [0, 0, 0])
+
     def test_partial_saved_record_fails(self):
         f = self.sd / 'R000.bin'
         f.write_bytes(f.read_bytes()[:-1])

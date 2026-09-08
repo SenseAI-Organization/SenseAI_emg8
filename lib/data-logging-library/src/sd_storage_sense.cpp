@@ -11,6 +11,8 @@
 #define __SD_SENSE_INTERNAL__
 
 #include "sd_storage_sense.hpp"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 #ifdef SD_SENSE_ENABLED
 
@@ -62,16 +64,49 @@ SD::~SD() {
     deinit();
 }
 
-#ifdef EMG8_NET_DIAGNOSTICS
-// Temporary initialization trace; removed after locating the startup failure.
-static esp_err_t traceSdCommand(int slot, sdmmc_command_t* cmd) {
+// Some SD v2 cards reject CMD59 while idle, but accept it once ready.
+// Apply this only to that exact rejection. CRC must still be enabled before
+// the normal SDK initialization proceeds to any data-register/block transfers.
+static esp_err_t sdInitTransaction(int slot, sdmmc_command_t* cmd) {
     esp_err_t err = sdspi_host_do_transaction(slot, cmd);
-    printf("#SD_CMD:%d,%08lx,%d,%d,%08lx\n", (int)cmd->opcode,
-           (unsigned long)cmd->arg, (int)err, (int)cmd->error,
-           (unsigned long)cmd->response[0]);
-    return err;
+    if (cmd->opcode != SD_CRC_ON_OFF || cmd->arg != 1 ||
+        err != ESP_ERR_NOT_SUPPORTED ||
+        SD_SPI_R1(cmd->response) != (SD_SPI_R1_IDLE_STATE | SD_SPI_R1_ILLEGAL_CMD))
+        return err;
+
+    sdmmc_command_t probe = {};
+    probe.opcode = SD_SEND_IF_COND;
+    probe.arg = 0x1aa;  // Confirm SD v2 at the existing 3.3 V interface.
+    probe.flags = SCF_CMD_BCR | SCF_RSP_R7;
+    probe.timeout_ms = cmd->timeout_ms;
+    esp_err_t probeErr = sdspi_host_do_transaction(slot, &probe);
+    if (probeErr != ESP_OK || (probe.response[0] & 0xfff) != 0x1aa)
+        return err;
+
+    for (unsigned attempt = 0; attempt < 100; ++attempt) {
+        probe = {};
+        probe.opcode = MMC_APP_CMD;
+        probe.flags = SCF_CMD_AC | SCF_RSP_R1;
+        probe.timeout_ms = cmd->timeout_ms;
+        probeErr = sdspi_host_do_transaction(slot, &probe);
+        if (probeErr != ESP_OK) return probeErr;
+
+        probe = {};
+        probe.opcode = SD_APP_OP_COND;
+        probe.arg = SD_OCR_SDHC_CAP;
+        probe.flags = SCF_CMD_BCR | SCF_RSP_R3;
+        probe.timeout_ms = cmd->timeout_ms;
+        probeErr = sdspi_host_do_transaction(slot, &probe);
+        if (probeErr != ESP_OK) return probeErr;
+        if (!(SD_SPI_R1(probe.response) & SD_SPI_R1_IDLE_STATE)) {
+            err = sdspi_host_do_transaction(slot, cmd);
+            if (err == ESP_OK) printf("#SD:CRC_AFTER_READY\n");
+            return err;  // Never report success unless the real CMD59 succeeds.
+        }
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+    return ESP_ERR_TIMEOUT;
 }
-#endif
 
 esp_err_t SD::init(void) {
     sdspi_device_config_t sdConfig = SDSPI_DEVICE_CONFIG_DEFAULT();
@@ -117,10 +152,9 @@ esp_err_t SD::init(void) {
         .is_slot_set_to_uhs1 = NULL,
     };
 
-#ifdef EMG8_NET_DIAGNOSTICS
-    sdHost_.do_transaction = &traceSdCommand;
-#endif
+    sdHost_.do_transaction = &sdInitTransaction;
     err = sdmmc_card_init(&sdHost_, &sdCardInfo_);
+    // The compatibility wrapper is initialization-only, with no runtime cost.
     sdHost_.do_transaction = &sdspi_host_do_transaction;
     sdCardInfo_.host.do_transaction = &sdspi_host_do_transaction;
     return err;
