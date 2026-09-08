@@ -1233,3 +1233,96 @@ finish the storage writer error/boundary review listed above.
 Normal and storage configurations both build successfully. Final test.txt
 hash is unchanged; device stopped, SD mounted, radio off, UART enabled,
 COM9 released. No monitor changes or pushes.
+
+
+## 2026-09-07 - Selectable 1000 Hz average acquisition ceiling
+
+User requested continued tests plus a 1000/max rate option. Implemented UART
+line commands R1000, Rmax, R? (newline terminated). Default remains max,
+configuration lasts until reset, changes while recording return ERR:BUSY.
+Ordinary status adds a separate RATE line without altering STATUS fields.
+Monitor app is unchanged. Selection is independent of All/Raw/Env/Sensor.
+All mode caps raw channels at 1000 Hz average and retains envelopes /20;
+Raw/Env-only cap their active channels, Sensor caps its single channel.
+
+This is an average limiter in groups of 20 fast cycles per 20 ms, not a
+uniform 1 ms sample clock. It preserves the channel scheduler, single-shot
+attribution, hardware data rate and original DRDY timestamps. At each group
+boundary the ADC completes its due envelope conversions, then its worker
+defers the read/next-trigger exchange until the pacing deadline. The other
+ADC on the bus is not blocked. A per-bus esp_timer wakes the worker through
+its existing queue; intentional waits are excluded from stall recovery.
+The limiter preserves phase under ordinary jitter and discards multi-frame
+catch-up credit after long interruption. Max bypasses pacing.
+The SD master v4 header remains 32 bytes: formerly reserved byte 25 now
+stores 0=max, 1=1000; bytes 26-31 remain reserved. Rate is snapshotted at
+recording start for the writer. Sample and UDP formats are unchanged.
+
+Storage test ELF:
+a4ba748dedbf3ae3e03b33692052b097bbdef55c53cb88ba1dceefad7c490c5a.
+Normal configuration also builds; its compiled firmware is archived alongside.
+Artifacts under benchmarks/rate-cap include firmware/ELF and captures.
+Added --rate to the host acquisition/SD tools and support for Sensor mode.
+Verifier checks saved rate metadata and timestamp-based acquisition ceiling,
+with allowance for one pacing group and conversion timestamp jitter.
+19 offline parser/verifier tests pass, including rate metadata mismatch and
+an over-rate recording incorrectly marked capped.
+
+Capped SD-only 10 s All: 80029 raw, 4000 envelope, 1998 IMU records.
+Raw-only 10 s capped: 80092 raw, 1998 IMU records.
+Both: saved ADC counts equal CNT, no errors/retriggers/storage drops.
+Complete device-time one-second raw windows contained 999-1001 samples.
+Short host averages can exceed 1000 slightly due to the initial pacing group
+and control/timestamp boundaries; this is not a strict per-interval cap.
+
+Capped All SD+UDP 60 s: raw host averages 1000.124-1000.240 Hz,
+envelopes 49.999 Hz. SD contains 480098 raw, 24000 envelope, 11908 IMU.
+Every saved ADC count equals CNT; no ADC errors/retriggers/storage drops.
+All received UDP records match SD bytes; SD contains 174 raw and 16 envelope
+records missing from UDP (two packet gaps). ADC delivery 99.96231%.
+NET TX=5569 ERR=0 DROP=0 for this run. This single run does not establish
+that the cap eliminates backpressure, and UDP is still not lossless.
+59 complete one-second windows per raw channel contained 998-1003 samples.
+Files were reverified offline with the additional actual-rate bound.
+
+Restoring max in Raw-only SD capture (10 s) gives 1068.266-1069.466 Hz,
+85522 raw +1994 IMU records; all counts match, no ADC errors/retriggers/drops.
+The first Env test aborted before recording because the host checker required
+RATE to be the last received line; a normal HEALTH line followed the valid
+acknowledgement. Fixed the checker to search only the response interval.
+This was a host assertion failure, not a firmware fault.
+
+Env-only capped capture then passed (40084 envelope +974 IMU records, 5 s),
+including the saved-rate bound, with zero errors/retriggers/storage drops.
+Sensor capture exposed stale diagnostics: inactive ADCs retained counters
+from Env mode. The single active sensor saved 5014 raw samples without
+errors, but stale inactive counts caused the verifier to fail.
+Added owner-only resetAcquisitionDiagnostics and clear inactive ADCs at each
+recording start (including errors/retriggers/timing metrics). Active ADCs use
+the same reset on start. No acquisition ordering changes were needed.
+Final storage ELF f103ebbbbd533a9a963934eeaaee16e1adfa2d057be33e100e2cc6d1c6651831
+is archived and flashed, with exact completed-build binary/ELF match verified.
+Artifacts for retests: benchmarks/rate-cap-final.
+
+Final-image Env -> Sensor transition passes: inactive counters are zero,
+all 5014 active-sensor samples match SD, and intentional pacing waits longer
+than the 5 ms watchdog threshold cause zero false retriggers.
+Final-image capped All SD+UDP 20 s: raw 1000.032-1000.532 Hz host averages;
+160048 raw +8000 envelope +3990 IMU records all match SD/UDP byte for byte,
+zero packet gaps, ADC errors/retriggers or storage drops.
+Busy/invalid rate commands were verified on hardware: R999 rejected,
+Rmax rejected while Sensor recording continued with RATE:1000, R? worked
+during acquisition, stop then Rmax accepted. An initial command-probe attempt
+consumed the RATE line from the preflight STATUS query as if it were a command
+acknowledgement; fixed the probe to consume that line first, then retested.
+The final probe script/log are archived. test.txt hash is still unchanged.
+Both final normal/storage builds and all 19 offline tests pass.
+Final board state: stopped, max selected, SD mounted, UART enabled, radio off.
+COM9 is free. No monitor changes or push; unrelated .vscode edit preserved.
+
+Next small checkpoint: finish SD writer checked write/short-write/sync/close
+handling and explicit recording stop/drain/close ownership, then longer
+SD+UDP tests including queue backpressure. Current successful captures do
+not validate full-card/error/power-loss behavior or guarantee UDP delivery.
+Actual-bracelet DRDY mapping and optional legacy I2C deployment decision
+remain pending. The average limiter does not imply evenly spaced sampling.

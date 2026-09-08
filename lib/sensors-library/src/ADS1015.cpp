@@ -745,7 +745,8 @@ esp_err_t ADS1015::startMixedContinuous(const ChannelConfig* configs, uint8_t nu
 }
 
 esp_err_t ADS1015::startMixedContinuousExternal(const ChannelConfig* configs,
-                                                uint8_t numConfigs, ConfigRate rate) {
+                                                uint8_t numConfigs, ConfigRate rate,
+                                                bool limitFastRate1000) {
     if (numConfigs == 0 || numConfigs > kMaxActiveChannels) {
         return ESP_ERR_INVALID_ARG;
     }
@@ -822,17 +823,7 @@ esp_err_t ADS1015::startMixedContinuousExternal(const ChannelConfig* configs,
     settling_ = false;                // not used on the single-shot path
     conversionPending_ = false;
     lastTriggerUs_ = 0;
-    i2cErrors_ = 0;
-    retriggers_ = 0;
-#ifdef EMG8_ADC_TIMING
-    for (auto& metric : timing_) metric = TimingMetric{};
-    memset(timingFirst_, 0, sizeof(timingFirst_));
-    memset(timingLast_, 0, sizeof(timingLast_));
-    timingEventDrops_ = 0;
-    timingSpurious_ = 0;
-    timingEarlyReady_ = 0;
-    timingUnassertedReady_ = 0;
-#endif
+    resetAcquisitionDiagnostics();
 
     // First channel to convert
     uint8_t firstCh = fastChannels_[0];
@@ -847,12 +838,37 @@ esp_err_t ADS1015::startMixedContinuousExternal(const ChannelConfig* configs,
 
     // Trigger the first conversion. No discard needed: single-shot results
     // belong to the channel named in the trigger, with no pipeline.
+    rateLimited_ = limitFastRate1000;
+    rateWaiting_ = false;
+    rateNextCycle_ = 20;
+    rateDeadlineUs_ = (uint32_t)esp_timer_get_time() + 20000;
     if (!triggerConversion(firstCh)) {
         stopContinuous();
         return ESP_FAIL;
     }
 
     return ESP_OK;
+}
+
+void ADS1015::resetAcquisitionDiagnostics() {
+    resetSampleCounts();
+    i2cErrors_ = 0;
+    retriggers_ = 0;
+#ifdef EMG8_ADC_TIMING
+    for (auto& metric : timing_) metric = TimingMetric{};
+    memset(timingFirst_, 0, sizeof(timingFirst_));
+    memset(timingLast_, 0, sizeof(timingLast_));
+    timingEventDrops_ = 0;
+    timingSpurious_ = 0;
+    timingEarlyReady_ = 0;
+    timingUnassertedReady_ = 0;
+#endif
+}
+
+uint32_t ADS1015::rateWaitDelayUs() const {
+    if (!continuousRunning_ || !rateWaiting_) return 0;
+    int32_t remaining = (int32_t)(rateDeadlineUs_ - (uint32_t)esp_timer_get_time());
+    return remaining > 0 ? (uint32_t)remaining : 1;
 }
 
 bool ADS1015::serviceConversion() {
@@ -894,6 +910,29 @@ bool ADS1015::serviceConversion() {
     timing_[1].add((uint32_t)esp_timer_get_time() - tsUs);
     timing_[4].add(tsUs - timingTriggerBegin_);
 #endif
+    // Pace complete groups of 20 fast-channel cycles. Slow channels due at
+    // this boundary are included before waiting, preserving the divider.
+    // Retain the completed single-shot value and its original DRDY timestamp;
+    // the bus worker sleeps on a timer, leaving the other ADC free to run.
+    if (rateLimited_ && fastIndex_ == 0 && fastCycleCount_ == rateNextCycle_) {
+        bool slowDue = false;
+        for (uint8_t i = 0; i < numSlowChannels_; ++i)
+            slowDue |= fastCycleCount_ >= slowNextDue_[i];
+        if (!slowDue) {
+            const uint32_t now = (uint32_t)esp_timer_get_time();
+            if ((int32_t)(rateDeadlineUs_ - now) > 0) {
+                rateWaiting_ = true;
+                xSemaphoreGive(drdySemaphore_);
+                return false;
+            }
+            rateWaiting_ = false;
+            rateNextCycle_ += 20;
+            // Keep phase under ordinary jitter, but never accumulate multiple
+            // frames of catch-up work after a long interruption.
+            if ((int32_t)(now - rateDeadlineUs_) >= 20000) rateDeadlineUs_ = now;
+            rateDeadlineUs_ += 20000;
+        }
+    }
     uint8_t ch = pendingChannel_;  // exact: we explicitly requested this conversion
     conversionPending_ = false;
 
@@ -972,6 +1011,10 @@ bool ADS1015::serviceConversion() {
 
 bool ADS1015::retriggerIfStalled(uint32_t timeoutUs) {
     if (!continuousRunning_ || !singleShot_) return false;
+    if (rateWaiting_) {
+        serviceConversion();
+        return false;  // An intentional pacing wait is not a lost conversion.
+    }
 
     uint32_t now = (uint32_t)esp_timer_get_time();
     if (conversionPending_ && (now - lastTriggerUs_) < timeoutUs) {

@@ -186,6 +186,8 @@ The firmware emits a mix of:
 | `4` | `4` | Start or switch to **Sensor test** mode (one sensor at a time) |
 | `S<n>` | `S3` | Select sEMG sensor `0`–`7` for sensor-test mode |
 | `0` | `0` | Stop / pause acquisition |
+| `R1000` / `Rmax` | `R1000\n` | Select average 1000 Hz ceiling or maximum speed while stopped |
+| `R?` | `R?\n` | Query selected sampling rate |
 | `?` | `?` | Query current status |
 | `V1` | `V1` | Enable 5V rail |
 | `V0` | `V0` | Disable 5V rail |
@@ -198,10 +200,32 @@ The firmware emits a mix of:
 
 Command notes:
 
-- `L<id>,<rep>` and `G<path>` are line commands. Send a terminating newline, for example `L7,3\n`.
+- `R1000`, `Rmax`, `R?`, `L<id>,<rep>` and `G<path>` are line commands. Send a terminating newline, for example `L7,3\n`.
 - `1`, `2`, and `3` trigger the firmware countdown before acquisition starts.
 - `G<path>` is rejected while recording is active and returns `#ERR:BUSY`.
 - `F` and `G` require a mounted SD card. Otherwise the device returns `#ERR:NO_SD`.
+
+### Sampling rate selection
+
+Send `R1000\n` while stopped, then start normally with `1`, `2`, or `3`.
+Send `Rmax\n` to restore the existing unrestricted scheduler. `max` is the
+boot default; the setting lasts until reset. `R?\n` and the ordinary status
+query report `#RATE:1000` or `#RATE:max`. Changing it during recording returns
+`#ERR:BUSY`; stop first. The monitor app has not been modified.
+
+The 1000 option paces ADC acquisition in groups of 20 fast-channel cycles
+against 20 ms deadlines. In All mode this targets a 1000 Hz average ceiling
+per raw channel and 50 Hz per envelope channel. Raw-only and Env-only modes
+cap each active channel at 1000 Hz; Sensor mode caps its single channel.
+It is not a uniform 1 ms sample clock: existing conversion jitter and envelope
+insertion remain, and short windows can contain more than 1000 samples/s.
+Use recorded timestamps. If hardware or I/O cannot sustain the target,
+the rate is lower; no values are duplicated or interpolated.
+After a long interruption the limiter discards accumulated catch-up credit.
+
+The 32-byte v4 master header uses previously reserved byte 25 for the rate:
+0 = max (including historical files), 1 = 1000 cap. Bytes 26-31 remain reserved.
+UDP and sample record layouts are unchanged.
 
 ### Bracelet → Host Responses
 
@@ -339,7 +363,8 @@ Each recording start within a session directory `s_<MAC>_<epoch>/` produces one 
 | 16 | 2 | IMU output data rate (Hz) |
 | 18 | 6 | Device MAC address |
 | 24 | 1 | Mode (`1`=All, `2`=Raw, `3`=Env, `4`=Sensor test) |
-| 25 | 7 | Reserved |
+| 25 | 1 | Rate selection: 0=max, 1=1000 Hz average cap |
+| 26 | 6 | Reserved |
 
 Label event (12 bytes, repeated for each `L<id>,<rep>` command received while recording):
 

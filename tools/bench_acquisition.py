@@ -230,6 +230,12 @@ def run(args):
         wait(1)
         if status is None or status[1] != 0 or status[2] != int(args.require_sd):
             raise RuntimeError(f'Requires idle device with SD mounted={args.require_sd}; status={status}')
+        if args.rate:
+            rate_log_start = len(logs)
+            send('R' + args.rate + '\n')
+            wait(.2)
+            if '#RATE:' + args.rate not in logs[rate_log_start:]:
+                raise RuntimeError('Rate selection not acknowledged')
         # Reset networking for an actual no-subscriber condition and empty batches.
         send('W0')
         wait(1)
@@ -296,7 +302,7 @@ def run(args):
     if result['diagnostics_complete'] is False:
         failure = failure or 'Incomplete or malformed firmware diagnostics; see serial.jsonl'
     elapsed = stop_time - start_time if stop_time is not None and start_time is not None else None
-    result.update(condition=args.condition, mode=args.mode, host_window_s=elapsed,
+    result.update(condition=args.condition, mode=args.mode, rate=args.rate, host_window_s=elapsed,
                   failure=failure, final_status=status, counts=counters)
     result['host_timed_acquired_hz'] = {
         f'{adc}:{ch}': round(values[ch] / elapsed, 3)
@@ -319,7 +325,8 @@ if __name__ == '__main__':
     ap.add_argument('--port', default='COM9')
     ap.add_argument('--host', default='192.168.4.1')
     ap.add_argument('--condition', choices=('off', 'nosub', 'udp', 'quiet'), default='udp')
-    ap.add_argument('--mode', type=int, choices=(1, 2, 3), default=1)
+    ap.add_argument('--mode', type=int, choices=(1, 2, 3, 4), default=1)
+    ap.add_argument('--rate', choices=('max', '1000'), help='Select rate while stopped; omitted preserves legacy firmware compatibility')
     ap.add_argument('--require-sd', action='store_true', help='Explicitly test mounted SD; default still requires SD unavailable')
     ap.add_argument('--seconds', type=float, default=60)
     ap.add_argument('--connect-wait', type=float, default=12)

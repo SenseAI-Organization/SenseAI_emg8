@@ -400,7 +400,12 @@ public:
      */
     esp_err_t startMixedContinuousExternal(const ChannelConfig* configs,
                                            uint8_t numConfigs,
-                                           ConfigRate rate = ConfigRate::Rate_3300Hz);
+                                           ConfigRate rate = ConfigRate::Rate_3300Hz,
+                                           bool limitFastRate1000 = false);
+
+    // External worker must wake again after this delay when serviceConversion
+    // defers a completed result for pacing. Zero means no pacing wait.
+    uint32_t rateWaitDelayUs() const;
 
     /**
      * @brief Service one completed conversion (non-blocking).
@@ -464,6 +469,9 @@ public:
      * @brief Reset all per-channel conversion counters to zero.
      */
     void resetSampleCounts();
+
+    // External owner only, while stopped: include ADCs inactive in the next run.
+    void resetAcquisitionDiagnostics();
 
     /**
      * @brief Get the actual effective sample rate for a channel in mixed mode.
@@ -659,6 +667,10 @@ private:
     uint32_t lastTriggerUs_ = 0;        ///< Trigger/exchange entry, or error return time for recovery
     uint32_t i2cErrors_ = 0;            ///< Failed I2C transactions since start
     uint32_t retriggers_ = 0;           ///< Stall recoveries since start
+    bool rateLimited_ = false;
+    bool rateWaiting_ = false;
+    uint32_t rateNextCycle_ = 20;
+    uint32_t rateDeadlineUs_ = 0;
 
 #ifdef EMG8_ADC_TIMING
     struct TimingMetric {

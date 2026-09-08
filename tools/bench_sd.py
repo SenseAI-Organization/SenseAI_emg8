@@ -93,6 +93,7 @@ def verify(folder, files, capture):
     disk = [collections.Counter() for _ in range(3)]
     counts = collections.Counter()
     last = {}
+    first = {}
     masters = []
     for name in files:
         data = (folder / Path(name).name).read_bytes()
@@ -101,7 +102,9 @@ def verify(folder, files, capture):
         if kind == 'M':
             assert len(data) >= 32 and data[:8] == b'EMG8\x04\x04\x04\x14'
             assert data[24] == summary['mode'] and (len(data) - 32) % 12 == 0
-            masters.append({'file': name, 'mode': data[24], 'label_count': (len(data)-32)//12})
+            if summary.get('rate'):
+                assert data[25] == (1 if summary['rate'] == '1000' else 0), 'Wrong rate metadata'
+            masters.append({'file': name, 'mode': data[24], 'rate_code': data[25], 'label_count': (len(data)-32)//12})
             continue
         assert len(data) % size == 0, name
         k = 'REI'.index(kind)
@@ -117,11 +120,20 @@ def verify(folder, files, capture):
             else:
                 key = ('imu',)
             assert key not in last or ts > last[key], (name, key, ts, last.get(key))
+            first.setdefault(key, ts)
             last[key] = ts
             disk[k][rec] += 1
     for adc, values in summary['counts'].items():
         for ch in range(4):
             assert counts[int(adc), ch] == values[ch], (adc, ch, counts[int(adc), ch], values[ch])
+    if summary.get('rate') == '1000':
+        for (adc, ch), count in counts.items():
+            hz = 50 if summary['mode'] == 1 and ch in ENV[adc] else 1000
+            # Bound the actual saved acquisition rate, allowing a pacing-frame
+            # boundary plus two conversions of timestamp/scheduling tolerance.
+            allowance = 2 if hz == 50 else 22
+            span = last[adc, ch] - first[adc, ch]
+            assert count <= span * hz / 1_000_000 + allowance, ('Rate cap exceeded', adc, ch)
     received = [collections.Counter() for _ in range(3)]
     seen = [set() for _ in range(3)]
     with (capture / 'udp.bin').open('rb') as f:
@@ -165,6 +177,8 @@ def run(args):
             cmd = [sys.executable, '-B', str(Path(__file__).with_name('bench_acquisition.py')),
                    '--port', args.port, '--require-sd', '--condition', args.condition,
                    '--mode', str(args.mode), '--seconds', str(args.seconds), '--output', str(out/'capture')]
+            if args.rate:
+                cmd += ['--rate', args.rate]
             if args.wifi_profile:
                 cmd += ['--wifi-profile', args.wifi_profile]
             subprocess.run(cmd, check=True)
@@ -195,7 +209,8 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--port', default='COM9')
     ap.add_argument('--condition', choices=('off', 'udp', 'quiet'), default='udp')
-    ap.add_argument('--mode', choices=(1, 2, 3), type=int, default=1)
+    ap.add_argument('--mode', choices=(1, 2, 3, 4), type=int, default=1)
+    ap.add_argument('--rate', choices=('max', '1000'))
     ap.add_argument('--seconds', type=float, default=60)
     ap.add_argument('--wifi-profile')
     ap.add_argument('--output', required=True)

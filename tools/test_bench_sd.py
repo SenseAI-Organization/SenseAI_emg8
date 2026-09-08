@@ -50,6 +50,33 @@ class SavedRecords(unittest.TestCase):
         self.assertEqual(result['sd_records'], [16, 16, 2])
         self.assertEqual(result['sd_absent_from_udp'], [0, 0, 0])
 
+    def test_rate_metadata_matches_requested_capture(self):
+        self.summary['rate'] = '1000'
+        self.write_summary()
+        with self.assertRaises(AssertionError):
+            self.check()
+        path = self.sd / 'M000.bin'
+        data = bytearray(path.read_bytes())
+        data[25] = 1
+        path.write_bytes(data)
+        self.assertEqual(self.check()['masters'][0]['rate_code'], 1)
+
+    def test_capped_file_cannot_hide_excess_acquisition_rate(self):
+        self.summary['rate'] = '1000'
+        for a, channels in enumerate(RAW):
+            for ch in channels:
+                self.summary['counts'][str(a)][ch] = 0
+        self.summary['counts']['0'][0] = 40
+        self.write_summary()
+        (self.sd / 'R000.bin').write_bytes(
+            b''.join(struct.pack('<IBBh', i * 100, 0, 0, 0) for i in range(40)))
+        path = self.sd / 'M000.bin'
+        data = bytearray(path.read_bytes())
+        data[25] = 1
+        path.write_bytes(data)
+        with self.assertRaisesRegex(AssertionError, 'Rate cap exceeded'):
+            self.check()
+
     def test_udp_loss_does_not_imply_sd_loss(self):
         f = self.capture / 'udp.bin'
         data = f.read_bytes()

@@ -167,6 +167,8 @@ static inline bool isRawCh(uint8_t adcId, uint8_t ch) {
 // per-channel counts and zero retriggers/I2C errors — this is the validated
 // configuration, do not change it without re-checking #CNT.
 static constexpr uint8_t kSLOW_DIV = 20;
+static bool limitFastRate1000 = false;  // Main-owned; copied to workers at start.
+static std::atomic<bool> recordingRate1000{false};  // SD header snapshot.
 static constexpr auto    kADC_RATE = ADS1015::ConfigRate::Rate_3300Hz;
 
 static constexpr uint16_t kIMU_ODR_HZ = 200;      // IMU polling rate
@@ -397,6 +399,7 @@ static void printStatusLine() {
            (unsigned long)rawDrops.load(std::memory_order_relaxed),
            (unsigned long)envDrops.load(std::memory_order_relaxed),
            (unsigned long)imuDrops.load(std::memory_order_relaxed));
+    printf("#RATE:%s\n", limitFastRate1000 ? "1000" : "max");
 }
 
 /** Per-ADC/channel conversion counts for the recording that just ended —
@@ -512,7 +515,7 @@ static bool sdOpenFiles(const std::string& base) {
     // Write master header (32 bytes, v4)
     // [0-3] "EMG8"  [4] ver=4  [5] nADC  [6] nCh  [7] div
     // [8-11] epoch_s(u32)  [12-13] bat_mV  [14] bat_%  [15] bat_state
-    // [16-17] imuODR(u16)  [18-23] MAC(6)  [24] mode  [25-31] reserved
+    // [16-17] imuODR(u16)  [18-23] MAC(6)  [24] mode  [25] rate cap  [26-31] reserved
     uint8_t hdr[32] = {};
     memcpy(hdr, "EMG8", 4);
     hdr[4] = 4;                  // version
@@ -535,6 +538,7 @@ static bool sdOpenFiles(const std::string& base) {
     esp_read_mac(mac, ESP_MAC_WIFI_STA);
     memcpy(hdr + 18, mac, 6);
     hdr[24] = (uint8_t)mode;
+    hdr[25] = recordingRate1000.load(std::memory_order_relaxed) ? 1 : 0;  // v4 reserved byte: 0=max, 1=1000 Hz cap
 
     UINT bw;
     f_write(&filMaster, hdr, 32, &bw);
@@ -778,9 +782,11 @@ static void uartTask(void*) {
 static QueueHandle_t drdyQ[2] = {nullptr, nullptr};
 static constexpr uint8_t kAdcStart = 4;
 static constexpr uint8_t kAdcStop = 5;
+static constexpr uint8_t kAdcRateWake = 6;
 struct AdcBusControl {
     ADS1015::ChannelConfig configs[2][4];
     uint8_t counts[2] = {};
+    bool rateLimited = false;
     SemaphoreHandle_t done = nullptr;
     esp_err_t result = ESP_OK;
 };
@@ -799,15 +805,33 @@ static esp_err_t commandAdcWorkers(uint8_t command) {
     return result;
 }
 
+static void adcRateWake(void* arg) {
+    const int bus = (int)(intptr_t)arg;
+    const uint8_t command = kAdcRateWake;
+    // If full, the worker is already awake and will recheck its timer deadline.
+    xQueueSend(drdyQ[bus], &command, 0);
+}
+
 static void adcBusTask(void* arg) {
     const int bus = (int)(intptr_t)arg;
     QueueHandle_t q = drdyQ[bus];
+    esp_timer_handle_t rateTimer = nullptr;
+    esp_timer_create_args_t timerArgs = {};
+    timerArgs.callback = adcRateWake;
+    timerArgs.arg = arg;
+    timerArgs.name = "adc_rate";
+    ESP_ERROR_CHECK(esp_timer_create(&timerArgs, &rateTimer));
+    bool rateLimited = false;
+    int64_t armedDeadline = 0;
     TickType_t lastRecoveryCheck = xTaskGetTickCount();
     uint8_t idx;
     while (true) {
         if (xQueueReceive(q, &idx, pdMS_TO_TICKS(10)) == pdTRUE) {
             if (idx == kAdcStart || idx == kAdcStop) {
                 auto& control = adcControl[bus];
+                esp_timer_stop(rateTimer);
+                armedDeadline = 0;
+                rateLimited = idx == kAdcStart && control.rateLimited;
                 control.result = ESP_OK;
                 for (int slot = 0; slot < 2; ++slot) {
                     auto* device = adc[bus * 2 + slot];
@@ -820,15 +844,23 @@ static void adcBusTask(void* arg) {
                 xQueueReset(q);
                 if (idx == kAdcStart && control.result == ESP_OK) {
                     for (int slot = 0; slot < 2; ++slot) {
-                        if (!control.counts[slot]) continue;
+                        if (!control.counts[slot]) {
+                            adc[bus * 2 + slot]->resetAcquisitionDiagnostics();
+                            continue;
+                        }
                         esp_err_t err = adc[bus * 2 + slot]->startMixedContinuousExternal(
-                            control.configs[slot], control.counts[slot], kADC_RATE);
+                            control.configs[slot], control.counts[slot], kADC_RATE,
+                            control.rateLimited);
                         if (err != ESP_OK) control.result = err;
                     }
                 }
                 xSemaphoreGive(control.done);
             } else if (idx < 4 && idx / 2 == bus) {
                 adc[idx]->serviceConversion();
+            } else if (idx == kAdcRateWake) {
+                armedDeadline = 0;
+                adc[bus * 2]->serviceConversion();
+                adc[bus * 2 + 1]->serviceConversion();
             }
         }
         // A healthy partner keeps this queue active even if one ADC loses
@@ -838,6 +870,24 @@ static void adcBusTask(void* arg) {
             lastRecoveryCheck = now;
             adc[bus * 2]->retriggerIfStalled();
             adc[bus * 2 + 1]->retriggerIfStalled();
+        }
+        if (rateLimited) {
+            uint32_t delay = 0;
+            for (int slot = 0; slot < 2; ++slot) {
+                uint32_t candidate = adc[bus * 2 + slot]->rateWaitDelayUs();
+                if (candidate && (!delay || candidate < delay)) delay = candidate;
+            }
+            if (delay) {
+                const int64_t deadline = esp_timer_get_time() + delay;
+                if (!armedDeadline || armedDeadline <= esp_timer_get_time() || deadline < armedDeadline) {
+                    esp_timer_stop(rateTimer);
+                    ESP_ERROR_CHECK(esp_timer_start_once(rateTimer, delay));
+                    armedDeadline = deadline;
+                }
+            } else if (armedDeadline) {
+                esp_timer_stop(rateTimer);
+                armedDeadline = 0;
+            }
         }
     }
 }
@@ -923,6 +973,7 @@ static bool countdown(int seconds) {
 /* ── Start / stop helpers ──────────────────────────────────────────────────── */
 
 static bool startADCs() {
+    for (auto& control : adcControl) control.rateLimited = limitFastRate1000;
     for (auto& control : adcControl)
         for (auto& count : control.counts) count = 0;
 
@@ -1026,6 +1077,7 @@ static bool startRecording() {
         return false;
     }
     // battery->enable5V();  // battery/5V management not used on this board (read on ESP32 #2 instead)
+    recordingRate1000.store(limitFastRate1000, std::memory_order_relaxed);
     recStart.store(esp_timer_get_time(), std::memory_order_relaxed);
     resetDropCounters();
     recording = true;
@@ -1206,7 +1258,18 @@ static int  uartLinePos = 0;
 static void processUartLine(const char* line, int len) {
     if (len < 1) return;
 
-    if (line[0] == 'L') {
+    if (line[0] == 'R') {
+        if (strcmp(line, "R?") == 0) {
+            printf("#RATE:%s\n", limitFastRate1000 ? "1000" : "max");
+        } else if (strcmp(line, "R1000") != 0 && strcmp(line, "Rmax") != 0) {
+            printf("#ERR:RATE:USE_R1000_OR_Rmax\n");
+        } else if (recording) {
+            printf("#ERR:BUSY\n");
+        } else {
+            limitFastRate1000 = strcmp(line, "R1000") == 0;
+            printf("#RATE:%s\n", limitFastRate1000 ? "1000" : "max");
+        }
+    } else if (line[0] == 'L') {
         // Label: L<grasp_id>,<rep>
         int gid = 0, rep = 0;
         if (sscanf(line + 1, "%d,%d", &gid, &rep) >= 1) {
@@ -1279,7 +1342,7 @@ static void processUartLine(const char* line, int len) {
 
 /** Feed one byte to the UART line accumulator. Returns single-char cmds. */
 static int feedUartByte(uint8_t b) {
-    // Multi-byte commands start with 'L', 'G' and end with '\n'
+    // Multi-byte commands start with 'L', 'G', 'R' and end with '\n'
     if (uartLinePos > 0) {
         // We're accumulating a line
         if (b == '\n' || b == '\r') {
@@ -1294,7 +1357,7 @@ static int feedUartByte(uint8_t b) {
     }
 
     // First byte of a potential command
-    if (b == 'L' || b == 'G') {
+    if (b == 'L' || b == 'G' || b == 'R') {
         uartLineBuf[0] = (char)b;
         uartLinePos = 1;
         return 0;
@@ -1698,6 +1761,7 @@ extern "C" void app_main() {
 
     if (mode != Mode::Idle) {
         // battery->enable5V();  // battery/5V management not used on this board (read on ESP32 #2 instead)
+        recordingRate1000.store(limitFastRate1000, std::memory_order_relaxed);
         recStart.store(esp_timer_get_time(), std::memory_order_relaxed);
         resetDropCounters();
         recording = true;
