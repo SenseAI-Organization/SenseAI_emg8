@@ -248,7 +248,7 @@ static bool            imuOK   = false;
 static bool            adcOK   = false;
 
 static volatile Mode mode      = Mode::Idle;
-static volatile bool recording = false;
+static std::atomic<bool> recording{false};
 static std::atomic<int64_t> recStart{0};     // µs epoch for timestamps
 static std::atomic<bool> sdOK{false};           // Shared with the SD writer
 
@@ -485,6 +485,57 @@ static FIL filMaster, filRaw, filEnv, filImu;
 static bool filesOpen = false;
 static uint16_t recIndex = 0;   // per-recording file set index within the session
 
+enum class SdCommand : uint8_t { Open, Close };
+static QueueHandle_t sdCommands = nullptr;
+static SemaphoreHandle_t sdCommandDone = nullptr;
+static SemaphoreHandle_t imuRunMutex = nullptr;
+
+// Only main submits commands; acknowledgement transfers file ownership.
+// ADC and IMU producers are stopped before Close is submitted.
+static void commandSdWriter(SdCommand command) {
+    if (!sdCommands) return;
+    xQueueSend(sdCommands, &command, portMAX_DELAY);
+    xSemaphoreTake(sdCommandDone, portMAX_DELAY);
+}
+
+static void waitImuIdle() {
+    if (!imuRunMutex) return;
+    xSemaphoreTake(imuRunMutex, portMAX_DELAY);
+    xSemaphoreGive(imuRunMutex);
+}
+
+static void sdReportError(const char* operation, const char* name, FRESULT error,
+                          UINT requested = 0, UINT written = 0) {
+    sdOK.store(false, std::memory_order_relaxed);
+    printf("#ERR:SD_%s:%s,%d,%u,%u\n", operation, name, (int)error,
+           (unsigned)requested, (unsigned)written);
+    updateStatusLed();
+}
+
+static bool sdWriteChecked(FIL* file, const char* name, const void* data, UINT size) {
+    UINT written = 0;
+    FRESULT result = f_write(file, data, size, &written);
+    if (result == FR_OK && written == size) return true;
+    // FatFs may return FR_OK with a short write when the card is full.
+    sdReportError("WRITE", name, result, size, written);
+    return false;
+}
+
+static bool sdSyncChecked(FIL* file, const char* name) {
+    FRESULT result = f_sync(file);
+    if (result == FR_OK) return true;
+    sdReportError("SYNC", name, result);
+    return false;
+}
+
+static void sdCloseChecked(FIL* file, const char* name) {
+    // f_close includes FatFs's final sync; do not ignore its result.
+    FRESULT result = f_close(file);
+    if (result != FR_OK) sdReportError("CLOSE", name, result);
+}
+
+static void sdCloseFiles();
+
 static bool sdOpenFiles(const std::string& base) {
     // One file set per recording start (R000.bin, R001.bin, ...) so a
     // pause/resume or stop/start never truncates earlier data.
@@ -502,10 +553,10 @@ static bool sdOpenFiles(const std::string& base) {
     fr[3] = f_open(&filImu,    iPath.c_str(), FA_CREATE_NEW | FA_WRITE);
     if (fr[0] != FR_OK || fr[1] != FR_OK || fr[2] != FR_OK || fr[3] != FR_OK) {
         printf("#ERR:SD_OPEN:%d,%d,%d,%d\n", fr[0], fr[1], fr[2], fr[3]);
-        if (fr[0] == FR_OK) f_close(&filMaster);
-        if (fr[1] == FR_OK) f_close(&filRaw);
-        if (fr[2] == FR_OK) f_close(&filEnv);
-        if (fr[3] == FR_OK) f_close(&filImu);
+        if (fr[0] == FR_OK) sdCloseChecked(&filMaster, "M");
+        if (fr[1] == FR_OK) sdCloseChecked(&filRaw, "R");
+        if (fr[2] == FR_OK) sdCloseChecked(&filEnv, "E");
+        if (fr[3] == FR_OK) sdCloseChecked(&filImu, "I");
         sdOK = false;
         updateStatusLed();
         return false;
@@ -540,96 +591,113 @@ static bool sdOpenFiles(const std::string& base) {
     hdr[24] = (uint8_t)mode;
     hdr[25] = recordingRate1000.load(std::memory_order_relaxed) ? 1 : 0;  // v4 reserved byte: 0=max, 1=1000 Hz cap
 
-    UINT bw;
-    f_write(&filMaster, hdr, 32, &bw);
-    f_sync(&filMaster);
-
     filesOpen = true;
+    if (!sdWriteChecked(&filMaster, "M", hdr, sizeof(hdr)) ||
+        !sdSyncChecked(&filMaster, "M")) {
+        sdCloseFiles();
+        return false;
+    }
     return true;
 }
 
 static void sdCloseFiles() {
     if (!filesOpen) return;
-    f_sync(&filRaw);  f_close(&filRaw);
-    f_sync(&filEnv);  f_close(&filEnv);
-    f_sync(&filImu);  f_close(&filImu);
-    f_sync(&filMaster); f_close(&filMaster);
+    sdCloseChecked(&filRaw, "R");
+    sdCloseChecked(&filEnv, "E");
+    sdCloseChecked(&filImu, "I");
+    sdCloseChecked(&filMaster, "M");
     filesOpen = false;
 }
 
 static void sdWriteTask(void*) {
-    constexpr int RAW_BATCH = 500;    // 500 × 8  = 4 KB
-    constexpr int ENV_BATCH = 100;    // 100 × 8  = 800 B
-    constexpr int IMU_BATCH = 50;     //  50 × 20 = 1 KB
-    constexpr int LBL_BATCH = 8;
+    // Single owner; keep batch storage off the task's call stack.
+    static Sample rawBuf[500], envBuf[100];
+    static ImuSample imuBuf[50];
+    static LabelEvent lblBuf[8];
+    bool closing = false, dirty = false;
+    TickType_t lastSync = xTaskGetTickCount();
 
-    Sample    rawBuf[RAW_BATCH];
-    Sample    envBuf[ENV_BATCH];
-    ImuSample imuBuf[IMU_BATCH];
-    LabelEvent lblBuf[LBL_BATCH];
-    UINT bw;
-
-    uint32_t syncTick = 0;
+    auto discardPending = [&]() {
+        while (xQueueReceive(rawQ, rawBuf, 0) == pdTRUE)
+            rawDrops.fetch_add(1, std::memory_order_relaxed);
+        while (xQueueReceive(envQ, envBuf, 0) == pdTRUE)
+            envDrops.fetch_add(1, std::memory_order_relaxed);
+        while (xQueueReceive(imuQ, imuBuf, 0) == pdTRUE)
+            imuDrops.fetch_add(1, std::memory_order_relaxed);
+        while (xQueueReceive(labelQ, lblBuf, 0) == pdTRUE) {}
+    };
+    auto writeBatch = [&](QueueHandle_t queue, auto* buffer, int capacity,
+                          FIL* file, const char* name, std::atomic<uint32_t>* drops) {
+        int n = 0;
+        while (n < capacity && xQueueReceive(queue, &buffer[n], 0) == pdTRUE) ++n;
+        if (n && !sdWriteChecked(file, name, buffer, n * sizeof(buffer[0]))) {
+            // The failed batch is uncertain, even if some bytes were accepted.
+            if (drops) drops->fetch_add(n, std::memory_order_relaxed);
+            return -1;
+        }
+        return n;
+    };
 
     while (true) {
-        /* ---- idle when not recording and nothing left to flush ---- */
-        if (!recording && !filesOpen) {
-            vTaskDelay(pdMS_TO_TICKS(100));
+        SdCommand command;
+        if (xQueueReceive(sdCommands, &command, filesOpen ? 0 : portMAX_DELAY) == pdTRUE) {
+            if (command == SdCommand::Open) {
+                if (sdOK) sdOpenFiles(sessionDir);
+                dirty = false;
+                lastSync = xTaskGetTickCount();
+                xSemaphoreGive(sdCommandDone);
+            } else {
+                closing = true;
+            }
+        }
+        if (!filesOpen) {
+            discardPending();
+            if (closing) {
+                closing = false;
+                xSemaphoreGive(sdCommandDone);
+            }
             continue;
         }
 
-        /* ---- open files on first iteration of a new recording ---- */
-        if (!filesOpen) {
-            if (!sdOK || !sdOpenFiles(sessionDir)) {
-                vTaskDelay(pdMS_TO_TICKS(500));
+        int nR = writeBatch(rawQ, rawBuf, 500, &filRaw, "R", &rawDrops);
+        int nE = nR < 0 ? 0 : writeBatch(envQ, envBuf, 100, &filEnv, "E", &envDrops);
+        int nI = nR < 0 || nE < 0 ? 0 : writeBatch(imuQ, imuBuf, 50, &filImu, "I", &imuDrops);
+        int nL = nR < 0 || nE < 0 || nI < 0 ? 0 :
+            writeBatch(labelQ, lblBuf, 8, &filMaster, "M", nullptr);
+        if (nR < 0 || nE < 0 || nI < 0 || nL < 0) {
+            sdCloseFiles();
+            discardPending();
+            if (closing) {
+                closing = false;
+                xSemaphoreGive(sdCommandDone);
+            }
+            continue;
+        }
+
+        bool hadData = nR || nE || nI || nL;
+        dirty |= hadData;
+        if (closing && !hadData) {
+            sdCloseFiles();
+            closing = false;
+            xSemaphoreGive(sdCommandDone);
+            continue;
+        }
+        if (!closing && dirty &&
+            (TickType_t)(xTaskGetTickCount() - lastSync) >= pdMS_TO_TICKS(500)) {
+            // Evaluate all files even when one fails.
+            bool ok = sdSyncChecked(&filRaw, "R");
+            ok = sdSyncChecked(&filEnv, "E") && ok;
+            ok = sdSyncChecked(&filImu, "I") && ok;
+            ok = sdSyncChecked(&filMaster, "M") && ok;
+            lastSync = xTaskGetTickCount();
+            dirty = false;
+            if (!ok) {
+                sdCloseFiles();
+                discardPending();
                 continue;
             }
         }
-
-        /* ---- drain raw EMG queue → R.bin ---- */
-        int nR = 0;
-        while (nR < RAW_BATCH && xQueueReceive(rawQ, &rawBuf[nR], 0) == pdTRUE) nR++;
-        if (nR > 0)
-            f_write(&filRaw, rawBuf, nR * sizeof(Sample), &bw);
-
-        /* ---- drain envelope queue → E.bin ---- */
-        int nE = 0;
-        while (nE < ENV_BATCH && xQueueReceive(envQ, &envBuf[nE], 0) == pdTRUE) nE++;
-        if (nE > 0)
-            f_write(&filEnv, envBuf, nE * sizeof(Sample), &bw);
-
-        /* ---- drain IMU queue → I.bin ---- */
-        int nI = 0;
-        while (nI < IMU_BATCH && xQueueReceive(imuQ, &imuBuf[nI], 0) == pdTRUE) nI++;
-        if (nI > 0)
-            f_write(&filImu, imuBuf, nI * sizeof(ImuSample), &bw);
-
-        /* ---- drain label queue → M.bin ---- */
-        int nL = 0;
-        while (nL < LBL_BATCH && xQueueReceive(labelQ, &lblBuf[nL], 0) == pdTRUE) nL++;
-        if (nL > 0)
-            f_write(&filMaster, lblBuf, nL * sizeof(LabelEvent), &bw);
-
-        /* ---- recording stopped: keep draining until empty, then close ---- */
-        if (!recording) {
-            if (nR == 0 && nE == 0 && nI == 0 && nL == 0) sdCloseFiles();
-            continue;
-        }
-
-        /* ---- periodic sync (every ~500 ms) ---- */
-        if (nR || nE || nI || nL) {
-            if (++syncTick >= 25) {   // 25 × 20ms ≈ 500ms
-                f_sync(&filRaw);
-                f_sync(&filEnv);
-                f_sync(&filImu);
-                f_sync(&filMaster);
-                syncTick = 0;
-            }
-        }
-
-        if (nR == 0 && nE == 0 && nI == 0 && nL == 0) {
-            vTaskDelay(pdMS_TO_TICKS(20));  // yield when idle
-        }
+        if (!hadData) vTaskDelay(pdMS_TO_TICKS(20));
     }
 }
 
@@ -906,6 +974,11 @@ static void imuTask(void*) {
             continue;
         }
 
+        xSemaphoreTake(imuRunMutex, portMAX_DELAY);
+        if (!recording.load(std::memory_order_relaxed)) {
+            xSemaphoreGive(imuRunMutex);
+            continue;
+        }
         if (imu->measure() == ESP_OK) {
             const float* ac = imu->getAccel();
             const float* gy = imu->getGyro();
@@ -926,6 +999,7 @@ static void imuTask(void*) {
             if (netStreamActive()) netEnqueueImu(s);
         }
 
+        xSemaphoreGive(imuRunMutex);
         vTaskDelayUntil(&wake, period);
     }
 }
@@ -1005,6 +1079,8 @@ static bool startADCs() {
     if (err == ESP_OK) return true;
     commandAdcWorkers(kAdcStop);
     recording = false;
+    waitImuIdle();
+    commandSdWriter(SdCommand::Close);
     adcOK = false;
     updateStatusLed();
     printf("#ERR:ADC_START:%d\n#STOP\n", (int)err);
@@ -1078,8 +1154,9 @@ static bool startRecording() {
     }
     // battery->enable5V();  // battery/5V management not used on this board (read on ESP32 #2 instead)
     recordingRate1000.store(limitFastRate1000, std::memory_order_relaxed);
-    recStart.store(esp_timer_get_time(), std::memory_order_relaxed);
     resetDropCounters();
+    if (sdOK) commandSdWriter(SdCommand::Open);
+    recStart.store(esp_timer_get_time(), std::memory_order_relaxed);
     recording = true;
     sendStartToSlave();  // notify the measurement ESP (in case the start came from python/reed and not its own button)
     if (!startADCs()) return false;
@@ -1091,11 +1168,15 @@ static bool startRecording() {
 // ─────────────────────────────────────────────
 //  Stops acquisition (ADCs + 5V) and updates the LED, without
 //  notifying anything else. Used internally when only the mode
-//  changes mid-recording (the file stays open for the next set).
+//  changes mid-recording (drain and close the old file set before restart).
 // ─────────────────────────────────────────────
-static void stopRecordingCore() {
+static void stopRecordingCore(bool notifySlave = false) {
     stopADCs();
     recording = false;
+    waitImuIdle();
+    // Notify the companion at acquisition end, before potentially slow SD I/O.
+    if (notifySlave) sendTrigger();
+    commandSdWriter(SdCommand::Close);
     printSampleCounts();
     // battery->disable5V();  // battery/5V management not used on this board (read on ESP32 #2 instead)
     updateStatusLed();
@@ -1110,8 +1191,7 @@ static void stopRecordingCore() {
 //  recording forever.
 // ─────────────────────────────────────────────
 static void stopTest() {
-    stopRecordingCore();
-    sendTrigger();
+    stopRecordingCore(true);
     printf("#STOP\n");
 }
 
@@ -1663,6 +1743,17 @@ extern "C" void app_main() {
     envQ   = xQueueCreate(kENV_QLEN,   sizeof(Sample));
     imuQ   = xQueueCreate(kIMU_QLEN,   sizeof(ImuSample));
     labelQ = xQueueCreate(kLABEL_QLEN, sizeof(LabelEvent));
+    configASSERT(rawQ && envQ && imuQ && labelQ);
+    imuRunMutex = xSemaphoreCreateMutex();
+    configASSERT(imuRunMutex);
+    if (sdOK) {
+        sdCommands = xQueueCreate(1, sizeof(SdCommand));
+        sdCommandDone = xSemaphoreCreateBinary();
+        configASSERT(sdCommands && sdCommandDone);
+        if (xTaskCreatePinnedToCore(sdWriteTask, "sd", 8192, nullptr, 5, nullptr, 1) != pdPASS)
+            ESP_ERROR_CHECK(ESP_ERR_NO_MEM);
+    }
+
 
     /* ---- Status LED ------------------------------------------------------ */
     if (!adcOK || !sdOK) {
@@ -1762,16 +1853,15 @@ extern "C" void app_main() {
     if (mode != Mode::Idle) {
         // battery->enable5V();  // battery/5V management not used on this board (read on ESP32 #2 instead)
         recordingRate1000.store(limitFastRate1000, std::memory_order_relaxed);
-        recStart.store(esp_timer_get_time(), std::memory_order_relaxed);
         resetDropCounters();
+        if (sdOK) commandSdWriter(SdCommand::Open);
+        recStart.store(esp_timer_get_time(), std::memory_order_relaxed);
         recording = true;
         sendStartToSlave();  // notify the measurement ESP (in case the start came from python/reed and not its own button)
         updateStatusLed();
         printf("#REC\n");
     }
 
-    if (sdOK)
-        xTaskCreatePinnedToCore(sdWriteTask, "sd",   8192, nullptr, 5, nullptr, 1);
     xTaskCreatePinnedToCore(uartTask,     "uart", 4096, nullptr, 3, nullptr, 0);
     if (xTaskCreatePinnedToCore(adcBusTask,   "adc0", 4096, (void*)0, configMAX_PRIORITIES - 2, nullptr, 1) != pdPASS)
         ESP_ERROR_CHECK(ESP_ERR_NO_MEM);
@@ -1809,11 +1899,7 @@ extern "C" void app_main() {
         if (reedNow && !reedPrev && (nowMs - lastToggle > kDebounceMs)) {
             lastToggle = nowMs;
             if (recording) {
-                recording = false;
-                stopADCs();
-                printSampleCounts();
-                // battery->disable5V();  // battery/5V management not used on this board (read on ESP32 #2 instead)
-                updateStatusLed();
+                stopRecordingCore();
                 printf("#PAUSE\n");
             } else {
                 startRecording();

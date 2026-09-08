@@ -305,6 +305,25 @@ Notes for the Python datalogger:
 - After `#FDATA:<path>,<bytes>`, read exactly `<bytes>` raw bytes before parsing the trailing `#FDONE` line.
 - During file transfer, treat the UART stream as binary, not line-oriented text.
 
+### SD recording completion and errors
+
+The writer opens a new file set before acquisition starts. Stop and pause
+acknowledgements follow ADC stop, completion of any in-flight IMU measurement,
+queue drain and file close. Once `#STOP` or `#PAUSE` arrives, files can be
+downloaded immediately; no extra grace period is needed. Mode changes close
+the previous file set before starting another. The companion stop notification
+is sent at acquisition end, ahead of potentially slow SD flushing.
+
+Writes must return both `FR_OK` and the full requested byte count. Write,
+sync or close failures print `#ERR:SD_<operation>:<file>,<FatFs code>,<requested>,<written>`
+and mark SD unavailable until reset. A code of zero with fewer bytes written
+is still a failure (for example, a full card). Acquisition and UDP can continue.
+The storage drop counters also include queued records discarded after failure
+and records in a failed write batch whose persistence is uncertain; they are
+not an exact count of missing bytes. Existing files are never reopened for overwrite.
+Dirty files are synced at elapsed 500 ms intervals, and closed on stop.
+Successful sync/close is not a guarantee against card-internal failure or power loss.
+
 ## WiFi / UDP Streaming
 
 Off by default (radio adds 120–250 mA draw). Send `W1` over UART to enable, `W0` to disable.

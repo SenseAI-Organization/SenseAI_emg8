@@ -1326,3 +1326,81 @@ SD+UDP tests including queue backpressure. Current successful captures do
 not validate full-card/error/power-loss behavior or guarantee UDP delivery.
 Actual-bracelet DRDY mapping and optional legacy I2C deployment decision
 remain pending. The average limiter does not imply evenly spaced sampling.
+
+
+## 2026-09-08 - Checked SD I/O and explicit recording boundaries
+
+Fresh 2 s baseline on the previous firmware passed: all 16261 raw +808
+envelope ADC records matched CNT, 400 IMU records saved, no ADC errors/drops.
+Artifacts: benchmarks/sd-writer-baseline/all-off-2. Card mounted, max selected.
+
+The writer previously ignored short writes and all sync/close errors, synced
+every 25 productive loop iterations rather than elapsed 500 ms, and inferred
+start/stop from a shared flag. Added checked writes (both result and exact
+byte count), checked sync/close, and elapsed-time dirty syncing. On failure,
+mark SD unavailable, report operation/file/result/requested/written, attempt
+to close all handles and discard pending storage records. ADC/UDP continue.
+Dropped records include uncertain failed write batches; the counter is not a
+byte-exact measure of data physically absent from the card. Header failures
+also close the newly created handles. Existing FA_CREATE_NEW protections remain.
+
+Main now sends explicit Open/Close requests to the writer and waits for
+acknowledgement. Files are opened before acquisition; Close drains queues and
+closes handles before stop/pause is acknowledged or another recording starts.
+The writer is created before the initial mode-selection loop, so very short
+first and subsequent recordings cannot be missed by its old 100 ms idle poll.
+Batch buffers are static, single-owner storage, removing about 5.9 KB from
+the writer's call stack. recording is atomic. An IMU mutex plus recheck gates
+measurement/publication so stop waits for in-flight work before draining SD.
+Reed pause now uses the same stop path. ADC-start failure also drains/closes SD.
+
+Compiled the actual checked-I/O helper bodies against scripted FatFs outcomes:
+full success, FR_OK short/zero write, error with apparently complete byte count,
+sync error, close error and remaining handle cleanup. All pass.
+The tests use constexpr evaluation with clang -fsyntax-only and emit no binary.
+The first native-test approach could not link the host's incomplete CRT; its
+freestanding fallback executable was flagged by Windows and not run. No
+security settings were changed. Switched to compiler-only assertions.
+These are simulated I/O results, not physical full-card/removal/power-loss tests.
+tools/test_sd_io.py and all 19 existing host verifier tests pass.
+
+First storage image:
+7d89da35d7a50dcdbe5ec0546bf1271c7b4c4068a62f799ef8ec917f85a6bf20.
+Four short captures (requested 5, 50, 150, 20 ms; All/Raw/Env/All) all passed
+immediate F/G access after STOP with no grace period. Every saved ADC count
+matched CNT, distinct file sets, zero storage drops/errors/retriggers.
+Observed stop acknowledgements 15-31 ms. Host request durations are not exact
+ADC-active durations, especially the first start while tasks are initialized.
+Artifacts: benchmarks/sd-writer-clean/short-lifecycle.
+The 60 s All SD+UDP capture on this image acquired 1001.561-1002.611 Hz per
+raw channel, zero ADC errors/retriggers/storage drops. All 481014 raw +24044
+envelope +11999 IMU records matched SD/UDP byte for byte; no packet gaps.
+A final ordering adjustment sends the companion stop notification before
+SD drain/close, avoiding a slow card delaying that signal.
+Both final configurations build (sd-writer-final-build.log). Retests follow.
+
+Final storage ELF:
+e2e9debd4266aa4be167eca6fb9a7708197eeb5a12c17527ebc4bc10fe133577.
+Final-image short lifecycle repeats all pass with immediate file access,
+matching counts and separate file sets. Initial stop-latency measurements
+used Windows' coarse monotonic clock (0-31 ms reported); the tool now uses
+perf_counter for future measurements. File/count validation is unaffected.
+Final-image capped SD+UDP 20 s: 160137 raw +8001 envelope +3973 IMU records;
+every saved ADC count matches CNT, no ADC errors/retriggers/storage drops.
+UDP missed one raw packet (174 records, all present on SD); all received
+records match SD bytes. ADC reception 99.89651%. No lossless-UDP claim.
+Artifacts: benchmarks/sd-writer-final, including binaries and final captures.
+
+The IMU still uses its existing 100 ms idle poll before a recording; very
+short recordings can have no IMU samples. Initial REC also precedes worker
+startup on the first recording. These startup details are not changed here.
+Next small step: longer mixed SD/UDP soak and runtime failure injection if
+needed, plus review of startup IMU timing. Physical card removal/full-card
+and power-loss tests remain unperformed; simulated helper checks are not
+a substitute for those hardware failure tests. Physical button/reed and
+companion reception, actual-bracelet ready wiring and final driver choice
+remain pending. Monitor files were not modified.
+
+Final capped run NET: TX=1844 ERR=0 DROP=0. Final verification: test.txt
+hash unchanged, recording stopped, SD mounted, max selected, radio off,
+UART enabled, COM9 released. No push; unrelated .vscode edit preserved.
